@@ -283,7 +283,7 @@ export default {
        whichever saves last silently drops the other's edits. This does the
        read-modify-write server-side against a single card, so the vulnerable
        window is milliseconds instead of however long a tab has been open.
-       Body: { upsert: [card, ...], remove: [id, ...] } */
+       Body: { upsert: [card, ...], remove: [id, ...], hideEventIds, showEventIds } */
     if (url.pathname === '/api/kanban/patch') {
       if (request.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: cors });
 
@@ -291,12 +291,22 @@ export default {
       try { patch = await request.json(); } catch (e) {}
       const board = (await env.PLANNER_KV.get('kanban', 'json')) || {};
       if (!Array.isArray(board.cards)) board.cards = [];
+      if (!Array.isArray(board.hiddenEventIds)) board.hiddenEventIds = [];
+
+      const hidden = new Set(board.hiddenEventIds.filter(Boolean));
+      (Array.isArray(patch.hideEventIds) ? patch.hideEventIds : []).forEach(id => { if (id) hidden.add(id); });
+      (Array.isArray(patch.showEventIds) ? patch.showEventIds : []).forEach(id => hidden.delete(id));
+      board.hiddenEventIds = [...hidden];
 
       const removeIds = new Set(Array.isArray(patch.remove) ? patch.remove : []);
       if (removeIds.size) board.cards = board.cards.filter(c => !removeIds.has(c.id));
+      // Drop planner remirrors the user already deleted from the Task Board.
+      if (hidden.size) board.cards = board.cards.filter(c => !c.srcEventId || !hidden.has(c.srcEventId));
 
       (Array.isArray(patch.upsert) ? patch.upsert : []).forEach(incoming => {
         if (!incoming || !incoming.id) return;
+        // Don't let Annual Planner recreate a card the user deleted here.
+        if (incoming.srcEventId && hidden.has(incoming.srcEventId)) return;
         const i = board.cards.findIndex(c => c.id === incoming.id);
         // Merge, so fields the caller didn't send (column, assignees…) survive.
         if (i >= 0) board.cards[i] = { ...board.cards[i], ...incoming };

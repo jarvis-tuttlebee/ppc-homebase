@@ -845,6 +845,7 @@
       justify-content: center;
       gap: 6px;
       width: 100%;
+      flex-shrink: 0;
       padding: 8px;
       border-radius: 6px;
       border: 1.5px dashed #d0ccc6;
@@ -1045,7 +1046,7 @@
 </div>
 
 <script src="/js/ppc-select.js?v=7"></script>
-<script src="/js/ppc-homebase.js"></script>
+<script src="/js/ppc-homebase.js?v=11"></script>
 <script>
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -1214,15 +1215,19 @@ const SEED_CARDS = [
 ];
 
 let CARDS = SEED_CARDS.map(c => ({ ...c }));
+// Planner events the user deleted from this board — sync must not remirror them.
+let HIDDEN_EVENT_IDS = [];
 
 // ─── PERSISTENCE (localStorage + Cloudflare Worker sync) ─────────────────────
 const STORAGE_KEY = 'kanban-board-data';
 const SYNC_URL = '/api/kanban';
-const APP_VERSION = '1.10.5';
+const PATCH_URL = SYNC_URL + '/patch';
+const APP_VERSION = '1.10.7';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
 let doneGroupCollapsed = true;
+let boardSaveInFlight = 0;
 
 // Moves a card into a column and stamps/clears its completion timestamp —
 // the Done column's "earlier" grouping is bucketed off this.
@@ -1235,19 +1240,51 @@ function moveCardToColumn(card, columnId) {
   }
 }
 
+function applyBoardData(data) {
+  CARDS = data.cards;
+  applyColumnOrder(data.order);
+  PROJECTS = Array.isArray(data.projects) ? data.projects : [];
+  if (Array.isArray(data.staff) && data.staff.length) STAFF = data.staff;
+  HIDDEN_EVENT_IDS = Array.isArray(data.hiddenEventIds) ? data.hiddenEventIds.filter(Boolean) : [];
+}
+
 function saveBoard() {
-  const payload = { cards: CARDS.map(c => ({ ...c })), order: COLUMN_ORDER.slice(), projects: PROJECTS.map(p => ({ ...p })), staff: STAFF.slice() };
+  const payload = {
+    cards: CARDS.map(c => ({ ...c })),
+    order: COLUMN_ORDER.slice(),
+    projects: PROJECTS.map(p => ({ ...p })),
+    staff: STAFF.slice(),
+    hiddenEventIds: HIDDEN_EVENT_IDS.slice()
+  };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch (err) {
     console.warn('Local save failed:', err);
   }
-  fetch(SYNC_URL, {
+  boardSaveInFlight++;
+  return fetch(SYNC_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
     cache: 'no-store'
-  }).catch(err => console.warn('Cloud sync failed:', err));
+  }).catch(err => console.warn('Cloud sync failed:', err))
+    .finally(() => { boardSaveInFlight = Math.max(0, boardSaveInFlight - 1); });
+}
+
+async function patchKanban(patch) {
+  try {
+    const res = await fetch(PATCH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch || {}),
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error('Kanban patch HTTP ' + res.status);
+    return true;
+  } catch (err) {
+    console.warn('Kanban patch failed:', err);
+    return false;
+  }
 }
 
 async function initApp() {
@@ -1270,10 +1307,7 @@ async function initApp() {
     }
   }
   if (data && data.cards && data.cards.length) {
-    CARDS = data.cards;
-    applyColumnOrder(data.order);
-    PROJECTS = Array.isArray(data.projects) ? data.projects : [];
-    if (Array.isArray(data.staff) && data.staff.length) STAFF = data.staff;
+    applyBoardData(data);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (err) {}
   }
   if (migrateAssignees()) saveBoard();   // single assignee → array, once
@@ -1281,15 +1315,13 @@ async function initApp() {
 }
 
 async function refreshBoard() {
+  if (boardSaveInFlight) return;
   try {
     const res = await fetch(SYNC_URL);
     if (res.ok) {
       const remote = await res.json();
       if (remote && remote.cards && remote.cards.length) {
-        CARDS = remote.cards;
-        applyColumnOrder(remote.order);
-        PROJECTS = Array.isArray(remote.projects) ? remote.projects : [];
-        if (Array.isArray(remote.staff) && remote.staff.length) STAFF = remote.staff;
+        applyBoardData(remote);
         migrateAssignees();
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remote)); } catch (err) {}
         // Drop expanded sections that no longer exist after a remote refresh.
@@ -1516,20 +1548,31 @@ function makeCardPill(card) {
   delBtn.title = 'Delete card';
   delBtn.addEventListener('click', async e => {
     e.stopPropagation();
-    if (!confirm('Delete "' + card.title + '"? You can recover it from Settings → Archive for 30 days.')) return;
+    if (!confirm('Delete "' + card.title + '"? It will also be removed from the Annual Planner. You can recover it from Settings → Archive for 30 days.')) return;
+    const plannerEvents = await removePlannerLinks(card);
     try {
       await PPC.archivePush({
         source: 'kanban',
         item: JSON.parse(JSON.stringify(card)),
-        restoreMeta: { column: card.column, project: card.project || null },
+        restoreMeta: {
+          column: card.column,
+          project: card.project || null,
+          plannerEvents
+        },
         label: card.title || 'Untitled task'
       });
     } catch (_) {}
     const idx = CARDS.indexOf(card);
     if (idx !== -1) CARDS.splice(idx, 1);
-    saveBoard();
+    if (card.srcEventId && !HIDDEN_EVENT_IDS.includes(card.srcEventId)) {
+      HIDDEN_EVENT_IDS.push(card.srcEventId);
+    }
     renderBoard();
-    removePlannerMirror(card.id);
+    await patchKanban({
+      remove: [card.id],
+      hideEventIds: card.srcEventId ? [card.srcEventId] : []
+    });
+    await saveBoard();
   });
   pill.appendChild(delBtn);
 
@@ -2189,6 +2232,12 @@ function makeColumn(col, sectionId) {
     renderBoard();
   });
 
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-card-btn';
+  addBtn.innerHTML = '<span style="font-size:14px;line-height:1">+</span> Add card';
+  addBtn.onclick = (e) => { e.stopPropagation(); openNewCardPanel(col.id, sectionId); };
+  body.appendChild(addBtn);
+
   if (col.id === 'done') {
     // Cards done in the last 7 days show directly; older ones collapse behind a
     // toggle so the column stays readable as it fills up.
@@ -2209,12 +2258,6 @@ function makeColumn(col, sectionId) {
   } else {
     cardsInCol.forEach(card => body.appendChild(makeCardPill(card)));
   }
-
-  const addBtn = document.createElement('button');
-  addBtn.className = 'add-card-btn';
-  addBtn.innerHTML = '<span style="font-size:14px;line-height:1">+</span> Add card';
-  addBtn.onclick = (e) => { e.stopPropagation(); openNewCardPanel(col.id, sectionId); };
-  body.appendChild(addBtn);
 
   colEl.appendChild(body);
   return colEl;
@@ -2762,17 +2805,26 @@ async function putPlannerData(data) {
   });
 }
 
-async function removePlannerMirror(cardId) {
-  if (!cardId) return;
+function isPlannerLink(evt, card) {
+  if (!evt || !card) return false;
+  if (card.id && evt.srcCardId === card.id) return true;
+  if (card.srcEventId && evt.id === card.srcEventId) return true;
+  return false;
+}
+
+async function removePlannerLinks(card) {
+  if (!card) return [];
   try {
     const data = await fetchPlannerData();
-    if (!data) return;
-    const before = data.events.length;
-    data.events = data.events.filter(e => e.srcCardId !== cardId);
-    if (data.events.length === before) return;
+    if (!data || !Array.isArray(data.events)) return [];
+    const removed = data.events.filter(e => isPlannerLink(e, card));
+    if (!removed.length) return [];
+    data.events = data.events.filter(e => !isPlannerLink(e, card));
     await putPlannerData(data);
+    return removed.map(e => JSON.parse(JSON.stringify(e)));
   } catch (err) {
-    console.warn('Timeline mirror remove failed:', err);
+    console.warn('Timeline remove failed:', err);
+    return [];
   }
 }
 

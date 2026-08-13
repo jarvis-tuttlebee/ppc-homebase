@@ -5,6 +5,63 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-08-13 — Deploy Task Board 1.10.7 + Planner 2.10.10 (Cursor)
+
+### Live
+- Version ID: `72201271-a9e5-4dbb-869e-db985bef7107`
+- Uploaded `/kanban.html` + `/planner.html` + `/js/ppc-homebase.js` (Worker included)
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/kanban → **`v1.10.7`**
+- Planner **`2.10.10`**. Marketing unchanged **`0.12.31`**.
+
+### What shipped
+1. Delete Task Board card also deletes linked Annual Planner event (Archive restores both)
+2. Ghost remirror blocked via `hiddenEventIds`
+3. Add card at top of columns
+
+### Open / next
+1. Hard-refresh Task Board + Planner. Delete Ode to Sirens once more — should stay gone on both.
+
+---
+
+## 2026-08-13 — Ghost Task Board card + Add card at top (Cursor)
+
+### What
+- **Ode to Sirens** kept coming back after delete: Annual Planner remirrors any dated timeline event onto the Task Board. Delete now records `hiddenEventIds` so that event stays on the calendar but is not recreated as a card. Worker `/api/kanban/patch` rejects remirror upserts for hidden ids. Archive recover clears the hide.
+- **Add card** moved to the **top** of each Task Board column (was at the bottom).
+- Versions: Task Board **`1.10.6`** · Planner **`2.10.10`**. Local only — not deployed.
+
+### How to use
+1. Hard-refresh `/kanban` (and `/planner` if that tab is open).
+2. Delete **Ode to Sirens** once more — it should stay gone. Calendar copy is untouched.
+3. Recover from Settings → Archive if you want the Task Board card back.
+
+### Open / next
+1. Soak on `:8787`; deploy when asked (`npx wrangler deploy` — needs Worker + kanban + planner).
+2. Live still Marketing **0.12.31** / Task Board **1.10.5** until deploy.
+
+---
+
+## 2026-08-08 — EOD handoff (Cursor)
+
+### Live
+- Marketing: https://ppc-homebase.pressplaycollective.workers.dev/marketing → **`v0.12.31`**
+- Version ID: `915b1c4e-c3e3-41bf-81b4-29d5fd2bc254`
+- Branch: `cursor/calendar-clear-miro-nav-8504` (pushed @ `7249f7b`)
+- PR: https://github.com/jarvis-tuttlebee/ppc-homebase/pull/11
+
+### Shipped (live)
+1. Restored tip after 0.12.13 rollback (**0.12.29**)
+2. Make band → open calendar card; mobile exec image scroll fix; scheduled-photo lightbox; subtler calendar × (**0.12.30**)
+3. Settings → **Card types** add / rename / remove (**0.12.31**)
+
+### Open / next
+1. Soak **0.12.31**: Card types in Settings; Make click; lightbox; mobile panel scroll
+2. Optional: `CLOUDFLARE_API_TOKEN` in Cursor cloud secrets so agents can deploy
+3. PR #11 ready for review/merge when soak passes
+4. Untracked local junk (dumps / `_ux-review` / edit-conflict html) — do not commit
+
+---
+
 ## 2026-08-07 — Deploy Marketing 0.12.31 (Cursor)
 
 ### Live

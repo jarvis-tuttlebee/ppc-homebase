@@ -144,11 +144,30 @@
       const board = await res.json().catch(() => ({}));
       if (!Array.isArray(board.cards)) board.cards = [];
       if (!board.cards.some(c => c.id === item.id)) board.cards.push(item);
+      if (item.srcEventId && Array.isArray(board.hiddenEventIds)) {
+        board.hiddenEventIds = board.hiddenEventIds.filter(id => id !== item.srcEventId);
+      }
       await fetch('/api/kanban', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(board)
       });
+      const plannerEvents = Array.isArray(meta.plannerEvents) ? meta.plannerEvents : [];
+      if (plannerEvents.length) {
+        const pres = await fetch('/api/data');
+        const pdata = await pres.json().catch(() => ({}));
+        if (!Array.isArray(pdata.events)) pdata.events = [];
+        plannerEvents.forEach(ev => {
+          if (!ev || !ev.id) return;
+          if (!pdata.events.some(e => e.id === ev.id)) pdata.events.push(ev);
+        });
+        await fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pdata)
+        });
+        return kanbanWhere(item) + ' + Annual Planner';
+      }
       return kanbanWhere(item);
     }
 

@@ -1308,7 +1308,7 @@
 </div>
 
 <script src="/js/ppc-select.js?v=7"></script>
-<script src="/js/ppc-homebase.js"></script>
+<script src="/js/ppc-homebase.js?v=11"></script>
 <script>
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -1432,7 +1432,7 @@ const REVENUE = [1000,1800,1500,5000,3000,3500,2000,5500,6500,8000,8000,8000];
 // ─── PERSISTENCE (localStorage + Cloudflare Worker sync) ─────────────────────
 const STORAGE_KEY = 'ppc-planner-data';
 const SYNC_URL = '/api/data';
-const APP_VERSION = '2.10.9';
+const APP_VERSION = '2.10.10';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
@@ -2074,6 +2074,7 @@ async function syncDateMirrors(opts) {
   } catch (err) { return false; }                      // offline: leave mirrors alone
   if (!board || !Array.isArray(board.cards)) return false;
   BOARD_PROJECTS = Array.isArray(board.projects) ? board.projects : [];
+  const hiddenEventIds = new Set(Array.isArray(board.hiddenEventIds) ? board.hiddenEventIds : []);
 
   let eventsChanged = ensureEventIds();
   const liveCardIds = new Set(board.cards.map(c => c.id));
@@ -2130,11 +2131,11 @@ async function syncDateMirrors(opts) {
   // ── Timeline → Task Board ────────────────────────────────────────────────
   // A dated timeline event gets its own card, so the item lives on both boards.
   // Writes go through the single-card patch endpoint, never a whole-board POST.
-  const datedEvents = EVENTS.filter(e => e.dueDate && !e.srcCardId);
+  const datedEvents = EVENTS.filter(e => e.dueDate && !e.srcCardId && !hiddenEventIds.has(e.id));
   const liveEventIds = new Set(datedEvents.map(e => e.id));
   const upserts = [];
   const removals = board.cards
-    .filter(c => c.srcEventId && !liveEventIds.has(c.srcEventId))
+    .filter(c => c.srcEventId && (!liveEventIds.has(c.srcEventId) || hiddenEventIds.has(c.srcEventId)))
     .map(c => c.id);
 
   datedEvents.forEach(evt => {
