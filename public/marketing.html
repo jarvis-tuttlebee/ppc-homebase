@@ -1255,22 +1255,64 @@
     #panel.schedule-discover #pScheduleNoteWrap {
       display: block;
     }
-    #panel.schedule-discover .review-inspo-thumb {
+    #panel.schedule-discover .review-media-well {
       cursor: pointer;
     }
-    #panel.schedule-discover .review-inspo-thumb.drop-target {
+    #panel.schedule-discover .review-media-well.drop-target {
       outline: 2px dashed #564A5E;
       outline-offset: 2px;
     }
     .schedule-ops .panel-section-label { margin-top: 10px; }
     .schedule-ops .panel-section-label:first-child { margin-top: 0; }
     .schedule-ops .panel-field-hint { margin-bottom: 2px; }
+    .schedule-source-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: start;
+    }
+    .schedule-pipeline-pane,
+    .schedule-content-pane {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .schedule-content-pane {
+      padding: 10px;
+      background: #faf9f7;
+      border: 1px solid #E2DDD5;
+      border-radius: 8px;
+    }
+    .schedule-pane-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #9a958d;
+    }
+    .schedule-content-pane .panel-section-label { margin-top: 4px; margin-bottom: 4px; }
+    .schedule-content-pane .panel-section-label:first-of-type { margin-top: 0; }
+    .schedule-content-pane .panel-field-hint { margin-bottom: 4px; }
+    .schedule-content-pane .review-media-well { min-height: 120px; }
+    .schedule-pipeline-pane .review-inspo { margin-bottom: 0; }
     .schedule-pipeline-notes {
-      margin-top: 10px;
-      margin-bottom: 4px;
+      margin-top: 0;
+      margin-bottom: 0;
     }
     .schedule-pipeline-notes .review-context-toggle { margin-bottom: 0; }
-    .schedule-pipeline-notes .review-context { margin-top: 6px; margin-bottom: 8px; }
+    .schedule-pipeline-notes .review-context { margin-top: 6px; margin-bottom: 0; }
+    #panel.schedule-discover .schedule-source-layout {
+      grid-template-columns: 1fr;
+    }
+    #panel.schedule-discover #schedulePipelinePane {
+      display: none !important;
+    }
+    #panel.schedule-discover .schedule-review-fields {
+      display: none !important;
+    }
     .schedule-collapse-stack {
       display: flex;
       flex-direction: column;
@@ -3279,30 +3321,67 @@
           <input class="prop-select" id="pScheduleAt" type="datetime-local" style="margin-top:2px">
         </div>
         <div id="scheduleExtraFields" style="display:none">
-          <div class="review-inspo" id="pScheduleInspo">
-            <div class="review-inspo-thumb" id="pScheduleThumb"></div>
-            <div class="review-inspo-meta">
-              <strong id="pScheduleInspoTitle">Scheduled content</strong>
-              <div id="pScheduleIdeaText"></div>
+          <div class="schedule-source-layout" id="scheduleSourceLayout">
+            <div class="schedule-pipeline-pane" id="schedulePipelinePane">
+              <div class="review-inspo schedule-pipeline-inspo" id="pScheduleInspo">
+                <div class="review-inspo-thumb" id="pSchedulePipelineThumb"></div>
+                <div class="review-inspo-meta">
+                  <strong id="pScheduleInspoTitle">From pipeline</strong>
+                  <div id="pScheduleIdeaText"></div>
+                  <button type="button" class="btn-secondary" id="pScheduleGoIdeas" onclick="openIdeaFillPicker()">Choose from Pipeline</button>
+                  <div id="pScheduleIdeaFillPicker" class="idea-fill-picker" hidden>
+                    <div class="idea-fill-picker-head">
+                      <span class="idea-fill-picker-label">Pick a pipeline card</span>
+                      <button type="button" class="btn-cancel" onclick="closeIdeaFillPicker()">Cancel</button>
+                    </div>
+                    <div id="pScheduleIdeaFillList" class="idea-fill-picker-list"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="schedule-pipeline-notes">
+                <button type="button" class="review-context-toggle" id="scheduleContextToggle">
+                  <span>Pipeline notes</span>
+                  <span id="scheduleContextChev">▸</span>
+                </button>
+                <div class="review-context" id="scheduleContext"></div>
+              </div>
+            </div>
+            <div class="schedule-content-pane" id="scheduleContentPane">
+              <strong class="schedule-pane-label" id="pScheduleContentTitle">Shot / edited content</strong>
+              <div class="panel-field-hint" id="pScheduleMediaHint">Drop or paste media you've already shot or edited.</div>
+              <div class="review-media-well" id="pScheduleMediaWell" tabindex="0">
+                <div class="placeholder" id="pScheduleMediaEmpty">Drop or paste shot / edited content…</div>
+                <img id="pScheduleMediaImg" alt="" style="display:none">
+                <button type="button" class="review-media-clear" id="pScheduleMediaClear" title="Remove media">×</button>
+              </div>
               <div id="pScheduleNoteWrap">
                 <textarea id="pScheduleNote" placeholder="Pin note or title…"></textarea>
               </div>
-              <button type="button" class="btn-secondary" id="pScheduleGoIdeas" onclick="openIdeaFillPicker()">Choose from Pipeline</button>
-              <div id="pScheduleIdeaFillPicker" class="idea-fill-picker" hidden>
-                <div class="idea-fill-picker-head">
-                  <span class="idea-fill-picker-label">Pick a pipeline card</span>
-                  <button type="button" class="btn-cancel" onclick="closeIdeaFillPicker()">Cancel</button>
+              <div class="panel-section-label" id="pScheduleDriveLabel">Link</div>
+              <div class="panel-field-hint" id="pScheduleDriveHint" hidden>Paste the Drive folder or file link for this pin.</div>
+              <div class="review-video-link">
+                <input class="prop-select" id="pScheduleVideoUrl" type="url" placeholder="Paste link…">
+                <a class="review-video-open is-disabled" id="pScheduleVideoOpen" href="#" target="_blank" rel="noopener noreferrer">Open</a>
+              </div>
+              <div class="schedule-review-fields">
+                <div class="panel-section-label">Content outcome</div>
+                <div class="fmt-bar">
+                  <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pScheduleOutcome','bold')"><b>B</b></button>
+                  <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pScheduleOutcome','italic')"><i>I</i></button>
+                  <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pScheduleOutcome','insertUnorderedList')">&#8226;</button>
+                  <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pScheduleOutcome','removeFormat')">Clear</button>
                 </div>
-                <div id="pScheduleIdeaFillList" class="idea-fill-picker-list"></div>
+                <div class="panel-desc" id="pScheduleOutcome" contenteditable="true" placeholder="What landed — strengths, audience fit…"></div>
+                <div class="panel-section-label" style="margin-top:10px">Tweaks to make</div>
+                <div class="fmt-bar">
+                  <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pScheduleTweaks','bold')"><b>B</b></button>
+                  <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pScheduleTweaks','italic')"><i>I</i></button>
+                  <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pScheduleTweaks','insertUnorderedList')">&#8226;</button>
+                  <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pScheduleTweaks','removeFormat')">Clear</button>
+                </div>
+                <div class="panel-desc" id="pScheduleTweaks" contenteditable="true" placeholder="Edits, crop, colour grade…"></div>
               </div>
             </div>
-          </div>
-          <div class="schedule-pipeline-notes">
-            <button type="button" class="review-context-toggle" id="scheduleContextToggle">
-              <span>Pipeline notes</span>
-              <span id="scheduleContextChev">▸</span>
-            </button>
-            <div class="review-context" id="scheduleContext"></div>
           </div>
           <div class="schedule-ops">
             <div class="panel-section-label">Status</div>
@@ -3323,12 +3402,6 @@
             </label>
             <div class="panel-section-label">Publish date</div>
             <input class="prop-select" id="pScheduleEditAt" type="datetime-local" style="margin-top:2px">
-            <div class="panel-section-label" id="pScheduleDriveLabel">Link</div>
-            <div class="panel-field-hint" id="pScheduleDriveHint" hidden>Paste the Drive folder or file link for this pin.</div>
-            <div class="review-video-link">
-              <input class="prop-select" id="pScheduleVideoUrl" type="url" placeholder="Paste link…">
-              <a class="review-video-open is-disabled" id="pScheduleVideoOpen" href="#" target="_blank" rel="noopener noreferrer">Open</a>
-            </div>
           </div>
           <div class="schedule-collapse-stack">
             <button type="button" class="review-context-toggle" id="schedulePostDetailsToggle">
@@ -3475,7 +3548,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.13';
+const APP_VERSION = '0.12.14';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -11037,9 +11110,7 @@ function fillScheduleContext(card) {
     { key: 'requirements', label: 'Requirements', multiline: true, value: stripHtml(card.requirements || '') },
     { key: 'productsUsed', label: 'Products', multiline: true, value: stripHtml(card.productsUsed || '') },
     { key: 'location', label: 'Location', multiline: false, value: stripHtml(card.location || '') },
-    { key: 'dateTime', label: 'Shoot date', type: 'datetime-local', value: toDateTimeLocalValue(card.dateTime) },
-    { key: 'contentOutcome', label: 'Outcome', multiline: true, value: stripHtml(card.contentOutcome || '') },
-    { key: 'tweaks', label: 'Tweaks', multiline: true, value: stripHtml(card.tweaks || '') }
+    { key: 'dateTime', label: 'Shoot date', type: 'datetime-local', value: toDateTimeLocalValue(card.dateTime) }
   ];
 
   fields.forEach(f => {
@@ -11260,14 +11331,74 @@ function openReviewPanel(reviewId) {
   setTimeout(() => document.getElementById('pOutcome').focus(), 50);
 }
 
-function clearScheduleDiscoverImage() {
+function setScheduleMediaUI(imageData) {
+  const well = document.getElementById('pScheduleMediaWell');
+  const img = document.getElementById('pScheduleMediaImg');
+  const empty = document.getElementById('pScheduleMediaEmpty');
+  if (!well || !img || !empty) return;
+  if (imageData) {
+    img.src = mediaSrc(imageData);
+    img.style.display = 'block';
+    empty.style.display = 'none';
+    well.classList.add('has-image');
+  } else {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    empty.style.display = 'block';
+    well.classList.remove('has-image');
+  }
+}
+
+function applyScheduleMediaResult(result) {
+  pendingReviewMedia = result
+    ? { imageData: result.imageData, imageW: result.imageW, imageH: result.imageH }
+    : { imageData: null, imageW: null, imageH: null };
+  setScheduleMediaUI(pendingReviewMedia.imageData);
+}
+
+async function applyImageToScheduleMedia(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  if (panelMode !== 'schedule' || !activeScheduleId) return;
+  try {
+    const result = await processImageFile(file);
+    applyScheduleMediaResult(result);
+    const card = scheduleCards().find(c => c.id === activeScheduleId);
+    if (!card) return;
+    if (isDiscoverCard(card)) {
+      card.imageData = result.imageData;
+      card.imageW = result.imageW;
+      card.imageH = result.imageH;
+    } else {
+      card.reviewMedia = result.imageData;
+      card.reviewMediaW = result.imageW;
+      card.reviewMediaH = result.imageH;
+    }
+    card.needContent = !scheduleSlotHasContent(card);
+    if (card.publishStatus === 'need' && !card.needContent) {
+      card.publishStatus = isDiscoverCard(card) ? 'scheduled' : 'prep';
+    }
+    refreshScheduleThumb(card);
+    scheduleSave();
+  } catch (err) {
+    console.warn('Schedule media load failed:', err);
+  }
+}
+
+function clearScheduleMedia() {
   if (panelMode !== 'schedule' || !activeScheduleId) return;
   const card = scheduleCards().find(c => c.id === activeScheduleId);
-  if (!card || !isDiscoverCard(card)) return;
-  card.imageData = null;
-  card.imageW = null;
-  card.imageH = null;
-  card.needContent = !discoverHasAsset(card);
+  if (!card) return;
+  applyScheduleMediaResult(null);
+  if (isDiscoverCard(card)) {
+    card.imageData = null;
+    card.imageW = null;
+    card.imageH = null;
+  } else {
+    card.reviewMedia = null;
+    card.reviewMediaW = null;
+    card.reviewMediaH = null;
+  }
+  card.needContent = !scheduleSlotHasContent(card);
   if (card.needContent && (card.publishStatus === 'scheduled' || card.publishStatus === 'posted')) {
     card.publishStatus = 'need';
   }
@@ -11276,38 +11407,43 @@ function clearScheduleDiscoverImage() {
   renderBoard();
 }
 
-function refreshScheduleThumb(card) {
-  const thumb = document.getElementById('pScheduleThumb');
+function refreshSchedulePipelineThumb(card) {
+  const thumb = document.getElementById('pSchedulePipelineThumb');
   if (!thumb) return;
   thumb.innerHTML = '';
   thumb.classList.remove('has-image');
-  const src = cardThumbSrc(card);
-  if (src) {
+  if (card.imageData) {
     const img = document.createElement('img');
-    img.src = src;
+    img.src = mediaSrc(card.imageData);
     img.alt = '';
     thumb.appendChild(img);
     thumb.classList.add('has-image');
-    thumb.title = isDiscoverCard(card) ? 'Drop or paste to replace preview' : '';
-    if (isDiscoverCard(card)) {
-      const clearBtn = document.createElement('button');
-      clearBtn.type = 'button';
-      clearBtn.className = 'review-media-clear';
-      clearBtn.title = 'Remove preview photo';
-      clearBtn.setAttribute('aria-label', 'Remove preview photo');
-      clearBtn.textContent = '×';
-      clearBtn.addEventListener('click', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        clearScheduleDiscoverImage();
-      });
-      thumb.appendChild(clearBtn);
-    }
+    thumb.title = 'Pipeline preview';
   } else {
-    thumb.textContent = isDiscoverCard(card) ? 'Drop preview' : 'No media';
-    thumb.title = isDiscoverCard(card) ? 'Drop or paste a pin preview image' : '';
+    thumb.textContent = 'No pipeline';
+    thumb.title = '';
   }
-  setPanelImage(src);
+}
+
+function refreshScheduleContentMedia(card) {
+  const isDiscover = isDiscoverCard(card);
+  const media = isDiscover ? (card.imageData || null) : (card.reviewMedia || null);
+  pendingReviewMedia = {
+    imageData: media,
+    imageW: isDiscover ? (card.imageW || null) : (card.reviewMediaW || null),
+    imageH: isDiscover ? (card.imageH || null) : (card.reviewMediaH || null)
+  };
+  setScheduleMediaUI(media);
+}
+
+function clearScheduleDiscoverImage() {
+  clearScheduleMedia();
+}
+
+function refreshScheduleThumb(card) {
+  refreshSchedulePipelineThumb(card);
+  refreshScheduleContentMedia(card);
+  setPanelImage(cardThumbSrc(card));
 }
 
 /** Toggle Discover-lite vs full pipeline schedule panel chrome. */
@@ -11317,7 +11453,16 @@ function applySchedulePanelLayout(card) {
   if (panel) panel.classList.toggle('schedule-discover', discover);
 
   const title = document.getElementById('pScheduleInspoTitle');
-  if (title) title.textContent = discover ? 'Discover post' : 'Scheduled content';
+  if (title) title.textContent = discover ? 'Discover post' : 'From pipeline';
+
+  const contentTitle = document.getElementById('pScheduleContentTitle');
+  if (contentTitle) contentTitle.textContent = discover ? 'Pin preview' : 'Shot / edited content';
+  const mediaHint = document.getElementById('pScheduleMediaHint');
+  if (mediaHint) {
+    mediaHint.textContent = discover
+      ? 'Drop or paste a pin preview image.'
+      : 'Drop or paste media you\'ve already shot or edited.';
+  }
 
   const driveLabel = document.getElementById('pScheduleDriveLabel');
   if (driveLabel) driveLabel.textContent = 'Link';
@@ -11431,6 +11576,10 @@ function openSchedulePanel(scheduleId) {
   document.getElementById('pScheduleMusic').value = card.music || '';
   document.getElementById('pScheduleVideoUrl').value = card.reviewVideoUrl || '';
   setVideoOpenLink('pScheduleVideoOpen', card.reviewVideoUrl || '');
+  const outcomeEl = document.getElementById('pScheduleOutcome');
+  if (outcomeEl) outcomeEl.innerHTML = sanitizeHtml(card.contentOutcome || '');
+  const tweaksEl = document.getElementById('pScheduleTweaks');
+  if (tweaksEl) tweaksEl.innerHTML = sanitizeHtml(card.tweaks || '');
   setPlanHintVisible(false);
   updatePanelStrip(card.pillar);
   document.getElementById('panel').classList.add('open');
@@ -11887,6 +12036,21 @@ function savePanel(silent) {
     card.anchorId = (document.getElementById('pScheduleAnchor') || {}).value || '';
     card.caption = (document.getElementById('pScheduleCaption') || {}).value || '';
     card.tags = (document.getElementById('pScheduleTags') || {}).value || '';
+    if (pendingReviewMedia) {
+      if (isDiscoverFormat(format)) {
+        card.imageData = pendingReviewMedia.imageData || null;
+        card.imageW = pendingReviewMedia.imageW || null;
+        card.imageH = pendingReviewMedia.imageH || null;
+      } else {
+        card.reviewMedia = pendingReviewMedia.imageData || null;
+        card.reviewMediaW = pendingReviewMedia.imageW || null;
+        card.reviewMediaH = pendingReviewMedia.imageH || null;
+      }
+    }
+    const outcomeEl = document.getElementById('pScheduleOutcome');
+    if (outcomeEl) card.contentOutcome = sanitizeHtml(outcomeEl.innerHTML).trim();
+    const tweaksEl = document.getElementById('pScheduleTweaks');
+    if (tweaksEl) card.tweaks = sanitizeHtml(tweaksEl.innerHTML).trim();
     readSchedulePipelineNotes(card);
     if (!isDiscoverFormat(format)) {
       const ideaText = document.getElementById('pScheduleIdeaText');
@@ -11947,7 +12111,7 @@ function plainTextPaste(e) {
   const text = (e.clipboardData || window.clipboardData).getData('text/plain');
   document.execCommand('insertText', false, text);
 }
-['pDesc', 'pPlan', 'pExecPlan', 'pProducts', 'pLocation', 'pRequirements', 'pOutcome', 'pTweaks'].forEach(id => {
+['pDesc', 'pPlan', 'pExecPlan', 'pProducts', 'pLocation', 'pRequirements', 'pOutcome', 'pTweaks', 'pScheduleOutcome', 'pScheduleTweaks'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('paste', plainTextPaste);
 });
@@ -12011,44 +12175,35 @@ document.getElementById('scheduleCampaignToggle').addEventListener('click', () =
   setupDropZone(well, file => applyImageToReviewMedia(file));
 })();
 
-async function applyImageToScheduleDiscover(file) {
-  if (panelMode !== 'schedule' || !activeScheduleId) return;
-  const card = scheduleCards().find(c => c.id === activeScheduleId);
-  if (!card || !isDiscoverCard(card)) return;
-  const result = await processImageFile(file);
-  if (!result) return;
-  card.imageData = result.imageData;
-  card.imageW = result.imageW;
-  card.imageH = result.imageH;
-  const noteEl = document.getElementById('pScheduleNote');
-  if (noteEl) card.body = (noteEl.value || '').trim() || card.body;
-  card.reviewVideoUrl = (document.getElementById('pScheduleVideoUrl').value || '').trim() || card.reviewVideoUrl;
-  card.needContent = !discoverHasAsset(card);
-  if (card.publishStatus === 'need' && !card.needContent) card.publishStatus = 'scheduled';
-  refreshScheduleThumb(card);
-  scheduleSave();
-}
-
-(function setupScheduleDiscoverThumb() {
-  const thumb = document.getElementById('pScheduleThumb');
-  if (!thumb) return;
-  setupDropZone(thumb, file => applyImageToScheduleDiscover(file));
-  thumb.addEventListener('paste', async e => {
+(function setupScheduleMediaWell() {
+  const well = document.getElementById('pScheduleMediaWell');
+  if (!well) return;
+  well.addEventListener('click', e => {
+    if (e.target.closest('.review-media-clear')) return;
+    focusedReviewMedia = true;
+    well.classList.add('focused');
+    clearWellFocus();
+    const reviewWell = document.getElementById('pReviewMediaWell');
+    if (reviewWell) reviewWell.classList.remove('focused');
+  });
+  document.getElementById('pScheduleMediaClear').addEventListener('click', e => {
+    e.stopPropagation();
+    clearScheduleMedia();
+  });
+  setupDropZone(well, file => applyImageToScheduleMedia(file));
+  well.addEventListener('paste', async e => {
     if (panelMode !== 'schedule' || !activeScheduleId) return;
-    const card = scheduleCards().find(c => c.id === activeScheduleId);
-    if (!card || !isDiscoverCard(card)) return;
     const items = e.clipboardData && e.clipboardData.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type && items[i].type.indexOf('image') === 0) {
         e.preventDefault();
         const file = items[i].getAsFile();
-        if (file) applyImageToScheduleDiscover(file);
+        if (file) await applyImageToScheduleMedia(file);
         break;
       }
     }
   });
-  thumb.tabIndex = 0;
 })();
 
 document.getElementById('pReviewVideoUrl').addEventListener('input', e => {
@@ -12134,10 +12289,12 @@ document.addEventListener('click', e => {
   hideCtxMenu();
   if (!e.target.closest('#calNeedMenu')) closeCalNeedMenu();
   if (!e.target.closest('.image-well')) clearWellFocus();
-  if (!e.target.closest('#pReviewMediaWell')) {
+  if (!e.target.closest('#pReviewMediaWell') && !e.target.closest('#pScheduleMediaWell')) {
     focusedReviewMedia = false;
     const well = document.getElementById('pReviewMediaWell');
     if (well) well.classList.remove('focused');
+    const schedWell = document.getElementById('pScheduleMediaWell');
+    if (schedWell) schedWell.classList.remove('focused');
   }
 });
 
@@ -12150,6 +12307,18 @@ document.addEventListener('paste', async e => {
         e.preventDefault();
         const file = items[i].getAsFile();
         if (file) await applyImageToReviewMedia(file);
+        return;
+      }
+    }
+  }
+  if (focusedReviewMedia && panelMode === 'schedule') {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) await applyImageToScheduleMedia(file);
         return;
       }
     }
