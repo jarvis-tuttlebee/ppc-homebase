@@ -1295,15 +1295,15 @@
     .schedule-content-pane .panel-section-label:first-of-type { margin-top: 0; }
     .schedule-content-pane .panel-field-hint { margin-bottom: 4px; }
     .schedule-content-pane .review-media-well { min-height: 96px; }
-    .schedule-review-details {
+    .schedule-review-details,
+    .schedule-review-section {
       display: none;
       margin-top: 2px;
     }
-    .schedule-review-details.open { display: block; }
-    .schedule-review-details .panel-section-label:first-child { margin-top: 0; }
-    #panel.schedule-discover #scheduleReviewDetailsToggle {
-      display: none !important;
-    }
+    .schedule-review-details.open,
+    .schedule-review-section.open { display: block; }
+    .schedule-review-details .panel-section-label:first-child,
+    .schedule-review-section .panel-section-label:first-child { margin-top: 0; }
     #panel.schedule-discover #scheduleReviewDetails {
       display: block !important;
     }
@@ -3557,18 +3557,24 @@
               <div id="pScheduleNoteWrap">
                 <textarea id="pScheduleNote" placeholder="Pin note or title…"></textarea>
               </div>
-              <button type="button" class="review-context-toggle" id="scheduleReviewDetailsToggle">
-                <span>Review details</span>
-                <span id="scheduleReviewDetailsChev">▸</span>
-              </button>
               <div class="schedule-review-details" id="scheduleReviewDetails">
-                <div class="panel-section-label" id="pScheduleDriveLabel">Link</div>
-                <div class="panel-field-hint" id="pScheduleDriveHint" hidden>Paste the Drive folder or file link for this pin.</div>
-                <div class="review-video-link">
-                  <input class="prop-select" id="pScheduleVideoUrl" type="url" placeholder="Paste link…">
-                  <a class="review-video-open is-disabled" id="pScheduleVideoOpen" href="#" target="_blank" rel="noopener noreferrer">Open</a>
+                <button type="button" class="review-context-toggle" id="scheduleReviewToggle">
+                  <span>Review</span>
+                  <span id="scheduleReviewChev">▸</span>
+                </button>
+                <div class="schedule-review-section" id="scheduleReviewSection">
+                  <div class="panel-section-label" id="pScheduleDriveLabel">Link</div>
+                  <div class="panel-field-hint" id="pScheduleDriveHint" hidden>Paste the Drive folder or file link for this pin.</div>
+                  <div class="review-video-link">
+                    <input class="prop-select" id="pScheduleVideoUrl" type="url" placeholder="Paste link…">
+                    <a class="review-video-open is-disabled" id="pScheduleVideoOpen" href="#" target="_blank" rel="noopener noreferrer">Open</a>
+                  </div>
                 </div>
-                <div class="schedule-review-fields">
+                <button type="button" class="review-context-toggle" id="scheduleOutcomeToggle">
+                  <span>Content outcome</span>
+                  <span id="scheduleOutcomeChev">▸</span>
+                </button>
+                <div class="schedule-review-section" id="scheduleOutcomeSection">
                   <div class="panel-section-label">Content outcome</div>
                   <div class="fmt-bar">
                     <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pScheduleOutcome','bold')"><b>B</b></button>
@@ -3577,6 +3583,12 @@
                     <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pScheduleOutcome','removeFormat')">Clear</button>
                   </div>
                   <div class="panel-desc" id="pScheduleOutcome" contenteditable="true" placeholder="What landed — strengths, audience fit…"></div>
+                </div>
+                <button type="button" class="review-context-toggle" id="scheduleTweaksToggle">
+                  <span>Tweaks to make</span>
+                  <span id="scheduleTweaksChev">▸</span>
+                </button>
+                <div class="schedule-review-section" id="scheduleTweaksSection">
                   <div class="panel-section-label" style="margin-top:10px">Tweaks to make</div>
                   <div class="fmt-bar">
                     <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pScheduleTweaks','bold')"><b>B</b></button>
@@ -3754,7 +3766,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.20';
+const APP_VERSION = '0.12.21';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5050,7 +5062,9 @@ let scheduleArmed = false;
 let reviewContextOpen = false;
 let scheduleContextOpen = false;
 let schedulePostDetailsOpen = false;
-let scheduleReviewDetailsOpen = false;
+let scheduleReviewOpen = false;
+let scheduleOutcomeOpen = false;
+let scheduleTweaksOpen = false;
 let scheduleCampaignOpen = false;
 let pendingReviewMedia = null; // { imageData, imageW, imageH } while panel open
 let dragCalSlotId = null;
@@ -12018,12 +12032,12 @@ function applySchedulePanelLayout(card) {
     String(card.music || '').trim()
   );
   setSchedulePostDetailsOpen(hasPostMeta);
-  const hasReviewDetails = !!(
-    String(card.reviewVideoUrl || '').trim() ||
-    stripHtml(card.contentOutcome || '') ||
-    stripHtml(card.tweaks || '')
-  );
-  setScheduleReviewDetailsOpen(hasReviewDetails);
+  const hasReview = !!String(card.reviewVideoUrl || '').trim();
+  const hasOutcome = !!stripHtml(card.contentOutcome || '');
+  const hasTweaks = !!stripHtml(card.tweaks || '');
+  setScheduleReviewOpen(hasReview);
+  setScheduleOutcomeOpen(hasOutcome);
+  setScheduleTweaksOpen(hasTweaks);
 
   refreshScheduleThumb(card);
 }
@@ -12048,7 +12062,9 @@ function openSchedulePanel(scheduleId) {
   focusedReviewMedia = false;
   scheduleContextOpen = false;
   scheduleCampaignOpen = false;
-  scheduleReviewDetailsOpen = false;
+  scheduleReviewOpen = false;
+  scheduleOutcomeOpen = false;
+  scheduleTweaksOpen = false;
   setPanelModeClass('schedule');
   setDescSectionMode('schedule');
   buildPrepPanelProps(card);
@@ -12599,7 +12615,6 @@ function closePanel() {
   reviewContextOpen = false;
   scheduleContextOpen = false;
   schedulePostDetailsOpen = false;
-  scheduleReviewDetailsOpen = false;
   scheduleCampaignOpen = false;
   pendingReviewMedia = null;
   focusedReviewMedia = false;
@@ -12642,12 +12657,28 @@ document.getElementById('scheduleContextToggle').addEventListener('click', () =>
   if (chev) chev.textContent = scheduleContextOpen ? '▾' : '▸';
 });
 
-function setScheduleReviewDetailsOpen(open) {
-  scheduleReviewDetailsOpen = !!open;
-  const wrap = document.getElementById('scheduleReviewDetails');
-  if (wrap) wrap.classList.toggle('open', scheduleReviewDetailsOpen);
-  const chev = document.getElementById('scheduleReviewDetailsChev');
-  if (chev) chev.textContent = scheduleReviewDetailsOpen ? '▾' : '▸';
+function setScheduleReviewOpen(open) {
+  scheduleReviewOpen = !!open;
+  const wrap = document.getElementById('scheduleReviewSection');
+  if (wrap) wrap.classList.toggle('open', scheduleReviewOpen);
+  const chev = document.getElementById('scheduleReviewChev');
+  if (chev) chev.textContent = scheduleReviewOpen ? '▾' : '▸';
+}
+
+function setScheduleOutcomeOpen(open) {
+  scheduleOutcomeOpen = !!open;
+  const wrap = document.getElementById('scheduleOutcomeSection');
+  if (wrap) wrap.classList.toggle('open', scheduleOutcomeOpen);
+  const chev = document.getElementById('scheduleOutcomeChev');
+  if (chev) chev.textContent = scheduleOutcomeOpen ? '▾' : '▸';
+}
+
+function setScheduleTweaksOpen(open) {
+  scheduleTweaksOpen = !!open;
+  const wrap = document.getElementById('scheduleTweaksSection');
+  if (wrap) wrap.classList.toggle('open', scheduleTweaksOpen);
+  const chev = document.getElementById('scheduleTweaksChev');
+  if (chev) chev.textContent = scheduleTweaksOpen ? '▾' : '▸';
 }
 
 function setSchedulePostDetailsOpen(open) {
@@ -12670,8 +12701,16 @@ document.getElementById('schedulePostDetailsToggle').addEventListener('click', (
   setSchedulePostDetailsOpen(!schedulePostDetailsOpen);
 });
 
-document.getElementById('scheduleReviewDetailsToggle').addEventListener('click', () => {
-  setScheduleReviewDetailsOpen(!scheduleReviewDetailsOpen);
+document.getElementById('scheduleReviewToggle').addEventListener('click', () => {
+  setScheduleReviewOpen(!scheduleReviewOpen);
+});
+
+document.getElementById('scheduleOutcomeToggle').addEventListener('click', () => {
+  setScheduleOutcomeOpen(!scheduleOutcomeOpen);
+});
+
+document.getElementById('scheduleTweaksToggle').addEventListener('click', () => {
+  setScheduleTweaksOpen(!scheduleTweaksOpen);
 });
 
 document.getElementById('scheduleCampaignToggle').addEventListener('click', () => {
