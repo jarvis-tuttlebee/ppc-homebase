@@ -1278,8 +1278,6 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-    }
-    .schedule-content-pane {
       padding: 10px;
       background: #faf9f7;
       border: 1px solid #E2DDD5;
@@ -1309,7 +1307,13 @@
     #panel.schedule-discover #scheduleReviewDetails {
       display: block !important;
     }
-    .schedule-pipeline-pane .review-inspo { margin-bottom: 0; }
+    .schedule-pipeline-pane .review-inspo {
+      margin-bottom: 0;
+      padding: 0;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+    }
     .schedule-pipeline-notes {
       margin-top: 0;
       margin-bottom: 0;
@@ -3372,10 +3376,10 @@
         <div id="scheduleExtraFields" style="display:none">
           <div class="schedule-source-layout" id="scheduleSourceLayout">
             <div class="schedule-pipeline-pane" id="schedulePipelinePane">
+              <strong class="schedule-pane-label" id="pScheduleInspoTitle">From pipeline</strong>
               <div class="review-inspo schedule-pipeline-inspo" id="pScheduleInspo">
                 <div class="review-inspo-thumb" id="pSchedulePipelineThumb"></div>
                 <div class="review-inspo-meta">
-                  <strong id="pScheduleInspoTitle">From pipeline</strong>
                   <div id="pScheduleIdeaText"></div>
                   <button type="button" class="btn-secondary" id="pScheduleGoIdeas" onclick="openIdeaFillPicker()">Choose from Pipeline</button>
                   <div id="pScheduleIdeaFillPicker" class="idea-fill-picker" hidden>
@@ -3603,7 +3607,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.17';
+const APP_VERSION = '0.12.18';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
