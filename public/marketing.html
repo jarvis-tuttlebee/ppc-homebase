@@ -3559,18 +3559,26 @@
               <div id="pScheduleNoteWrap">
                 <textarea id="pScheduleNote" placeholder="Pin note or title…"></textarea>
               </div>
+              <div class="panel-section-label" id="pScheduleDriveLabel">Link</div>
+              <div class="panel-field-hint" id="pScheduleDriveHint" hidden>Paste the Drive folder or file link for this pin.</div>
+              <div class="review-video-link">
+                <input class="prop-select" id="pScheduleVideoUrl" type="url" placeholder="Paste link…">
+                <a class="review-video-open is-disabled" id="pScheduleVideoOpen" href="#" target="_blank" rel="noopener noreferrer">Open</a>
+              </div>
               <div class="schedule-review-details" id="scheduleReviewDetails">
                 <button type="button" class="review-context-toggle" id="scheduleReviewToggle">
                   <span>Review</span>
                   <span id="scheduleReviewChev">▸</span>
                 </button>
                 <div class="schedule-review-section" id="scheduleReviewSection">
-                  <div class="panel-section-label" id="pScheduleDriveLabel">Link</div>
-                  <div class="panel-field-hint" id="pScheduleDriveHint" hidden>Paste the Drive folder or file link for this pin.</div>
-                  <div class="review-video-link">
-                    <input class="prop-select" id="pScheduleVideoUrl" type="url" placeholder="Paste link…">
-                    <a class="review-video-open is-disabled" id="pScheduleVideoOpen" href="#" target="_blank" rel="noopener noreferrer">Open</a>
+                  <div class="panel-section-label">Review</div>
+                  <div class="fmt-bar">
+                    <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pScheduleReviewNotes','bold')"><b>B</b></button>
+                    <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pScheduleReviewNotes','italic')"><i>I</i></button>
+                    <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pScheduleReviewNotes','insertUnorderedList')">&#8226;</button>
+                    <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pScheduleReviewNotes','removeFormat')">Clear</button>
                   </div>
+                  <div class="panel-desc" id="pScheduleReviewNotes" contenteditable="true" placeholder="Review notes…"></div>
                 </div>
                 <button type="button" class="review-context-toggle" id="scheduleOutcomeToggle">
                   <span>Content outcome</span>
@@ -3768,7 +3776,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.22';
+const APP_VERSION = '0.12.23';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5164,6 +5172,7 @@ function migrateReview(card) {
   migrateExec(card);
   if (card.reviewMedia == null) card.reviewMedia = null;
   if (card.reviewVideoUrl == null) card.reviewVideoUrl = '';
+  if (card.reviewNotes == null) card.reviewNotes = '';
   if (card.contentOutcome == null) card.contentOutcome = '';
   if (card.tweaks == null) card.tweaks = '';
   if (card.caption == null) card.caption = '';
@@ -12034,7 +12043,10 @@ function applySchedulePanelLayout(card) {
     String(card.music || '').trim()
   );
   setSchedulePostDetailsOpen(hasPostMeta);
-  const hasReview = !!String(card.reviewVideoUrl || '').trim();
+  const hasReview = !!(
+    String(card.reviewVideoUrl || '').trim() ||
+    stripHtml(card.reviewNotes || '')
+  );
   const hasOutcome = !!stripHtml(card.contentOutcome || '');
   const hasTweaks = !!stripHtml(card.tweaks || '');
   setScheduleReviewOpen(hasReview);
@@ -12100,6 +12112,8 @@ function openSchedulePanel(scheduleId) {
   document.getElementById('pScheduleMusic').value = card.music || '';
   document.getElementById('pScheduleVideoUrl').value = card.reviewVideoUrl || '';
   setVideoOpenLink('pScheduleVideoOpen', card.reviewVideoUrl || '');
+  const reviewNotesEl = document.getElementById('pScheduleReviewNotes');
+  if (reviewNotesEl) reviewNotesEl.innerHTML = sanitizeHtml(card.reviewNotes || '');
   const outcomeEl = document.getElementById('pScheduleOutcome');
   if (outcomeEl) outcomeEl.innerHTML = sanitizeHtml(card.contentOutcome || '');
   const tweaksEl = document.getElementById('pScheduleTweaks');
@@ -12571,6 +12585,8 @@ function savePanel(silent) {
         card.reviewMediaH = pendingReviewMedia.imageH || null;
       }
     }
+    const reviewNotesEl = document.getElementById('pScheduleReviewNotes');
+    if (reviewNotesEl) card.reviewNotes = sanitizeHtml(reviewNotesEl.innerHTML).trim();
     const outcomeEl = document.getElementById('pScheduleOutcome');
     if (outcomeEl) card.contentOutcome = sanitizeHtml(outcomeEl.innerHTML).trim();
     const tweaksEl = document.getElementById('pScheduleTweaks');
@@ -12635,7 +12651,7 @@ function plainTextPaste(e) {
   const text = (e.clipboardData || window.clipboardData).getData('text/plain');
   document.execCommand('insertText', false, text);
 }
-['pDesc', 'pPlan', 'pExecPlan', 'pProducts', 'pLocation', 'pRequirements', 'pOutcome', 'pTweaks', 'pScheduleOutcome', 'pScheduleTweaks'].forEach(id => {
+['pDesc', 'pPlan', 'pExecPlan', 'pProducts', 'pLocation', 'pRequirements', 'pOutcome', 'pTweaks', 'pScheduleReviewNotes', 'pScheduleOutcome', 'pScheduleTweaks'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('paste', plainTextPaste);
 });
