@@ -5,21 +5,58 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
-## 2026-08-18 — Manual marketing board backup (Cursor)
+## 2026-08-18 — EOD: calendar cards, Posted look, Types, delete fix (Cursor)
 
-### Backup
-- Live `/api/marketing` rev **754** (`_savedAt` 2026-08-18T04:13:08Z)
-- KV key (does not rotate with snap index):
-  `marketing-backup:2026-08-18-rev754`
-- Board: **71** schedule, **36** ideas, **4** anchors (Ode to Sirens,
-  Fremantle Design Week, Exploration In Denim, World Building)
+### What was built or decided
+- Marketing **`0.12.20`** on branch `cursor/calendar-manual-media-a933` (PR #12).
+  Base was pipeline-notes calendar work; not merged to `main`.
+- Calendar panel: two columns. **From pipeline** (picker + notes) beside
+  **Shot / edited content** (drop/paste media, no pipeline required). Link,
+  outcome, and tweaks sit under collapsed **Review details**. Both panes share
+  the same contained card layout.
+- **Posted** slots: teal wash, ~0.55 opacity, hidden assignee, checkmark badge.
+  Make reminders still disappear when Posted (by design).
+- **Make** rows open the related calendar card on click. Drag / × unchanged.
+- **Types** nav menu restored. **Posted** chip lives inside it (hide posted);
+  format groups unchanged. Show all restores types + posted.
+- Delete filled card was bouncing **Cloud blocked a wipe**. Worker now allows
+  a single filled-card drop; `removeScheduleCard` force-syncs. Mass wipes still
+  rejected.
+
+### Backup (pinned, does not rotate)
+- Live board rev **754** (`_savedAt` 2026-08-18T04:13:08Z)
+- KV: `marketing-backup:2026-08-18-rev754`
+- **71** schedule, **36** ideas, **4** anchors (Ode to Sirens, Fremantle Design
+  Week, Exploration In Denim, World Building)
 - Local dump (gitignored): `_backup-marketing-2026-08-18-rev754.json`
+- Restore:
+  ```
+  npx wrangler kv key get --remote --namespace-id 2f3dc18365c2477595cc76e4f3303746 marketing-backup:2026-08-18-rev754 > restore.json
+  # POST restore.json to /api/marketing with X-PPC-Force-Overwrite: 1
+  ```
 
-### Restore
-```
-npx wrangler kv key get --remote --namespace-id 2f3dc18365c2477595cc76e4f3303746 marketing-backup:2026-08-18-rev754 > restore.json
-# then POST restore.json to /api/marketing with X-PPC-Force-Overwrite: 1
-```
+### Deployed
+- Version ID `2670326f-3630-460e-9724-df476f540e19` — Marketing **`0.12.20`**
+  + Worker wipe-guard change
+- Live: https://ppc-homebase.pressplaycollective.workers.dev/marketing
+- Hard-refresh if cache still shows an older `v0.12.x`
+
+### What's mid-flight / not finished
+- PR #12 still draft; `main` is far behind this calendar work.
+- Automatic snap index still rotates (max 5); the **manual KV backup** is the
+  keep-forever copy.
+- Pipeline boards (Prep / Exec / Review) were not given Posted styling.
+
+### Known issues or things flagged but not fixed
+- Empty Need slots still use × to remove; filled cards delete from the panel
+  (**Delete card**). Make × only clears the reminder.
+- Types menu was missing on this branch until restored from
+  `cursor/calendar-type-filter-af1c` — confirm it after hard-refresh.
+
+### Next logical step
+1. Soak live calendar: media drop, Review details, Posted fade, Types / hide
+   posted, Make click, Delete card (no wipe toast).
+2. Merge PR #12 when ready; keep the rev **754** backup until after merge soak.
 
 ---
 
