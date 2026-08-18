@@ -1897,7 +1897,7 @@
       border-radius: 2px;
       background: rgba(255, 255, 255, 0.55);
       padding: 5px 22px 4px 6px;
-      cursor: grab;
+      cursor: pointer;
       font-family: inherit;
       line-height: 1.25;
       user-select: none;
@@ -3585,7 +3585,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.15';
+const APP_VERSION = '0.12.16';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -7668,7 +7668,7 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
     if (cues.childNodes.length) head.appendChild(cues);
   }
 
-  // Prep reminders: visual + drag to move + clear — not an editor.
+  // Prep reminders: click opens the related card; drag to move; × clears.
   if (prepCardsToday.length) {
     const strip = document.createElement('div');
     strip.className = 'cal-day-prep-strip';
@@ -7683,7 +7683,7 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
       let title = stripHtml(card.body || '').trim();
       if (!title) title = needTypeDisplayLabel(card) || 'Content';
       const pub = card.scheduledAt ? formatShortDate(new Date(card.scheduledAt)) : '';
-      row.title = 'Drag to move prep day' + (pub ? ' · posts ' + pub : '') + ' · × clears reminder';
+      row.title = 'Click to edit' + (pub ? ' · posts ' + pub : '') + ' · drag to move prep day · × clears reminder';
       const clearBtn = document.createElement('button');
       clearBtn.type = 'button';
       clearBtn.className = 'cal-day-prep-clear';
@@ -7716,6 +7716,12 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
       });
       row.addEventListener('drag', () => { calSlotDragMoved = true; });
       row.addEventListener('dragend', () => endCalPrepDrag(row));
+      row.addEventListener('click', e => {
+        if (e.target.closest('.cal-day-prep-clear')) return;
+        e.stopPropagation();
+        if (calSlotDragMoved) return;
+        openSchedulePanel(card.id);
+      });
       strip.appendChild(row);
     });
     head.appendChild(strip);
