@@ -1295,12 +1295,14 @@
     .schedule-content-pane .panel-section-label:first-of-type { margin-top: 0; }
     .schedule-content-pane .panel-field-hint { margin-bottom: 4px; }
     .schedule-content-pane .review-media-well { min-height: 96px; }
-    .schedule-review-details,
+    .schedule-review-details {
+      display: block;
+      margin-top: 2px;
+    }
     .schedule-review-section {
       display: none;
       margin-top: 2px;
     }
-    .schedule-review-details.open,
     .schedule-review-section.open { display: block; }
     .schedule-review-details .panel-section-label:first-child,
     .schedule-review-section .panel-section-label:first-child { margin-top: 0; }
@@ -3766,7 +3768,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.21';
+const APP_VERSION = '0.12.22';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
