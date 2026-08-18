@@ -2281,8 +2281,44 @@
     }
     .cal-slot-flag--posted {
       color: #4E6E6C;
-      background: rgba(78,110,108,0.14);
+      background: rgba(78,110,108,0.22);
     }
+    .cal-slot-flag .chip-check {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #4E6E6C;
+      color: #fff;
+      font-size: 7px;
+      font-weight: 700;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .cal-slot.cal-slot--posted {
+      opacity: 0.55;
+      padding: 4px 8px 6px;
+      background: rgba(78,110,108,0.18);
+      border-color: #E2DDD5;
+      border-left-color: #4E6E6C;
+    }
+    .cal-slot--posted:hover {
+      opacity: 0.72;
+      filter: none;
+    }
+    .cal-slot--posted .cal-slot-meta {
+      color: #6B7A8D;
+    }
+    .cal-slot--posted .cal-slot-footer {
+      border-top: none;
+      padding-top: 0;
+      margin-top: 2px;
+      justify-content: flex-end;
+    }
+    .cal-slot--posted .cal-slot-footer .cal-slot-assignee { display: none; }
+    .cal-slot--posted .cal-slot-details { color: #b5b0a8; }
     .cal-slot--need-empty .cal-slot-details {
       margin-top: 2px;
     }
@@ -3549,7 +3585,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.14';
+const APP_VERSION = '0.12.15';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -10065,7 +10101,10 @@ function renderCalSlot(card) {
   const emptyNeed = isEmptyNeedSlot(card);
   const quiet = emptyNeed && isQuietPlaceholder(card);
   const actionable = emptyNeed && isActionableNeed(card);
-  el.className = 'cal-slot' + (emptyNeed ? ' cal-slot--need cal-slot--need-empty' : '');
+  const isPosted = !emptyNeed && publishStatusOf(card) === 'posted';
+  el.className = 'cal-slot'
+    + (emptyNeed ? ' cal-slot--need cal-slot--need-empty' : '')
+    + (isPosted ? ' cal-slot--posted' : '');
   el.dataset.scheduleId = card.id;
   el.draggable = true;
   el.title = emptyNeed
@@ -10075,8 +10114,10 @@ function renderCalSlot(card) {
     : 'Drag to another day · click View details to open';
   const formatTone = formatColor(card.format, card.pillar);
   el.style.borderColor = '#E2DDD5';
-  el.style.borderLeftColor = formatTone;
-  el.style.background = hexWash(formatTone, 0.12);
+  if (!isPosted) {
+    el.style.borderLeftColor = formatTone;
+    el.style.background = hexWash(formatTone, 0.12);
+  }
   const anchor = card.anchorId ? anchors().find(a => a.id === card.anchorId) : null;
   const eventTone = anchor ? anchorTypeColor(anchor.type) : null;
   let eventName = '';
@@ -10232,7 +10273,9 @@ function renderCalSlot(card) {
     flag.className = 'cal-slot-flag ' + (PUBLISH_STATUS_FLAG_CLASS[status] || 'cal-slot-flag--need');
     flag.style.color = colour;
     flag.style.background = colour + '22';
-    flag.innerHTML = '<span class="chip-dot" style="background:' + colour + '"></span>' + publishStatusLabel(status);
+    flag.innerHTML = status === 'posted'
+      ? '<span class="chip-check" aria-hidden="true">✓</span>' + publishStatusLabel(status)
+      : '<span class="chip-dot" style="background:' + colour + '"></span>' + publishStatusLabel(status);
     flag.title = 'Status: ' + publishStatusLabel(status) + ' — click to cycle';
     flag.addEventListener('click', e => {
       e.stopPropagation();
