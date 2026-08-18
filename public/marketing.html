@@ -3754,7 +3754,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.19';
+const APP_VERSION = '0.12.20';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6795,7 +6795,8 @@ async function removeScheduleCard(id) {
   }
   DATA.sections.schedule = scheduleCards().filter(c => c.id !== id);
   clearTimeout(saveTimer);
-  saveData();
+  // Force: dropping one filled card used to look like a catastrophic wipe.
+  saveData({ force: true });
   renderBoard();
 }
 
