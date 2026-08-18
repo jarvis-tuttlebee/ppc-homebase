@@ -5,6 +5,24 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-08-18 — Manual marketing board backup (Cursor)
+
+### Backup
+- Live `/api/marketing` rev **754** (`_savedAt` 2026-08-18T04:13:08Z)
+- KV key (does not rotate with snap index):
+  `marketing-backup:2026-08-18-rev754`
+- Board: **71** schedule, **36** ideas, **4** anchors (Ode to Sirens,
+  Fremantle Design Week, Exploration In Denim, World Building)
+- Local dump (gitignored): `_backup-marketing-2026-08-18-rev754.json`
+
+### Restore
+```
+npx wrangler kv key get --remote --namespace-id 2f3dc18365c2477595cc76e4f3303746 marketing-backup:2026-08-18-rev754 > restore.json
+# then POST restore.json to /api/marketing with X-PPC-Force-Overwrite: 1
+```
+
+---
+
 ## 2026-08-05 — Pipeline notes under Scheduled content (Cursor)
 
 ### What

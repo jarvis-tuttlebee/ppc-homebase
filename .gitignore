@@ -1,2 +1,4 @@
 .wrangler/
 node_modules/
+_backup-marketing*.json
+_backup-summary.json
