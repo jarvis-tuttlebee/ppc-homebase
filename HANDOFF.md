@@ -5,6 +5,392 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-08-21 — EOD: Ideas board UX restored (Cursor)
+
+### Live
+- Marketing **`0.12.42`** — `619d7392-658e-4675-a9f5-d7dfe6b7600b`
+- https://ppc-homebase.pressplaycollective.workers.dev/marketing (hard-refresh)
+
+### Today’s arc (Ideas)
+1. Restored full-width Ideas + even Reshuffle/Fit + drop/paste (**0.12.38–0.12.39**)
+2. Dropped Select/Hand (**0.12.40**)
+3. Tried pan-by-default / no wheel scroll (**0.12.41**) — felt wrong for card move
+4. Settled: drag card moves card; empty space / Space pans; Ctrl+scroll zooms (**0.12.42**)
+
+### What’s live now (Ideas)
+- Full width like Prep/Exec/Review
+- Drag card = move; empty space / hold Space = pan
+- Reshuffle + Fit evenly spread; Ctrl+scroll / +/- zoom; plain wheel inert
+- Drop/paste onto card or panel Image well
+
+### Keep
+- Canonical path: Proton Drive only
+- KV backup `marketing-backup:2026-08-18-rev754` until soak done
+- Earlier calendar stack (0.12.35–0.12.37) still in force
+
+### Open / next
+1. Soak **0.12.42** after hard-refresh
+2. Commit/push Proton tree when asked
+3. Drop rev754 backup after soak
+
+### Vault
+- Session summary: `Jarvis-Vault/3. AIOS/3.1 History/Session Summary — Marketing Ideas Board UX Restored — 21-08-26.md`
+
+---
+
+## 2026-08-21 — Deploy Marketing 0.12.42: drag card moves card again (Cursor)
+
+### Live
+- Marketing **`0.12.42`** — `619d7392-658e-4675-a9f5-d7dfe6b7600b`
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/marketing
+
+### What
+1. **Drag a card** moves that card again (0.12.41 pan-over-cards reverted)
+2. **Drag empty space** (or hold Space over a card) pans the view
+3. Plain wheel still does nothing on Ideas; Ctrl+scroll / +/- zoom
+
+### Open / next
+1. Hard-refresh live → confirm **v0.12.42**
+2. Smoke: hover card → drag moves only that card
+
+---
+
+## 2026-08-21 — Deploy Marketing 0.12.41: Ideas pan-by-default (Cursor)
+
+### Live
+- Marketing **`0.12.41`** — `fb79fa89-a65b-49d8-9ca1-2fd1ff1d21a3`
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/marketing
+
+### What
+1. Ideas: **drag pans the view** (including over cards); **Alt+drag** moves a card; click opens
+2. Plain wheel on Ideas does nothing (no up/down scroll/pan); **Ctrl+scroll** / +/- still zoom
+3. Space still pans
+
+### Open / next
+1. Hard-refresh live → confirm **v0.12.41**
+2. Smoke: drag pans; Alt+drag moves; wheel doesn’t scroll the board
+
+---
+
+## 2026-08-21 — Deploy Marketing 0.12.40: drop Select/Hand (Cursor)
+
+### Live
+- Marketing **`0.12.40`** — `e634c095-cca2-479c-8ca8-9f2b586079ee`
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/marketing
+
+### What
+1. Removed Select/Hand toggle (they did the same thing)
+2. Drag card = move; empty space / hold **Space** = pan; Ctrl+scroll / +/- = zoom
+3. Includes 0.12.38–0.12.39 Ideas fixes: full width, even Reshuffle/Fit, drop/paste onto cards
+
+### Open / next
+1. Hard-refresh live → confirm **v0.12.40**
+2. Smoke Ideas: no Select/Hand chrome; Space pans over cards
+
+---
+
+## 2026-08-21 — Marketing 0.12.39: Ideas spread + Ctrl+scroll zoom (Cursor)
+
+### Local
+- Marketing **`0.12.39`** (not deployed)
+- Builds on **0.12.38** full-width Ideas board
+
+### What
+1. **Reshuffle** + **Fit** evenly spread cards across the board (masonry pack), not a stacked pile
+2. Zoom via **Ctrl/Cmd+scroll** (or pinch) and **+/-** — plain wheel pans
+3. Drop/paste image onto whole idea card or panel Image well; left/up drag expands the board
+
+### How to use
+1. Hard-refresh local `:8787/marketing` → **v0.12.39**
+2. Pipeline → Content Ideas → Reshuffle / Fit; Ctrl+scroll to zoom
+3. Drop or paste an image onto a card or the open panel Image area
+
+### Open / next
+1. Soak locally; deploy when asked
+
+---
+
+## 2026-08-21 — Marketing 0.12.38: restore Ideas board UX (Cursor)
+
+### Local
+- Marketing **`0.12.38`** (not deployed)
+- Calendar/status from **0.12.37** unchanged
+
+### What
+1. Ideas board **full width** again (dropped 920px gutters from 0.12.28)
+2. **Reshuffle** scatters cards across the visible board (not tight grid pack)
+3. Drop/paste onto an idea card no longer also creates a duplicate (stopPropagation on drop zones)
+
+### How to use
+1. `npm run dev` → http://127.0.0.1:8787/marketing → Pipeline → Content Ideas
+2. Hard-refresh; confirm **v0.12.38**
+3. Smoke: full width, drag sticks, Reshuffle scatters, drop image on empty card = that card only
+
+### Open / next
+1. Soak locally; deploy when asked
+
+---
+
+## 2026-08-21 — EOD (Cursor)
+
+### Live
+- Marketing **`0.12.37`** — `1ecb4776-bf6e-45d6-b7cc-1361bbf37083`
+- https://ppc-homebase.pressplaycollective.workers.dev/marketing (hard-refresh)
+
+### Today’s arc
+1. Project home → Proton Drive `ppc-homebase`
+2. Deployed **0.12.34** (Ideas drag, Unscheduled, Campaign above notes) then ported media + Posted wash → **0.12.35**
+3. Ported remaining cloud-agent calendar gaps from `cursor/calendar-manual-media-a933` → **0.12.36** (not a full branch merge)
+4. Fixed status not sticking → **0.12.37**
+
+### What’s live now (calendar)
+- Two-column Need panel (pipeline | shot/edited media)
+- Media without pipeline; Link above Review / Outcome / Tweaks (collapsible; `reviewNotes`)
+- Posted teal wash + Types Posted chip; Make row click; wipe-guard allows one-card delete
+- Status: immediate save; cycleable chip on empty Needs too
+
+### Keep
+- Canonical path: Proton Drive only (Desktop = cold backup)
+- KV backup `marketing-backup:2026-08-18-rev754` until soak done
+
+### Open / next
+1. Soak smoke on live after hard-refresh
+2. Commit/push Proton tree when asked
+3. Drop rev754 backup after soak
+
+### Vault
+- Session summary: `Jarvis-Vault/3. AIOS/3.1 History/Session Summary — Marketing Calendar Gaps Live & Status Fix — 21-08-26.md`
+
+---
+
+## 2026-08-21 — Deploy Marketing 0.12.37: status change fix (Cursor)
+
+### Live
+- Version ID: `1ecb4776-bf6e-45d6-b7cc-1361bbf37083`
+- Marketing **`0.12.37`**
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/marketing
+
+### What
+1. Status changes persist immediately (`saveData` on setPublishStatus — was lost when closePanel cancelled the debounce)
+2. Panel save no longer clobbers in-memory status when the select is empty/out of sync
+3. Empty Needs show a cycleable status chip; Posted wash applies whenever status is Posted
+
+### Open / next
+1. Hard-refresh `/marketing` — change Status on a card; badge should update and stick after reload
+
+---
+
+## 2026-08-21 — Deploy Marketing 0.12.36: fill calendar gaps from cloud branch (Cursor)
+
+### Live
+- Version ID: `7328a09b-d4bc-4dba-a492-1b1995b1d285`
+- Marketing **`0.12.36`** — ported missing pieces from `cursor/calendar-manual-media-a933` (0.12.23 tip) onto live 0.12.35 tree; not a full branch redeploy
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/marketing
+
+### Gaps filled vs 0.12.35
+1. Three collapsible sections under Link: **Review** (`reviewNotes`), **Content outcome**, **Tweaks** — headings always visible; bodies collapse; auto-open when content exists
+2. Matched card layout on both pipeline + shot panes; stack to one column on narrow screens
+3. Types menu: **Posted** chip inside Types; Show all restores types + posted (standalone Hide posted removed)
+4. Worker wipe-guard allows single filled-card deletes; `removeScheduleCard` force-syncs
+5. `.gitignore` backup patterns from branch
+
+### Already present (kept)
+- Two-column panel + media without pipeline, Posted teal wash, Make row click, Make hidden when Posted, Campaign above Pipeline notes, Ideas drag, Unscheduled drop
+
+### Backup
+- Keep `marketing-backup:2026-08-18-rev754` until after soak
+
+### Open / next
+1. Hard-refresh live `/marketing` — confirm **v0.12.36**
+2. Smoke: two columns, media drop, three accordions, Posted chip, delete filled card (no wipe toast)
+
+---
+
+## 2026-08-21 — Deploy Marketing 0.12.35 (Cursor)
+
+### Live
+- Version ID: `ecc39c3e-80ba-490b-8478-6acb144aa7e9`
+- Marketing **`0.12.35`** — uploaded `/marketing.html` from Proton Drive home
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/marketing
+
+### What shipped
+1. Calendar Needs: direct media / add content (side-by-side pipeline + shot/edited well)
+2. Posted/Done: faded teal-green whole-card wash
+3. Kept Ideas drag, Unscheduled drop, Campaign above Pipeline notes
+
+### Open / next
+1. Hard-refresh live `/marketing` — confirm **v0.12.35**
+2. Soak: drop media on a Need; mark a card Posted and check the wash
+
+---
+
+## 2026-08-21 — Marketing 0.12.35: calendar media + Posted wash (Cursor)
+
+### Local
+- Marketing **`0.12.35`** (deployed — see entry above)
+- Ported from `origin/cursor/calendar-manual-media-a933` onto Proton **0.12.34** tree (not a full branch merge)
+
+### What
+1. Calendar Needs: side-by-side panel — pipeline / Choose content on the left; **Shot / edited content** drop-paste well, Link, outcome, tweaks on the right
+2. Posted/Done cards: faded teal-green whole-card wash (`cal-slot--posted`), checkmark badge, assignee hidden
+3. Kept **0.12.34** UX: Ideas card drag, Unscheduled drop, Campaign dropdown above Pipeline notes
+
+### How to use
+1. Hard-refresh live `/marketing` → confirm **v0.12.35**
+2. Open a Need → drop media in the right pane (or Choose from Pipeline on the left)
+3. Mark a card Posted → whole card should wash teal and fade
+
+### Open / next
+1. Soak live after hard-refresh
+
+---
+
+## 2026-08-21 — Deploy Marketing 0.12.34 from Proton (Cursor)
+
+### Live
+- Version ID: `cf3fcb26-1dfc-4bfd-a927-da4329280a04`
+- Marketing **`0.12.34`** — uploaded `/marketing.html` from Proton Drive home
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/marketing
+
+### What shipped
+1. Ideas: individual card drag (canvas grows; Space pans over cards)
+2. Calendar: drag cards to **Unscheduled**
+3. Schedule panel: **Campaign** dropdown above Pipeline notes
+
+### Open / next
+1. Hard-refresh live `/marketing` — confirm v0.12.34.
+2. ~~Port from `origin/cursor/calendar-manual-media-a933` onto this tree → **0.12.35**~~ — done locally; deploy when asked.
+
+---
+
+## 2026-08-21 — Project home → Proton Drive (Cursor)
+
+### Canonical path (use this only)
+`C:\Users\jarvi\Proton Drive\jarvis.tuttlebee\My files\Coding Projects\ppc-homebase`
+
+### What we did
+1. Desktop + Proton were on the **same git commit** (`cca9c0e`); Desktop alone
+   had uncommitted Marketing **0.12.34** (Ideas drag, Unscheduled drop, Campaign).
+2. Backed up Proton’s prior `marketing.html` + `HANDOFF.md` to
+   `_migrate-backup-20260821-122321/`.
+3. Copied Desktop’s working `public/marketing.html` + `HANDOFF.md` → Proton.
+4. Agent workspace root switched to the Proton path.
+
+### Keep safe
+1. **Open Cursor on the Proton folder** (File → Open Folder → path above). Do not
+   keep editing `Desktop\Press Play Collective\ppc-homebase`.
+2. Leave Desktop clone as a cold backup for a few days; don’t dual-edit.
+3. Proton Drive sync can lag — after big edits wait for sync, or prefer git
+   push so GitHub is the real backup.
+4. Live is still **0.12.32**; local Proton is **0.12.34** (uncommitted). Deploy
+   from Proton when ready: `npx wrangler deploy`.
+5. Still missing vs memory (neither copy had them): inline **Add content** on
+   Needs, **Done/Posted** faded green card wash — restore next on this tree.
+
+### Open / next
+1. Confirm Cursor is opened on Proton `ppc-homebase`.
+2. `npm run dev` from Proton → soak **0.12.34**.
+3. Restore Add content + Done-card wash; deploy when asked.
+
+---
+
+## 2026-08-21 — Campaign dropdown above Pipeline notes (Cursor)
+
+### Local
+- Branch: `cursor/calendar-clear-miro-nav-8504`
+- Marketing **`0.12.34`** (not deployed; includes pending **0.12.33** Unscheduled drop)
+
+### What
+1. Schedule panel: **Campaign** is a plain dropdown (anchor list) above
+   **Pipeline notes** — no collapsible Campaign section, no “Campaign anchor”
+   sub-label.
+2. Same `anchorId` field / save path as before.
+
+### How to use
+1. Hard-refresh `/marketing` on `:8787`.
+2. Open a calendar card — Campaign sits under Scheduled content, above Pipeline notes.
+
+### Open / next
+1. Soak with Unscheduled drop (**0.12.33**) + this layout; deploy when asked.
+
+---
+
+## 2026-08-21 — Drag calendar cards to Unscheduled (Cursor)
+
+### Local
+- Branch: `cursor/calendar-clear-miro-nav-8504`
+- Marketing **`0.12.33`** (not deployed)
+
+### What
+1. Calendar cards can be dragged into the **Unscheduled** queue — clears
+   publish date, keeps content / Need, marks `slotMoved` so quotas won’t wipe it.
+2. Drop target highlight on Unscheduled; expands if collapsed. Lead-up day is
+   vacated when a linked card leaves a date.
+
+### How to use
+1. Hard-refresh `/marketing` (local `:8787` or deploy first).
+2. Drag a day card onto **Unscheduled** — toast + card appears in the queue.
+3. Drag back onto a day to re-date.
+
+### Open / next
+1. Soak on `:8787`; deploy when asked (`npx wrangler deploy`).
+2. Live still **0.12.32** until deploy.
+
+---
+
+## 2026-08-21 — Deploy Marketing 0.12.32 (Cursor)
+
+### Live
+- Version ID: `dc399d01-c872-4f45-9b8f-5af434319cac`
+- Marketing **`0.12.32`** — uploaded `/marketing.html`
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/marketing
+
+### What shipped
+1. Ideas: grab a card moves **that card** (Space still pans over cards)
+2. No more auto-pack on load/delete/Prepare — positions stick
+3. Drag grows canvas + edge-pans; **Reshuffle** packs on demand
+
+### Open / next
+1. Hard-refresh Marketing and confirm one card can be dragged and stays after reload.
+
+---
+
+## 2026-08-21 — Ideas board: move cards individually (Cursor)
+
+### Local
+- Branch: `cursor/calendar-clear-miro-nav-8504`
+- Marketing **`0.12.32`** (deployed same day)
+
+### What
+1. Grabbing a card always moves **that card** (Hand no longer steals the drag;
+   hold Space to pan over cards).
+2. Stopped auto-packing on load / delete / Prepare — layouts were being
+   restacked whenever cards looked “sparse”, so individual placement never stuck.
+3. Drag is no longer clamped to the tiny viewport plane; the canvas grows and
+   the view edge-pans so you can place a card anywhere. **Reshuffle** still
+   packs on demand.
+
+### How to use
+1. Hard-refresh live `/marketing` (or local `:8787`).
+2. Drag one Ideas card away from the cluster; reload — it should stay put.
+
+### Open / next
+1. Soak live **0.12.32**.
+
+---
+
+## 2026-08-17 — Delete leftover ppc-planner-worker folder (Cursor)
+
+### What
+- Removed stale local copy `…/Press Play Collective/ppc-planner-worker` (no `.git`; leftover from the 31 Jul rename).
+- Live worker was already `ppc-homebase` only — old `ppc-planner` URL still 404.
+- Left `ppc-homebase` and `personal-planner-worker` untouched.
+
+### Open / next
+1. Hard-refresh Task Board + Planner. Delete Ode to Sirens once more — should stay gone on both.
+
+---
+
 ## 2026-08-13 — Deploy Task Board 1.10.7 + Planner 2.10.10 (Cursor)
 
 ### Live

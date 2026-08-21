@@ -247,11 +247,10 @@
     }
     .btn-add:hover { background: #2C2C2C; color: #fff; }
 
-    /* Narrower Ideas board — side gutters so trackpad scroll can reach the pipeline below. */
+    /* Full-width Ideas board — matches Prep / Exec / Review section width. */
     .mood-board-wrap {
-      width: min(920px, calc(100% - 72px));
+      width: 100%;
       max-width: 100%;
-      margin: 0 auto;
       box-sizing: border-box;
     }
 
@@ -264,12 +263,11 @@
       background-size: 28px 28px;
       border: 1px solid #e8e5e0;
       border-radius: 10px 10px 0 0;
-      cursor: default;
+      cursor: grab;
       user-select: none;
       touch-action: none;
       outline: none;
     }
-    .mood-viewport.mood-hand,
     .mood-viewport.mood-space {
       cursor: grab;
     }
@@ -279,7 +277,6 @@
       outline-offset: -4px;
       background-color: rgba(86,74,94,0.04);
     }
-    .mood-viewport.mood-hand .idea-card,
     .mood-viewport.mood-space .idea-card {
       cursor: grab;
     }
@@ -294,19 +291,6 @@
       text-align: left;
       z-index: 5;
       pointer-events: none;
-    }
-    .mood-viewport-modes {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      z-index: 6;
-      display: flex;
-      gap: 2px;
-      padding: 2px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.94);
-      border: 1px solid #E2DDD5;
-      box-shadow: 0 1px 4px rgba(44,44,44,0.06);
     }
     .mood-viewport-tools {
       position: absolute;
@@ -1466,22 +1450,87 @@
     #panel.schedule-discover #pScheduleNoteWrap {
       display: block;
     }
-    #panel.schedule-discover .review-inspo-thumb {
+    #panel.schedule-discover .review-media-well {
       cursor: pointer;
     }
-    #panel.schedule-discover .review-inspo-thumb.drop-target {
+    #panel.schedule-discover .review-media-well.drop-target {
       outline: 2px dashed #564A5E;
       outline-offset: 2px;
     }
     .schedule-ops .panel-section-label { margin-top: 10px; }
     .schedule-ops .panel-section-label:first-child { margin-top: 0; }
     .schedule-ops .panel-field-hint { margin-bottom: 2px; }
+    .schedule-source-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: start;
+    }
+    .schedule-pipeline-pane,
+    .schedule-content-pane {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+      background: #faf9f7;
+      border: 1px solid #E2DDD5;
+      border-radius: 8px;
+    }
+    .schedule-pane-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #9a958d;
+    }
+    .schedule-content-pane .panel-section-label { margin-top: 4px; margin-bottom: 4px; }
+    .schedule-content-pane .panel-section-label:first-of-type { margin-top: 0; }
+    .schedule-content-pane .panel-field-hint { margin-bottom: 4px; }
+    .schedule-content-pane .review-media-well { min-height: 96px; }
+    .schedule-review-details {
+      display: block;
+      margin-top: 2px;
+    }
+    .schedule-review-section {
+      display: none;
+      margin-top: 2px;
+    }
+    .schedule-review-section.open { display: block; }
+    .schedule-review-details .panel-section-label:first-child,
+    .schedule-review-section .panel-section-label:first-child { margin-top: 0; }
+    #panel.schedule-discover #scheduleReviewDetails {
+      display: block !important;
+    }
+    .schedule-pipeline-pane .review-inspo {
+      margin-bottom: 0;
+      padding: 0;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+    }
+    .schedule-campaign-field {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+    .schedule-campaign-field .panel-section-label { margin-top: 0; }
     .schedule-pipeline-notes {
-      margin-top: 10px;
-      margin-bottom: 4px;
+      margin-top: 0;
+      margin-bottom: 0;
     }
     .schedule-pipeline-notes .review-context-toggle { margin-bottom: 0; }
-    .schedule-pipeline-notes .review-context { margin-top: 6px; margin-bottom: 8px; }
+    .schedule-pipeline-notes .review-context { margin-top: 6px; margin-bottom: 0; }
+    #panel.schedule-discover .schedule-source-layout {
+      grid-template-columns: 1fr;
+    }
+    #panel.schedule-discover #schedulePipelinePane {
+      display: none !important;
+    }
+    #panel.schedule-discover .schedule-review-fields {
+      display: none !important;
+    }
     .schedule-collapse-stack {
       display: flex;
       flex-direction: column;
@@ -1489,16 +1538,13 @@
       margin-top: 12px;
     }
     .schedule-collapse-stack .review-context-toggle { margin-bottom: 0; }
-    .schedule-post-details,
-    .schedule-campaign-body {
+    .schedule-post-details {
       display: none;
       margin-bottom: 2px;
       padding: 4px 0 2px;
     }
-    .schedule-post-details.open,
-    .schedule-campaign-body.open { display: block; }
-    .schedule-post-details .panel-section-label:first-child,
-    .schedule-campaign-body .panel-section-label:first-child { margin-top: 0; }
+    .schedule-post-details.open { display: block; }
+    .schedule-post-details .panel-section-label:first-child { margin-top: 0; }
     .review-context-toggle {
       width: 100%;
       display: flex;
@@ -1881,6 +1927,11 @@
       color: #9a958d;
       padding: 6px 4px 6px;
     }
+    .cal-types-chip--posted {
+      width: 100%;
+      justify-content: flex-start;
+      margin-bottom: 4px;
+    }
     .cal-types-cat {
       border-radius: 6px;
       margin-bottom: 4px;
@@ -2209,7 +2260,7 @@
       border-radius: 2px;
       background: rgba(255, 255, 255, 0.55);
       padding: 5px 22px 4px 6px;
-      cursor: grab;
+      cursor: pointer;
       font-family: inherit;
       line-height: 1.25;
       user-select: none;
@@ -2588,8 +2639,44 @@
     }
     .cal-slot-flag--posted {
       color: #4E6E6C;
-      background: rgba(78,110,108,0.14);
+      background: rgba(78,110,108,0.22);
     }
+    .cal-slot-flag .chip-check {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #4E6E6C;
+      color: #fff;
+      font-size: 7px;
+      font-weight: 700;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .cal-slot.cal-slot--posted {
+      opacity: 0.55;
+      padding: 4px 8px 6px;
+      background: rgba(78,110,108,0.18);
+      border-color: #E2DDD5;
+      border-left-color: #4E6E6C;
+    }
+    .cal-slot--posted:hover {
+      opacity: 0.72;
+      filter: none;
+    }
+    .cal-slot--posted .cal-slot-meta {
+      color: #6B7A8D;
+    }
+    .cal-slot--posted .cal-slot-footer {
+      border-top: none;
+      padding-top: 0;
+      margin-top: 2px;
+      justify-content: flex-end;
+    }
+    .cal-slot--posted .cal-slot-footer .cal-slot-assignee { display: none; }
+    .cal-slot--posted .cal-slot-details { color: #b5b0a8; }
     .cal-slot--need-empty .cal-slot-details {
       margin-top: 2px;
     }
@@ -2910,6 +2997,12 @@
       margin-top: 16px;
       border-top: 1px solid #E2DDD5;
       padding-top: 12px;
+      border-radius: 8px;
+      transition: background 0.12s, box-shadow 0.12s;
+    }
+    .cal-unscheduled.drag-over {
+      background: rgba(44,44,44,0.06);
+      box-shadow: inset 0 0 0 2px rgba(44,44,44,0.28);
     }
     .cal-unscheduled-toggle {
       width: 100%;
@@ -2934,8 +3027,12 @@
       align-items: flex-start;
       gap: 5px;
       padding: 6px 4px;
+      min-height: 36px;
     }
     .cal-unscheduled-list.collapsed { display: none; }
+    .cal-unscheduled.drag-over .cal-unscheduled-list.collapsed {
+      display: flex;
+    }
     .cal-unscheduled-list .cal-slot {
       width: auto;
       max-width: min(240px, 100%);
@@ -3542,6 +3639,7 @@
       .exec-card-thumb { width: 96px; height: 96px; }
       .schedule-card { grid-template-columns: 72px 1fr; }
       .schedule-card-thumb { width: 72px; height: 72px; }
+      .schedule-source-layout { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -3586,7 +3684,7 @@
       <div class="panel-image-wrap" id="pImageWrap">
         <div class="panel-section-label">Image</div>
         <img id="pImage" alt="">
-        <div class="panel-image-empty" id="pImageEmpty">No image on this card yet</div>
+        <div class="panel-image-empty" id="pImageEmpty">Drop or paste an image</div>
       </div>
       <div class="panel-fields">
         <div class="panel-props" id="panelProps"></div>
@@ -3702,34 +3800,101 @@
           <input class="prop-select" id="pScheduleAt" type="datetime-local" style="margin-top:2px">
         </div>
         <div id="scheduleExtraFields" style="display:none">
-          <div class="review-inspo" id="pScheduleInspo">
-            <div class="review-inspo-thumb" id="pScheduleThumb"></div>
-            <div class="review-inspo-meta">
-              <strong id="pScheduleInspoTitle">Scheduled content</strong>
-              <div id="pScheduleIdeaText"></div>
+          <div class="schedule-source-layout" id="scheduleSourceLayout">
+            <div class="schedule-pipeline-pane" id="schedulePipelinePane">
+              <strong class="schedule-pane-label" id="pScheduleInspoTitle">From pipeline</strong>
+              <div class="review-inspo schedule-pipeline-inspo" id="pScheduleInspo">
+                <div class="review-inspo-thumb" id="pSchedulePipelineThumb"></div>
+                <div class="review-inspo-meta">
+                  <div id="pScheduleIdeaText"></div>
+                  <div class="schedule-content-actions" id="pScheduleContentActions">
+                    <button type="button" class="btn-secondary" id="pScheduleGoIdeas" onclick="openIdeaFillPicker()">Choose from Pipeline</button>
+                    <button type="button" class="btn-secondary" id="pScheduleChangeContent" hidden onclick="openIdeaFillPicker({ replace: true })">Change content</button>
+                    <button type="button" class="btn-secondary" id="pScheduleClearContent" hidden onclick="confirmClearScheduledContent()">Clear content</button>
+                  </div>
+                  <div id="pScheduleIdeaFillPicker" class="idea-fill-picker" hidden>
+                    <div class="idea-fill-picker-head">
+                      <span class="idea-fill-picker-label">Pick a pipeline card</span>
+                      <button type="button" class="btn-cancel" onclick="closeIdeaFillPicker()">Cancel</button>
+                    </div>
+                    <div id="pScheduleIdeaFillList" class="idea-fill-picker-list"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="schedule-campaign-field">
+                <div class="panel-section-label">Campaign</div>
+                <div id="pScheduleAnchorWrap" style="margin-top:2px"></div>
+              </div>
+              <div class="schedule-pipeline-notes">
+                <button type="button" class="review-context-toggle" id="scheduleContextToggle">
+                  <span>Pipeline notes</span>
+                  <span id="scheduleContextChev">▸</span>
+                </button>
+                <div class="review-context" id="scheduleContext"></div>
+              </div>
+            </div>
+            <div class="schedule-content-pane" id="scheduleContentPane">
+              <strong class="schedule-pane-label" id="pScheduleContentTitle">Shot / edited content</strong>
+              <div class="panel-field-hint" id="pScheduleMediaHint">Drop or paste media you've already shot or edited.</div>
+              <div class="review-media-well" id="pScheduleMediaWell" tabindex="0">
+                <div class="placeholder" id="pScheduleMediaEmpty">Drop or paste shot / edited content…</div>
+                <img id="pScheduleMediaImg" alt="" style="display:none">
+                <button type="button" class="review-media-clear" id="pScheduleMediaClear" title="Remove media">×</button>
+              </div>
               <div id="pScheduleNoteWrap">
                 <textarea id="pScheduleNote" placeholder="Pin note or title…"></textarea>
               </div>
-              <div class="schedule-content-actions" id="pScheduleContentActions">
-                <button type="button" class="btn-secondary" id="pScheduleGoIdeas" onclick="openIdeaFillPicker()">Choose from Pipeline</button>
-                <button type="button" class="btn-secondary" id="pScheduleChangeContent" hidden onclick="openIdeaFillPicker({ replace: true })">Change content</button>
-                <button type="button" class="btn-secondary" id="pScheduleClearContent" hidden onclick="confirmClearScheduledContent()">Clear content</button>
+              <div class="panel-section-label" id="pScheduleDriveLabel">Link</div>
+              <div class="panel-field-hint" id="pScheduleDriveHint" hidden>Paste the Drive folder or file link for this pin.</div>
+              <div class="review-video-link">
+                <input class="prop-select" id="pScheduleVideoUrl" type="url" placeholder="Paste link…">
+                <a class="review-video-open is-disabled" id="pScheduleVideoOpen" href="#" target="_blank" rel="noopener noreferrer">Open</a>
               </div>
-              <div id="pScheduleIdeaFillPicker" class="idea-fill-picker" hidden>
-                <div class="idea-fill-picker-head">
-                  <span class="idea-fill-picker-label">Pick a pipeline card</span>
-                  <button type="button" class="btn-cancel" onclick="closeIdeaFillPicker()">Cancel</button>
+              <div class="schedule-review-details" id="scheduleReviewDetails">
+                <button type="button" class="review-context-toggle" id="scheduleReviewToggle">
+                  <span>Review</span>
+                  <span id="scheduleReviewChev">▸</span>
+                </button>
+                <div class="schedule-review-section" id="scheduleReviewSection">
+                  <div class="panel-section-label">Review</div>
+                  <div class="fmt-bar">
+                    <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pScheduleReviewNotes','bold')"><b>B</b></button>
+                    <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pScheduleReviewNotes','italic')"><i>I</i></button>
+                    <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pScheduleReviewNotes','insertUnorderedList')">&#8226;</button>
+                    <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pScheduleReviewNotes','removeFormat')">Clear</button>
+                  </div>
+                  <div class="panel-desc" id="pScheduleReviewNotes" contenteditable="true" placeholder="Review notes…"></div>
                 </div>
-                <div id="pScheduleIdeaFillList" class="idea-fill-picker-list"></div>
+                <button type="button" class="review-context-toggle" id="scheduleOutcomeToggle">
+                  <span>Content outcome</span>
+                  <span id="scheduleOutcomeChev">▸</span>
+                </button>
+                <div class="schedule-review-section" id="scheduleOutcomeSection">
+                  <div class="panel-section-label">Content outcome</div>
+                  <div class="fmt-bar">
+                    <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pScheduleOutcome','bold')"><b>B</b></button>
+                    <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pScheduleOutcome','italic')"><i>I</i></button>
+                    <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pScheduleOutcome','insertUnorderedList')">&#8226;</button>
+                    <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pScheduleOutcome','removeFormat')">Clear</button>
+                  </div>
+                  <div class="panel-desc" id="pScheduleOutcome" contenteditable="true" placeholder="What landed — strengths, audience fit…"></div>
+                </div>
+                <button type="button" class="review-context-toggle" id="scheduleTweaksToggle">
+                  <span>Tweaks to make</span>
+                  <span id="scheduleTweaksChev">▸</span>
+                </button>
+                <div class="schedule-review-section" id="scheduleTweaksSection">
+                  <div class="panel-section-label">Tweaks to make</div>
+                  <div class="fmt-bar">
+                    <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pScheduleTweaks','bold')"><b>B</b></button>
+                    <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pScheduleTweaks','italic')"><i>I</i></button>
+                    <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pScheduleTweaks','insertUnorderedList')">&#8226;</button>
+                    <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pScheduleTweaks','removeFormat')">Clear</button>
+                  </div>
+                  <div class="panel-desc" id="pScheduleTweaks" contenteditable="true" placeholder="Edits, crop, colour grade…"></div>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="schedule-pipeline-notes">
-            <button type="button" class="review-context-toggle" id="scheduleContextToggle">
-              <span>Pipeline notes</span>
-              <span id="scheduleContextChev">▸</span>
-            </button>
-            <div class="review-context" id="scheduleContext"></div>
           </div>
           <div class="schedule-ops">
             <div class="panel-section-label">Status</div>
@@ -3763,12 +3928,6 @@
             </label>
             <div class="panel-section-label">Publish date</div>
             <input class="prop-select" id="pScheduleEditAt" type="datetime-local" style="margin-top:2px">
-            <div class="panel-section-label" id="pScheduleDriveLabel">Link</div>
-            <div class="panel-field-hint" id="pScheduleDriveHint" hidden>Paste the Drive folder or file link for this pin.</div>
-            <div class="review-video-link">
-              <input class="prop-select" id="pScheduleVideoUrl" type="url" placeholder="Paste link…">
-              <a class="review-video-open is-disabled" id="pScheduleVideoOpen" href="#" target="_blank" rel="noopener noreferrer">Open</a>
-            </div>
           </div>
           <div class="schedule-collapse-stack">
             <button type="button" class="review-context-toggle" id="schedulePostDetailsToggle">
@@ -3787,14 +3946,6 @@
                 <div class="panel-section-label" style="margin-top:14px">Music</div>
                 <input class="prop-select" id="pScheduleMusic" type="text" style="margin-top:2px" placeholder="Track name or link…">
               </div>
-            </div>
-            <button type="button" class="review-context-toggle" id="scheduleCampaignToggle">
-              <span>Campaign</span>
-              <span id="scheduleCampaignChev">▸</span>
-            </button>
-            <div class="schedule-campaign-body" id="scheduleCampaignBody">
-              <div class="panel-section-label">Campaign anchor</div>
-              <div id="pScheduleAnchorWrap" style="margin-top:2px"></div>
             </div>
           </div>
         </div>
@@ -3915,7 +4066,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.31';
+const APP_VERSION = '0.12.42';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -4960,6 +5111,14 @@ function styleTypesChip(el, tone, state) {
   }
 }
 
+function persistHidePosted() {
+  try { localStorage.setItem(HIDE_POSTED_KEY, hidePostedWeek ? '1' : '0'); } catch (_) {}
+}
+
+function typesFilterActive() {
+  return hiddenCalFormats.size > 0 || hidePostedWeek;
+}
+
 function buildTypesFilterControl() {
   const wrap = document.createElement('div');
   wrap.className = 'cal-types-wrap';
@@ -4967,11 +5126,14 @@ function buildTypesFilterControl() {
   const hiddenCount = hiddenCalFormats.size;
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'cal-nav-btn' + (hiddenCount || typesFilterOpen ? ' is-toggled' : '');
+  btn.className = 'cal-nav-btn' + (typesFilterActive() || typesFilterOpen ? ' is-toggled' : '');
   btn.setAttribute('aria-haspopup', 'true');
   btn.setAttribute('aria-expanded', typesFilterOpen ? 'true' : 'false');
-  btn.textContent = hiddenCount ? ('Types · ' + hiddenCount + ' hidden') : 'Types';
-  btn.title = 'Show or hide calendar card types';
+  if (hiddenCount && hidePostedWeek) btn.textContent = 'Types · ' + hiddenCount + ' + posted';
+  else if (hiddenCount) btn.textContent = 'Types · ' + hiddenCount + ' hidden';
+  else if (hidePostedWeek) btn.textContent = 'Types · posted hidden';
+  else btn.textContent = 'Types';
+  btn.title = 'Show or hide calendar card types and posted cards';
   btn.addEventListener('click', e => {
     e.stopPropagation();
     typesFilterOpen = !typesFilterOpen;
@@ -4984,6 +5146,29 @@ function buildTypesFilterControl() {
   menu.setAttribute('role', 'menu');
   menu.setAttribute('aria-label', 'Filter calendar card types');
   menu.addEventListener('click', e => e.stopPropagation());
+
+  const viewLabel = document.createElement('div');
+  viewLabel.className = 'cal-types-menu-label';
+  viewLabel.textContent = 'View';
+  menu.appendChild(viewLabel);
+
+  const postedOn = !hidePostedWeek;
+  const postedChip = document.createElement('button');
+  postedChip.type = 'button';
+  postedChip.className = 'cal-types-chip cal-types-chip--posted' + (postedOn ? '' : ' is-off');
+  postedChip.setAttribute('role', 'menuitemcheckbox');
+  postedChip.setAttribute('aria-checked', postedOn ? 'true' : 'false');
+  postedChip.textContent = 'Posted';
+  postedChip.title = postedOn ? 'Hide Posted cards' : 'Show Posted cards';
+  styleTypesChip(postedChip, '#4E6E6C', postedOn ? 'on' : 'off');
+  postedChip.addEventListener('click', e => {
+    e.stopPropagation();
+    hidePostedWeek = !hidePostedWeek;
+    persistHidePosted();
+    typesFilterOpen = true;
+    renderBoard();
+  });
+  menu.appendChild(postedChip);
 
   const label = document.createElement('div');
   label.className = 'cal-types-menu-label';
@@ -5080,12 +5265,14 @@ function buildTypesFilterControl() {
   reset.type = 'button';
   reset.className = 'cal-types-menu-reset';
   reset.textContent = 'Show all';
-  reset.title = 'Turn every card type back on';
-  reset.hidden = hiddenCount === 0;
+  reset.title = 'Turn every card type back on, including Posted';
+  reset.hidden = !typesFilterActive();
   reset.addEventListener('click', e => {
     e.stopPropagation();
     hiddenCalFormats.clear();
     persistHiddenCalFormats();
+    hidePostedWeek = false;
+    persistHidePosted();
     typesFilterOpen = true;
     renderBoard();
   });
@@ -5311,7 +5498,9 @@ let scheduleArmed = false;
 let reviewContextOpen = false;
 let scheduleContextOpen = false;
 let schedulePostDetailsOpen = false;
-let scheduleCampaignOpen = false;
+let scheduleReviewOpen = false;
+let scheduleOutcomeOpen = false;
+let scheduleTweaksOpen = false;
 let pendingReviewMedia = null; // { imageData, imageW, imageH } while panel open
 let dragCalSlotId = null;
 let calSlotDragMoved = false;
@@ -5326,11 +5515,10 @@ let ctxCanvasX = null;
 let ctxCanvasY = null;
 let moodViewportEl = null;
 let moodCanvasEl = null;
-/** Miro-like tool: select (move/open cards) or hand (pan over cards). */
-let moodToolMode = 'select';
-/** Miro-like input mode: trackpad pans with two fingers; mouse wheel zooms. */
-let moodNavMode = (/Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent || '') ? 'trackpad' : 'mouse');
+/** Hold Space to pan over cards instead of moving them. */
 let moodSpaceHeld = false;
+/** Wheel pans; Ctrl/Cmd+scroll (or pinch) zooms. +/- buttons also zoom. */
+let moodNavMode = (/Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent || '') ? 'trackpad' : 'mouse');
 let moodZoomLabelEl = null;
 let moodNavMenuEl = null;
 let moodViewRestored = false;
@@ -5357,6 +5545,38 @@ function setIdeasCanvasSize(w, h) {
     board.style.setProperty('--ideas-canvas-w', cssW);
     board.style.setProperty('--ideas-canvas-h', cssH);
   }
+}
+
+/** Grow the Ideas plane so a dragged card can leave the packed cluster. */
+function growIdeasCanvasForIdea(idea, cardSize) {
+  const pad = 48;
+  const h = ideaCardHeight(idea, cardSize);
+  const needW = (Number(idea.x) || 0) + cardSize + pad;
+  const needH = (Number(idea.y) || 0) + h + pad;
+  if (needW > ideasCanvasWidth() || needH > ideasCanvasHeight()) {
+    setIdeasCanvasSize(
+      Math.max(ideasCanvasWidth(), needW),
+      Math.max(ideasCanvasHeight(), needH)
+    );
+  }
+}
+
+/** Shift other cards so the dragged card can move left/up past the origin. */
+function shiftIdeasBoardOrigin(dx, dy, exceptId) {
+  if (!dx && !dy) return;
+  (DATA.ideas || []).forEach(idea => {
+    if (exceptId && idea.id === exceptId) return;
+    idea.x = (Number(idea.x) || 0) + dx;
+    idea.y = (Number(idea.y) || 0) + dy;
+  });
+  document.querySelectorAll('.idea-card').forEach(el => {
+    if (exceptId && el.dataset.ideaId === exceptId) return;
+    const idea = (DATA.ideas || []).find(i => i.id === el.dataset.ideaId);
+    if (!idea) return;
+    el.style.left = idea.x + 'px';
+    el.style.top = idea.y + 'px';
+  });
+  setIdeasCanvasSize(ideasCanvasWidth() + dx, ideasCanvasHeight() + dy);
 }
 
 /** Size the ideas plane to existing card positions or the viewport minimum. */
@@ -5498,6 +5718,7 @@ function migrateReview(card) {
   migrateExec(card);
   if (card.reviewMedia == null) card.reviewMedia = null;
   if (card.reviewVideoUrl == null) card.reviewVideoUrl = '';
+  if (card.reviewNotes == null) card.reviewNotes = '';
   if (card.contentOutcome == null) card.contentOutcome = '';
   if (card.tweaks == null) card.tweaks = '';
   if (card.caption == null) card.caption = '';
@@ -6107,76 +6328,33 @@ function restackIdeas() {
   return true;
 }
 
-/** Pack overlapping/sparse idea cards, then fit the cluster into the viewport. */
+/**
+ * Evenly spread ideas across the visible Ideas board (viewport-sized canvas).
+ * Uses the masonry pack so cards fill the box instead of stacking in a pile.
+ */
+function spreadIdeasAcrossBoard() {
+  return restackIdeas();
+}
+
+/** Evenly spread cards across the visible board, then reset pan/zoom to 1:1. */
 function reshuffleIdeasBoard() {
   if (!DATA.ideas.length) return;
-  restackIdeas();
-  lastIdeaCardSize = ideaCardSize(DATA.ideas.length);
+  spreadIdeasAcrossBoard();
   pendingFitIdeas = true;
   scheduleSave();
   renderBoard();
 }
 
-/** Zoom/pan so all idea cards fit in the mood viewport. */
+/**
+ * Evenly spread cards across the board and frame them in the viewport.
+ * (Fit used to only zoom into a pile — that hid the mood-board layout.)
+ */
 function fitIdeasInView() {
-  const ideas = DATA.ideas || [];
-  if (!ideas.length || !moodViewportEl) return;
-  const size = ideaCardSize(ideas.length);
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  ideas.forEach(idea => {
-    const x = Number(idea.x) || 0;
-    const y = Number(idea.y) || 0;
-    const h = ideaCardHeight(idea, size);
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x + size);
-    maxY = Math.max(maxY, y + h);
-  });
-  const pad = 48;
-  const contentW = Math.max(160, maxX - minX + pad * 2);
-  const contentH = Math.max(160, maxY - minY + pad * 2);
-  const vw = Math.max(1, moodViewportEl.clientWidth || 800);
-  const vh = Math.max(1, moodViewportEl.clientHeight || 400);
-  const nextZoom = Math.min(1.35, Math.max(0.35, Math.min(vw / contentW, vh / contentH)));
-  canvasZoom = nextZoom;
-  canvasPanX = (vw - (minX + maxX) * nextZoom) / 2;
-  canvasPanY = (vh - (minY + maxY) * nextZoom) / 2;
-  applyCanvasTransform();
-}
-
-function ideasAreSparse() {
-  const n = DATA.ideas.length;
-  if (n < 3) return false;
-  const size = ideaCardSize(n);
-  const metrics = ideasBuildMetrics();
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  let packedH = 0;
-  DATA.ideas.forEach(idea => {
-    const x = idea.x || 0, y = idea.y || 0;
-    const h = ideaCardHeight(idea, size);
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x + size);
-    maxY = Math.max(maxY, y + h);
-    packedH += h;
-  });
-  const spanArea = Math.max(1, (maxX - minX) * (maxY - minY));
-  const gap = ideasPackGap(n);
-  const cols = Math.max(1, Math.floor((metrics.innerW + gap) / (size + gap)));
-  const avgH = packedH / n;
-  const packedArea = cols * (size + gap) * (avgH + gap) * Math.ceil(n / cols);
-  return spanArea > packedArea * 2.2;
-}
-
-let lastIdeaCardSize = null;
-function restackIdeasIfNeeded(force) {
-  const size = ideaCardSize(DATA.ideas.length);
-  const shrunk = lastIdeaCardSize != null && size < lastIdeaCardSize - 6;
-  lastIdeaCardSize = size;
-  if (force || shrunk || ideasAreSparse()) {
-    return restackIdeas();
-  }
-  return false;
+  if (!DATA.ideas.length || !moodViewportEl) return;
+  spreadIdeasAcrossBoard();
+  pendingFitIdeas = true;
+  scheduleSave();
+  renderBoard();
 }
 
 function applyCanvasTransform() {
@@ -6198,7 +6376,6 @@ function saveMoodView() {
       zoom: canvasZoom,
       panX: canvasPanX,
       panY: canvasPanY,
-      tool: moodToolMode,
       nav: moodNavMode
     }));
   } catch (_) {}
@@ -6213,22 +6390,11 @@ function restoreMoodView() {
     if (typeof v.zoom === 'number') canvasZoom = Math.min(2.5, Math.max(0.35, v.zoom));
     if (typeof v.panX === 'number') canvasPanX = v.panX;
     if (typeof v.panY === 'number') canvasPanY = v.panY;
-    if (v.tool === 'hand' || v.tool === 'select') moodToolMode = v.tool;
     if (v.nav === 'mouse' || v.nav === 'trackpad') moodNavMode = v.nav;
     return true;
   } catch (_) {
     return false;
   }
-}
-
-function moodIsPanTool() {
-  return moodToolMode === 'hand' || moodSpaceHeld;
-}
-
-function setMoodToolMode(mode) {
-  moodToolMode = mode === 'hand' ? 'hand' : 'select';
-  syncMoodViewportChrome();
-  saveMoodView();
 }
 
 function setMoodNavMode(mode) {
@@ -6237,19 +6403,14 @@ function setMoodNavMode(mode) {
   saveMoodView();
   if (typeof PPC !== 'undefined' && PPC.showToast) {
     PPC.showToast(moodNavMode === 'trackpad'
-      ? 'Trackpad: two-finger pan · pinch zoom'
-      : 'Mouse: scroll zooms · right-drag pans');
+      ? 'Trackpad: drag card to move · empty space / Space pans · pinch or Ctrl+scroll zoom'
+      : 'Mouse: drag card to move · empty space pans · Ctrl+scroll zooms');
   }
 }
 
 function syncMoodViewportChrome() {
   if (!moodViewportEl) return;
-  moodViewportEl.classList.toggle('mood-hand', moodToolMode === 'hand');
   moodViewportEl.classList.toggle('mood-space', moodSpaceHeld);
-  const selectBtn = moodViewportEl.querySelector('[data-mood-tool="select"]');
-  const handBtn = moodViewportEl.querySelector('[data-mood-tool="hand"]');
-  if (selectBtn) selectBtn.classList.toggle('is-active', moodToolMode === 'select' && !moodSpaceHeld);
-  if (handBtn) handBtn.classList.toggle('is-active', moodToolMode === 'hand' || moodSpaceHeld);
   updateMoodZoomLabel();
   if (moodNavMenuEl) {
     moodNavMenuEl.querySelectorAll('[data-mood-nav]').forEach(btn => {
@@ -6302,6 +6463,7 @@ let panMoveHandler = null;
 let panUpHandler = null;
 let moodKeyDownHandler = null;
 let moodKeyUpHandler = null;
+let moodBlurHandler = null;
 let moodWheelHandler = null;
 let moodMouseDownHandler = null;
 let moodContextHandler = null;
@@ -6311,6 +6473,7 @@ function cleanupMoodPan() {
   if (panUpHandler) window.removeEventListener('mouseup', panUpHandler);
   if (moodKeyDownHandler) window.removeEventListener('keydown', moodKeyDownHandler);
   if (moodKeyUpHandler) window.removeEventListener('keyup', moodKeyUpHandler);
+  if (moodBlurHandler) window.removeEventListener('blur', moodBlurHandler);
   if (moodViewportEl && moodWheelHandler) {
     moodViewportEl.removeEventListener('wheel', moodWheelHandler);
   }
@@ -6321,7 +6484,7 @@ function cleanupMoodPan() {
     moodViewportEl.removeEventListener('contextmenu', moodContextHandler);
   }
   panMoveHandler = panUpHandler = null;
-  moodKeyDownHandler = moodKeyUpHandler = null;
+  moodKeyDownHandler = moodKeyUpHandler = moodBlurHandler = null;
   moodWheelHandler = moodMouseDownHandler = moodContextHandler = null;
 }
 
@@ -6349,42 +6512,34 @@ function setupMoodCanvas(viewport, canvas) {
   }
 
   moodWheelHandler = e => {
+    // Keep page/board from scrolling while the pointer is over Ideas.
     e.preventDefault();
     e.stopPropagation();
-    const { dx, dy } = normalizeWheelDelta(e, viewport);
-    const pinchZoom = e.ctrlKey || e.metaKey;
-    const mouseZoom = moodNavMode === 'mouse' && !e.shiftKey;
-    const isZoom = pinchZoom || mouseZoom;
-    if (isZoom) {
-      const intensity = Math.min(0.22, Math.abs(dy) / 240);
+    const { dy } = normalizeWheelDelta(e, viewport);
+    // Zoom only with Ctrl/Cmd+scroll (or trackpad pinch). Plain wheel does nothing.
+    if (e.ctrlKey || e.metaKey) {
+      const intensity = Math.min(0.28, Math.abs(dy) / 180);
       const factor = dy > 0 ? (1 - intensity) : (1 + intensity);
       zoomMoodCanvas(factor, e.clientX, e.clientY);
-      return;
     }
-    // Trackpad two-finger pan, or mouse Shift+wheel horizontal pan.
-    canvasPanX -= (e.shiftKey && !dx ? dy : dx);
-    canvasPanY -= (e.shiftKey && !dx ? 0 : dy);
-    applyCanvasTransform();
   };
   viewport.addEventListener('wheel', moodWheelHandler, { passive: false });
 
   moodMouseDownHandler = e => {
-    const onChrome = e.target.closest('.mood-tool-btn, .mood-viewport-nav, .mood-viewport-modes, .mood-nav-menu');
+    const onChrome = e.target.closest('.mood-tool-btn, .mood-viewport-nav, .mood-nav-menu');
     if (onChrome) return;
 
-    // Right-drag pans (Miro mouse mode); middle-drag also pans.
+    // Right-drag / middle-drag pans.
     if (e.button === 2 || e.button === 1) {
       beginPan(e);
       return;
     }
     if (e.button !== 0) return;
 
-    if (moodIsPanTool()) {
-      beginPan(e);
-      return;
-    }
-    // Select mode: empty-space drag pans; cards handle their own drag.
-    if (e.target.closest('.idea-card')) return;
+    // Drag on a card moves that card (unless Space is held to pan over it).
+    if (e.target.closest('.idea-card') && !moodSpaceHeld) return;
+
+    // Empty-space drag (or Space over a card) pans the view.
     beginPan(e);
   };
   viewport.addEventListener('mousedown', moodMouseDownHandler);
@@ -6430,18 +6585,6 @@ function setupMoodCanvas(viewport, canvas) {
       e.preventDefault();
       return;
     }
-    if (e.key === 'h' || e.key === 'H') {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      setMoodToolMode('hand');
-      e.preventDefault();
-      return;
-    }
-    if (e.key === 'v' || e.key === 'V') {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      setMoodToolMode('select');
-      e.preventDefault();
-      return;
-    }
     if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
       zoomMoodCanvas(1.12);
       e.preventDefault();
@@ -6470,6 +6613,12 @@ function setupMoodCanvas(viewport, canvas) {
   };
   window.addEventListener('keydown', moodKeyDownHandler);
   window.addEventListener('keyup', moodKeyUpHandler);
+  moodBlurHandler = () => {
+    if (!moodSpaceHeld) return;
+    moodSpaceHeld = false;
+    syncMoodViewportChrome();
+  };
+  window.addEventListener('blur', moodBlurHandler);
 }
 
 function stripHtml(html) {
@@ -6996,7 +7145,6 @@ async function initApp() {
   }
 
   if (ensureIdeaPositions()) scheduleSave();
-  if (restackIdeasIfNeeded(false)) scheduleSave();
   const hadAnchors = anchors().length;
   seedAnchorsIfEmpty();
   if (!hadAnchors && anchors().length) scheduleSave();
@@ -7125,8 +7273,6 @@ async function removeIdea(id) {
     }
   }
   DATA.ideas = DATA.ideas.filter(i => i.id !== id);
-  restackIdeas();
-  lastIdeaCardSize = ideaCardSize(DATA.ideas.length);
   scheduleSave();
   renderBoard();
 }
@@ -7175,7 +7321,7 @@ async function processImageFile(file) {
 }
 
 async function applyImageToIdea(ideaId, file) {
-  if (!file || !file.type.startsWith('image/')) return;
+  if (!isImageFile(file)) return;
   try {
     const result = await processImageFile(file);
     const idea = DATA.ideas.find(i => i.id === ideaId);
@@ -7186,8 +7332,15 @@ async function applyImageToIdea(ideaId, file) {
       scheduleSave();
       renderBoard();
       focusWell(ideaId);
+      if (panelMode === 'idea' && activeIdeaId === ideaId) setPanelImage(idea.imageData);
     }
   } catch (err) { console.warn('Image load failed:', err); }
+}
+
+function isImageFile(file) {
+  if (!file) return false;
+  if (file.type && file.type.startsWith('image/')) return true;
+  return /\.(png|jpe?g|gif|webp|bmp|heic|heif|avif)$/i.test(file.name || '');
 }
 
 function focusWell(ideaId) {
@@ -7210,6 +7363,7 @@ function clearWellFocus() {
 function setupDropZone(el, onDrop) {
   el.addEventListener('dragover', e => {
     e.preventDefault();
+    e.stopPropagation();
     el.classList.add('drop-target');
   });
   el.addEventListener('dragleave', e => {
@@ -7217,6 +7371,7 @@ function setupDropZone(el, onDrop) {
   });
   el.addEventListener('drop', e => {
     e.preventDefault();
+    e.stopPropagation();
     el.classList.remove('drop-target');
     const file = e.dataTransfer.files && e.dataTransfer.files[0];
     if (file) onDrop(file, e);
@@ -7289,8 +7444,10 @@ function renderIdeaCard(idea, cardSize) {
   }
 
   well.title = 'Click to open · drag to move · drop image to replace';
-  setupDropZone(well, file => applyImageToIdea(idea.id, file));
   card.appendChild(well);
+  // Whole card accepts drops (not only the image well) so drops on the
+  // preview text still land on this idea instead of spawning a new card.
+  setupDropZone(card, file => applyImageToIdea(idea.id, file));
 
   const preview = document.createElement('div');
   preview.className = 'card-preview';
@@ -7331,43 +7488,86 @@ function renderIdeaCard(idea, cardSize) {
   card.appendChild(preview);
 
   let didDrag = false;
-  let dragStartX = 0, dragStartY = 0, cardStartX = 0, cardStartY = 0;
+  let dragStartX = 0, dragStartY = 0;
   let fromWell = false;
 
   card.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
     if (e.target.closest('.card-delete, .card-schedule-badge')) return;
-    // Miro Hand / Space-drag: don't move cards — let the viewport pan.
-    if (moodIsPanTool()) return;
+    // Hold Space to pan the view over cards instead of moving them.
+    if (moodSpaceHeld) return;
+    e.stopPropagation();
     raiseIdeaCard(card);
     didDrag = false;
     fromWell = !!e.target.closest('.image-well');
     dragStartX = e.clientX;
     dragStartY = e.clientY;
-    cardStartX = idea.x || 0;
-    cardStartY = idea.y || 0;
+    const origin = clientToCanvas(e.clientX, e.clientY);
+    let grabOffX = origin.x - (idea.x || 0);
+    let grabOffY = origin.y - (idea.y || 0);
+    let lastClientX = e.clientX;
+    let lastClientY = e.clientY;
+    let edgeRaf = 0;
     card.classList.add('dragging');
     card.style.zIndex = String(ideaTopZ + 50);
 
-    const onMove = ev => {
-      const screenDx = ev.clientX - dragStartX;
-      const screenDy = ev.clientY - dragStartY;
-      // Threshold in screen pixels — canvas-space threshold failed when zoomed out.
+    const applyPosFromPointer = (clientX, clientY) => {
+      const screenDx = clientX - dragStartX;
+      const screenDy = clientY - dragStartY;
       if (!didDrag && Math.abs(screenDx) <= 5 && Math.abs(screenDy) <= 5) return;
       didDrag = true;
-      const dx = screenDx / canvasZoom;
-      const dy = screenDy / canvasZoom;
-      idea.x = Math.round(Math.max(0, Math.min(ideasCanvasWidth() - cardSize, cardStartX + dx)));
-      idea.y = Math.round(Math.max(0, Math.min(ideasCanvasHeight() - cardSize, cardStartY + dy)));
+      const pt = clientToCanvas(clientX, clientY);
+      let nx = Math.round(pt.x - grabOffX);
+      let ny = Math.round(pt.y - grabOffY);
+      if (nx < 0 || ny < 0) {
+        const sx = nx < 0 ? -nx : 0;
+        const sy = ny < 0 ? -ny : 0;
+        shiftIdeasBoardOrigin(sx, sy, idea.id);
+        grabOffX += sx;
+        grabOffY += sy;
+        nx += sx;
+        ny += sy;
+      }
+      idea.x = nx;
+      idea.y = ny;
       card.style.left = idea.x + 'px';
       card.style.top = idea.y + 'px';
+      growIdeasCanvasForIdea(idea, cardSize);
+    };
+
+    const edgeTick = () => {
+      edgeRaf = 0;
+      if (!card.classList.contains('dragging') || !moodViewportEl) return;
+      const rect = moodViewportEl.getBoundingClientRect();
+      const m = 44;
+      let vx = 0, vy = 0;
+      if (lastClientX < rect.left + m) vx = Math.min(18, rect.left + m - lastClientX);
+      else if (lastClientX > rect.right - m) vx = -Math.min(18, lastClientX - (rect.right - m));
+      if (lastClientY < rect.top + m) vy = Math.min(18, rect.top + m - lastClientY);
+      else if (lastClientY > rect.bottom - m) vy = -Math.min(18, lastClientY - (rect.bottom - m));
+      if (!vx && !vy) return;
+      canvasPanX += vx;
+      canvasPanY += vy;
+      applyCanvasTransform();
+      applyPosFromPointer(lastClientX, lastClientY);
+      edgeRaf = requestAnimationFrame(edgeTick);
+    };
+
+    const onMove = ev => {
+      lastClientX = ev.clientX;
+      lastClientY = ev.clientY;
+      applyPosFromPointer(ev.clientX, ev.clientY);
+      if (didDrag && !edgeRaf) edgeRaf = requestAnimationFrame(edgeTick);
     };
     const onUp = () => {
+      if (edgeRaf) cancelAnimationFrame(edgeRaf);
       card.classList.remove('dragging');
       card.style.zIndex = String(ideaTopZ);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       if (didDrag) {
+        growIdeasCanvasForIdea(idea, cardSize);
+        syncIdeasCanvasFromCards();
         scheduleSave();
         return;
       }
@@ -7529,39 +7729,13 @@ function renderIdeasBody() {
   viewport.className = 'mood-viewport';
   viewport.id = 'moodViewport';
 
-  const modes = document.createElement('div');
-  modes.className = 'mood-viewport-modes';
-  const selectBtn = document.createElement('button');
-  selectBtn.type = 'button';
-  selectBtn.className = 'mood-tool-btn';
-  selectBtn.dataset.moodTool = 'select';
-  selectBtn.textContent = 'Select';
-  selectBtn.title = 'Select / move cards (V)';
-  selectBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    setMoodToolMode('select');
-  });
-  const handBtn = document.createElement('button');
-  handBtn.type = 'button';
-  handBtn.className = 'mood-tool-btn';
-  handBtn.dataset.moodTool = 'hand';
-  handBtn.textContent = 'Hand';
-  handBtn.title = 'Pan the board (H) · or hold Space';
-  handBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    setMoodToolMode('hand');
-  });
-  modes.appendChild(selectBtn);
-  modes.appendChild(handBtn);
-  viewport.appendChild(modes);
-
   const tools = document.createElement('div');
   tools.className = 'mood-viewport-tools';
   const reshuffleBtn = document.createElement('button');
   reshuffleBtn.type = 'button';
   reshuffleBtn.className = 'mood-tool-btn';
   reshuffleBtn.textContent = 'Reshuffle';
-  reshuffleBtn.title = 'Pack cards into the visible board area and reset view';
+  reshuffleBtn.title = 'Evenly spread cards across the board and reset view';
   reshuffleBtn.addEventListener('click', e => {
     e.stopPropagation();
     reshuffleIdeasBoard();
@@ -7602,7 +7776,7 @@ function renderIdeasBody() {
   fitBtn.type = 'button';
   fitBtn.className = 'mood-tool-btn';
   fitBtn.textContent = 'Fit';
-  fitBtn.title = 'Zoom to fit all idea cards (⌥1)';
+  fitBtn.title = 'Spread cards evenly and show the full board (⌥1)';
   fitBtn.addEventListener('click', e => {
     e.stopPropagation();
     if (moodNavMenuEl) moodNavMenuEl.classList.remove('open');
@@ -7636,7 +7810,7 @@ function renderIdeasBody() {
 
   const hint = document.createElement('div');
   hint.className = 'mood-viewport-hint';
-  hint.textContent = 'Two-finger pan · pinch zoom · Space-drag · H hand · V select';
+  hint.textContent = 'Drag a card to move it · drag empty space to pan · hold Space to pan over cards · Ctrl+scroll zooms';
   viewport.appendChild(hint);
 
   const canvas = document.createElement('div');
@@ -7645,8 +7819,8 @@ function renderIdeasBody() {
 
   viewport.addEventListener('contextmenu', e => {
     if (e.target.closest('.idea-card')) return;
-    // Right-drag pan uses button 2 — skip menu if we were panning.
-    if (moodIsPanTool()) {
+    // Right-drag pan uses button 2 — skip menu if Space-pan is active.
+    if (moodSpaceHeld) {
       e.preventDefault();
       return;
     }
@@ -7792,7 +7966,8 @@ async function removeScheduleCard(id) {
   clearPipelineLinkForSchedule(id);
   DATA.sections.schedule = scheduleCards().filter(c => c.id !== id);
   clearTimeout(saveTimer);
-  saveData();
+  // Force: dropping one filled card used to look like a catastrophic wipe.
+  saveData({ force: true });
   renderBoard();
 }
 
@@ -8789,20 +8964,6 @@ function renderScheduleBody() {
   });
   btns.appendChild(rangeToggle);
   btns.appendChild(buildTypesFilterControl());
-  if (scheduleCalRange === 'week') {
-    const hidePostedBtn = document.createElement('button');
-    hidePostedBtn.type = 'button';
-    hidePostedBtn.className = 'cal-nav-btn' + (hidePostedWeek ? ' is-toggled' : '');
-    hidePostedBtn.textContent = hidePostedWeek ? 'Show posted' : 'Hide posted';
-    hidePostedBtn.title = 'Hide Posted cards in week view';
-    hidePostedBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      hidePostedWeek = !hidePostedWeek;
-      try { localStorage.setItem(HIDE_POSTED_KEY, hidePostedWeek ? '1' : '0'); } catch (_) {}
-      renderBoard();
-    });
-    btns.appendChild(hidePostedBtn);
-  }
   btns.appendChild(prev);
   btns.appendChild(todayBtn);
   btns.appendChild(next);
@@ -8895,10 +9056,12 @@ function renderScheduleBody() {
 
   const unscheduled = scheduleCards().filter(c => {
     if (c.scheduledAt && String(c.scheduledAt).trim()) return false;
+    if (hidePostedWeek && publishStatusOf(c) === 'posted') return false;
     return isCalFormatVisible(c);
   });
   const unschedWrap = document.createElement('div');
   unschedWrap.className = 'cal-unscheduled';
+  unschedWrap.title = 'Drop a calendar card here to clear its publish date';
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'cal-unscheduled-toggle';
@@ -8914,12 +9077,32 @@ function renderScheduleBody() {
   if (!unscheduled.length) {
     const empty = document.createElement('div');
     empty.className = 'exec-empty';
-    empty.textContent = 'All scheduled content has a publish date.';
+    empty.textContent = 'Drop calendar cards here · or all content has a publish date.';
     list.appendChild(empty);
   } else {
     unscheduled.forEach(card => list.appendChild(renderCalSlot(card)));
   }
   unschedWrap.appendChild(list);
+  function acceptUnschedDragOver(e) {
+    if (!dragCalSlotId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    unschedWrap.classList.add('drag-over');
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  }
+  function acceptUnschedDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    unschedWrap.classList.remove('drag-over');
+    const id = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || dragCalSlotId;
+    if (!id || String(id).startsWith('leadup:') || String(id).startsWith('prep:')) return;
+    moveCalSlotToUnscheduled(id);
+  }
+  unschedWrap.addEventListener('dragover', acceptUnschedDragOver);
+  unschedWrap.addEventListener('dragleave', e => {
+    if (!unschedWrap.contains(e.relatedTarget)) unschedWrap.classList.remove('drag-over');
+  });
+  unschedWrap.addEventListener('drop', acceptUnschedDrop);
   body.appendChild(unschedWrap);
 
   return body;
@@ -9297,7 +9480,7 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
     acceptDayDrop(e);
   });
   const visibleDayCards = dayCards.filter(c => {
-    if (scheduleCalRange === 'week' && hidePostedWeek && publishStatusOf(c) === 'posted') return false;
+    if (hidePostedWeek && publishStatusOf(c) === 'posted') return false;
     return isCalFormatVisible(c);
   });
   visibleDayCards.forEach(card => dayBody.appendChild(renderCalSlot(card)));
@@ -9631,10 +9814,42 @@ function placeLeadUpNeedSlots(anchor) {
 
 function clearCalDragStyles() {
   document.querySelectorAll(
-    '.cal-slot.dragging, .schedule-card.dragging, .cal-day-cue--leadup.dragging, .cal-day-body.dragging, .cal-day-body.drag-over, .cal-day-prep-item.dragging, .cal-day--prep-drop'
+    '.cal-slot.dragging, .schedule-card.dragging, .cal-day-cue--leadup.dragging, .cal-day-body.dragging, .cal-day-body.drag-over, .cal-day-prep-item.dragging, .cal-day--prep-drop, .cal-unscheduled.drag-over'
   ).forEach(n => {
     n.classList.remove('dragging', 'drag-over', 'cal-day--prep-drop');
   });
+}
+
+/** Clear publish date — card lands in the Unscheduled queue. */
+function moveCalSlotToUnscheduled(scheduleId) {
+  const card = scheduleCards().find(c => c.id === scheduleId);
+  if (!card) return false;
+  const prev = card.scheduledAt ? new Date(card.scheduledAt) : null;
+  const hadDate = !!(prev && !Number.isNaN(prev.getTime()));
+  if (!hadDate && !(card.scheduledAt && String(card.scheduledAt).trim()) && !(card.scheduleAt && String(card.scheduleAt).trim())) {
+    dragCalSlotId = null;
+    calSlotDragMoved = false;
+    clearCalDragStyles();
+    return false;
+  }
+  const fromKey = hadDate ? dateKey(prev) : null;
+  card.scheduledAt = '';
+  card.scheduleAt = '';
+  card.slotMoved = true;
+  if (card.needContent == null) card.needContent = isNeedContentCard(card);
+  if (card.anchorId && fromKey) {
+    const anchor = anchors().find(a => a.id === card.anchorId);
+    if (anchor) markLeadDateVacated(anchor, fromKey);
+  }
+  dragCalSlotId = null;
+  dragLeadUp = null;
+  calSlotDragMoved = false;
+  unscheduledQueueOpen = true;
+  clearCalDragStyles();
+  scheduleSave();
+  renderBoard();
+  if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Moved to Unscheduled');
+  return true;
 }
 
 function moveCalSlotToDate(scheduleId, dayDate) {
@@ -11415,7 +11630,7 @@ function addNeedContentSlot(format, dayDate, pillar) {
 function setPublishStatus(cardId, status, opts) {
   const card = scheduleCards().find(c => c.id === cardId);
   if (!card) return;
-  let next = String(status || '');
+  let next = String(status || '').trim();
   if (next === 'ready') next = 'scheduled';
   if (!PUBLISH_STATUS_IDS.has(next)) return;
   if (isDiscoverCard(card) && !DISCOVER_STATUS_IDS.includes(next)) {
@@ -11430,7 +11645,9 @@ function setPublishStatus(cardId, status, opts) {
       if (statusEl) statusEl.value = next;
     }
   }
-  scheduleSave();
+  // Persist immediately — debounced scheduleSave can be cancelled by closePanel/savePanel.
+  clearTimeout(saveTimer);
+  saveData();
   renderBoard();
 }
 
@@ -11722,19 +11939,25 @@ function renderCalSlot(card) {
   const emptyNeed = isEmptyNeedSlot(card);
   const quiet = emptyNeed && isQuietPlaceholder(card);
   const actionable = emptyNeed && isActionableNeed(card);
-  el.className = 'cal-slot' + (emptyNeed ? ' cal-slot--need cal-slot--need-empty' : '');
+  const status = publishStatusOf(card);
+  const isPosted = status === 'posted';
+  el.className = 'cal-slot'
+    + (emptyNeed ? ' cal-slot--need cal-slot--need-empty' : '')
+    + (isPosted ? ' cal-slot--posted' : '');
   el.dataset.scheduleId = card.id;
   el.draggable = true;
   el.title = emptyNeed
     ? (quiet
-      ? 'Planned for later · fill closer to the date · drag to move'
-      : 'Click type to change · drag to move · × to remove')
-    : 'Drag to another day · click View details to open';
+      ? 'Planned for later · fill closer to the date · drag to a day or Unscheduled'
+      : 'Click type to change · drag to a day or Unscheduled · × to remove')
+    : 'Drag to another day or Unscheduled · click View details to open';
   const formatTone = formatColor(card.format, card.pillar);
   el.style.borderColor = '#E2DDD5';
-  el.style.borderLeftColor = formatTone;
-  // Stronger wash so format colours read at a glance (was 0.12 — too pale / blendy).
-  el.style.background = hexWash(formatTone, 0.24);
+  if (!isPosted) {
+    el.style.borderLeftColor = formatTone;
+    // Stronger wash so format colours read at a glance (was 0.12 — too pale / blendy).
+    el.style.background = hexWash(formatTone, 0.24);
+  }
   const anchor = card.anchorId ? anchors().find(a => a.id === card.anchorId) : null;
   const eventTone = anchor ? anchorTypeColor(anchor.type) : null;
   let eventName = '';
@@ -11777,7 +12000,7 @@ function renderCalSlot(card) {
     }
 
     const prepNeed = prepByOf(card);
-    if (prepNeed && publishStatusOf(card) !== 'posted') {
+    if (prepNeed && status !== 'posted') {
       const prepEl = document.createElement('span');
       prepEl.className = 'cal-slot-prep';
       const pd = parseDateOnly(prepNeed);
@@ -11792,15 +12015,30 @@ function renderCalSlot(card) {
       el.appendChild(prepEl);
     }
 
-    if (actionable) {
-      const colour = PUBLISH_STATUS_COLORS.need || '#8a6a1a';
+    // Always show a cycleable status chip so panel Status changes are visible on Needs too.
+    {
+      const colour = PUBLISH_STATUS_COLORS[status] || '#6B7A8D';
       const flag = document.createElement('span');
-      flag.className = 'cal-slot-flag cal-slot-flag--need';
+      flag.className = 'cal-slot-flag ' + (PUBLISH_STATUS_FLAG_CLASS[status] || 'cal-slot-flag--need');
       flag.style.color = colour;
       flag.style.background = colour + '22';
       flag.style.marginTop = '2px';
-      flag.innerHTML = '<span class="chip-dot" style="background:' + colour + '"></span>Need';
-      flag.title = 'Actionable within ' + NEED_ACTION_DAYS + ' days (or unscheduled)';
+      flag.innerHTML = status === 'posted'
+        ? '<span class="chip-check" aria-hidden="true">✓</span>' + publishStatusLabel(status)
+        : '<span class="chip-dot" style="background:' + colour + '"></span>' + publishStatusLabel(status);
+      flag.title = actionable && status === 'need'
+        ? ('Actionable within ' + NEED_ACTION_DAYS + ' days (or unscheduled) · click to cycle')
+        : ('Status: ' + publishStatusLabel(status) + ' — click to cycle');
+      flag.addEventListener('click', e => {
+        e.stopPropagation();
+        if (calSlotDragMoved) return;
+        const order = statusOptionsForCard(card).map(o => o.id);
+        let cur = status;
+        if (isDiscoverCard(card)) cur = normalizeDiscoverStatus(cur, card);
+        const idx = order.indexOf(cur);
+        const next = order[(idx >= 0 ? idx + 1 : 0) % order.length];
+        setPublishStatus(card.id, next);
+      });
       el.appendChild(flag);
     }
 
@@ -11848,7 +12086,7 @@ function renderCalSlot(card) {
     }
 
     const prepFilled = prepByOf(card);
-    if (prepFilled && publishStatusOf(card) !== 'posted') {
+    if (prepFilled && status !== 'posted') {
       const prepEl = document.createElement('span');
       prepEl.className = 'cal-slot-prep';
       const pd = parseDateOnly(prepFilled);
@@ -11886,13 +12124,14 @@ function renderCalSlot(card) {
     asg.appendChild(asgVal);
     footer.appendChild(asg);
 
-    const status = publishStatusOf(card);
     const colour = PUBLISH_STATUS_COLORS[status] || '#6B7A8D';
     const flag = document.createElement('span');
     flag.className = 'cal-slot-flag ' + (PUBLISH_STATUS_FLAG_CLASS[status] || 'cal-slot-flag--need');
     flag.style.color = colour;
     flag.style.background = colour + '22';
-    flag.innerHTML = '<span class="chip-dot" style="background:' + colour + '"></span>' + publishStatusLabel(status);
+    flag.innerHTML = status === 'posted'
+      ? '<span class="chip-check" aria-hidden="true">✓</span>' + publishStatusLabel(status)
+      : '<span class="chip-dot" style="background:' + colour + '"></span>' + publishStatusLabel(status);
     flag.title = 'Status: ' + publishStatusLabel(status) + ' — click to cycle';
     flag.addEventListener('click', e => {
       e.stopPropagation();
@@ -11975,8 +12214,8 @@ function renderScheduleCard(card) {
   applyPrepCardStyle(el, card.pillar, card.format);
   const emptyNeed = isNeedContentCard(card) && !stripHtml(card.body || '').trim();
   el.title = emptyNeed
-    ? 'Drag onto a calendar day · click to open'
-    : 'Drag onto a calendar day · click to open';
+    ? 'Drag onto a calendar day or Unscheduled · click to open'
+    : 'Drag onto a calendar day or Unscheduled · click to open';
 
   const thumbSrc = cardThumbSrc(card);
   const thumb = document.createElement('div');
@@ -13050,14 +13289,74 @@ function openReviewPanel(reviewId) {
   setTimeout(() => document.getElementById('pOutcome').focus(), 50);
 }
 
-function clearScheduleDiscoverImage() {
+function setScheduleMediaUI(imageData) {
+  const well = document.getElementById('pScheduleMediaWell');
+  const img = document.getElementById('pScheduleMediaImg');
+  const empty = document.getElementById('pScheduleMediaEmpty');
+  if (!well || !img || !empty) return;
+  if (imageData) {
+    img.src = mediaSrc(imageData);
+    img.style.display = 'block';
+    empty.style.display = 'none';
+    well.classList.add('has-image');
+  } else {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    empty.style.display = 'block';
+    well.classList.remove('has-image');
+  }
+}
+
+function applyScheduleMediaResult(result) {
+  pendingReviewMedia = result
+    ? { imageData: result.imageData, imageW: result.imageW, imageH: result.imageH }
+    : { imageData: null, imageW: null, imageH: null };
+  setScheduleMediaUI(pendingReviewMedia.imageData);
+}
+
+async function applyImageToScheduleMedia(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  if (panelMode !== 'schedule' || !activeScheduleId) return;
+  try {
+    const result = await processImageFile(file);
+    applyScheduleMediaResult(result);
+    const card = scheduleCards().find(c => c.id === activeScheduleId);
+    if (!card) return;
+    if (isDiscoverCard(card)) {
+      card.imageData = result.imageData;
+      card.imageW = result.imageW;
+      card.imageH = result.imageH;
+    } else {
+      card.reviewMedia = result.imageData;
+      card.reviewMediaW = result.imageW;
+      card.reviewMediaH = result.imageH;
+    }
+    card.needContent = !scheduleSlotHasContent(card);
+    if (card.publishStatus === 'need' && !card.needContent) {
+      card.publishStatus = isDiscoverCard(card) ? 'scheduled' : 'prep';
+    }
+    refreshScheduleThumb(card);
+    scheduleSave();
+  } catch (err) {
+    console.warn('Schedule media load failed:', err);
+  }
+}
+
+function clearScheduleMedia() {
   if (panelMode !== 'schedule' || !activeScheduleId) return;
   const card = scheduleCards().find(c => c.id === activeScheduleId);
-  if (!card || !isDiscoverCard(card)) return;
-  card.imageData = null;
-  card.imageW = null;
-  card.imageH = null;
-  card.needContent = !discoverHasAsset(card);
+  if (!card) return;
+  applyScheduleMediaResult(null);
+  if (isDiscoverCard(card)) {
+    card.imageData = null;
+    card.imageW = null;
+    card.imageH = null;
+  } else {
+    card.reviewMedia = null;
+    card.reviewMediaW = null;
+    card.reviewMediaH = null;
+  }
+  card.needContent = !scheduleSlotHasContent(card);
   if (card.needContent && (card.publishStatus === 'scheduled' || card.publishStatus === 'posted')) {
     card.publishStatus = 'need';
   }
@@ -13066,47 +13365,49 @@ function clearScheduleDiscoverImage() {
   renderBoard();
 }
 
-function refreshScheduleThumb(card) {
-  const thumb = document.getElementById('pScheduleThumb');
+function refreshSchedulePipelineThumb(card) {
+  const thumb = document.getElementById('pSchedulePipelineThumb');
   if (!thumb) return;
   thumb.innerHTML = '';
   thumb.classList.remove('has-image');
   thumb.onclick = null;
-  const src = cardThumbSrc(card);
-  if (src) {
+  if (card.imageData) {
     const img = document.createElement('img');
-    img.src = mediaSrc(src) || src;
+    img.src = mediaSrc(card.imageData);
     img.alt = '';
     thumb.appendChild(img);
     thumb.classList.add('has-image');
-    thumb.title = isDiscoverCard(card)
-      ? 'Click to view · drop or paste to replace preview'
-      : 'Click to view photo';
+    thumb.title = 'Pipeline preview — click to view';
     thumb.onclick = e => {
-      if (e.target.closest('.review-media-clear')) return;
       e.preventDefault();
       e.stopPropagation();
-      openMediaLightbox(src);
+      openMediaLightbox(card.imageData);
     };
-    if (isDiscoverCard(card)) {
-      const clearBtn = document.createElement('button');
-      clearBtn.type = 'button';
-      clearBtn.className = 'review-media-clear';
-      clearBtn.title = 'Remove preview photo';
-      clearBtn.setAttribute('aria-label', 'Remove preview photo');
-      clearBtn.textContent = '×';
-      clearBtn.addEventListener('click', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        clearScheduleDiscoverImage();
-      });
-      thumb.appendChild(clearBtn);
-    }
   } else {
-    thumb.textContent = isDiscoverCard(card) ? 'Drop preview' : 'No media';
-    thumb.title = isDiscoverCard(card) ? 'Drop or paste a pin preview image' : '';
+    thumb.textContent = 'No pipeline';
+    thumb.title = '';
   }
-  setPanelImage(src);
+}
+
+function refreshScheduleContentMedia(card) {
+  const isDiscover = isDiscoverCard(card);
+  const media = isDiscover ? (card.imageData || null) : (card.reviewMedia || null);
+  pendingReviewMedia = {
+    imageData: media,
+    imageW: isDiscover ? (card.imageW || null) : (card.reviewMediaW || null),
+    imageH: isDiscover ? (card.imageH || null) : (card.reviewMediaH || null)
+  };
+  setScheduleMediaUI(media);
+}
+
+function clearScheduleDiscoverImage() {
+  clearScheduleMedia();
+}
+
+function refreshScheduleThumb(card) {
+  refreshSchedulePipelineThumb(card);
+  refreshScheduleContentMedia(card);
+  setPanelImage(cardThumbSrc(card));
 }
 
 /** Toggle Discover-lite vs full pipeline schedule panel chrome. */
@@ -13116,7 +13417,16 @@ function applySchedulePanelLayout(card) {
   if (panel) panel.classList.toggle('schedule-discover', discover);
 
   const title = document.getElementById('pScheduleInspoTitle');
-  if (title) title.textContent = discover ? 'Discover post' : 'Scheduled content';
+  if (title) title.textContent = discover ? 'Discover post' : 'From pipeline';
+
+  const contentTitle = document.getElementById('pScheduleContentTitle');
+  if (contentTitle) contentTitle.textContent = discover ? 'Pin preview' : 'Shot / edited content';
+  const mediaHint = document.getElementById('pScheduleMediaHint');
+  if (mediaHint) {
+    mediaHint.textContent = discover
+      ? 'Drop or paste a pin preview image.'
+      : 'Drop or paste media you\'ve already shot or edited.';
+  }
 
   const driveLabel = document.getElementById('pScheduleDriveLabel');
   if (driveLabel) driveLabel.textContent = 'Link';
@@ -13183,13 +13493,21 @@ function applySchedulePanelLayout(card) {
     }
   }
 
-  setScheduleCampaignOpen(scheduleCampaignOpen);
   const hasPostMeta = !!(
     String(card.caption || '').trim() ||
     String(card.tags || '').trim() ||
     String(card.music || '').trim()
   );
   setSchedulePostDetailsOpen(hasPostMeta);
+  const hasReview = !!(
+    String(card.reviewVideoUrl || '').trim() ||
+    stripHtml(card.reviewNotes || '')
+  );
+  const hasOutcome = !!stripHtml(card.contentOutcome || '');
+  const hasTweaks = !!stripHtml(card.tweaks || '');
+  setScheduleReviewOpen(hasReview);
+  setScheduleOutcomeOpen(hasOutcome);
+  setScheduleTweaksOpen(hasTweaks);
 
   refreshScheduleThumb(card);
 }
@@ -13213,7 +13531,9 @@ function openSchedulePanel(scheduleId) {
   pendingReviewMedia = null;
   focusedReviewMedia = false;
   scheduleContextOpen = false;
-  scheduleCampaignOpen = false;
+  scheduleReviewOpen = false;
+  scheduleOutcomeOpen = false;
+  scheduleTweaksOpen = false;
   setPanelModeClass('schedule');
   setDescSectionMode('schedule');
   buildPrepPanelProps(card);
@@ -13247,6 +13567,12 @@ function openSchedulePanel(scheduleId) {
   document.getElementById('pScheduleMusic').value = card.music || '';
   document.getElementById('pScheduleVideoUrl').value = card.reviewVideoUrl || '';
   setVideoOpenLink('pScheduleVideoOpen', card.reviewVideoUrl || '');
+  const reviewNotesEl = document.getElementById('pScheduleReviewNotes');
+  if (reviewNotesEl) reviewNotesEl.innerHTML = sanitizeHtml(card.reviewNotes || '');
+  const outcomeEl = document.getElementById('pScheduleOutcome');
+  if (outcomeEl) outcomeEl.innerHTML = sanitizeHtml(card.contentOutcome || '');
+  const tweaksEl = document.getElementById('pScheduleTweaks');
+  if (tweaksEl) tweaksEl.innerHTML = sanitizeHtml(card.tweaks || '');
   setPlanHintVisible(false);
   updatePanelStrip(card.pillar);
   document.getElementById('panel').classList.add('open');
@@ -13689,6 +14015,17 @@ function savePanel(silent) {
     } else {
       card.music = (document.getElementById('pScheduleMusic') || {}).value || '';
     }
+    if (pendingReviewMedia) {
+      if (isDiscoverFormat(format)) {
+        card.imageData = pendingReviewMedia.imageData || null;
+        card.imageW = pendingReviewMedia.imageW || null;
+        card.imageH = pendingReviewMedia.imageH || null;
+      } else {
+        card.reviewMedia = pendingReviewMedia.imageData || null;
+        card.reviewMediaW = pendingReviewMedia.imageW || null;
+        card.reviewMediaH = pendingReviewMedia.imageH || null;
+      }
+    }
     card.needContent = !scheduleSlotHasContent(card);
     const needLabelEl = document.getElementById('pNeedLabel');
     if (needLabelEl) {
@@ -13705,11 +14042,15 @@ function savePanel(silent) {
     // Respect the Status control — never force back to Need/Scheduled on save.
     const statusEl = document.getElementById('pScheduleStatus');
     const allowed = isDiscoverFormat(format) ? DISCOVER_STATUS_IDS : [...PUBLISH_STATUS_IDS];
-    let nextStatus = statusEl ? statusEl.value : card.publishStatus;
+    const rawStatus = statusEl ? String(statusEl.value || '').trim() : '';
+    let nextStatus = rawStatus || card.publishStatus || '';
     if (nextStatus === 'ready') nextStatus = 'scheduled';
     if (allowed.includes(nextStatus)) {
       card.publishStatus = nextStatus;
-    } else if (!PUBLISH_STATUS_IDS.has(card.publishStatus) || card.publishStatus === 'ready') {
+    } else if (PUBLISH_STATUS_IDS.has(card.publishStatus) && card.publishStatus !== 'ready') {
+      // Keep the in-memory status (e.g. set via chip / setPublishStatus) when the
+      // select is missing or temporarily out of sync.
+    } else {
       card.publishStatus = card.needContent ? 'need' : (isDiscoverFormat(format) ? 'scheduled' : 'prep');
     }
     const asgEl = document.getElementById('asgSummary');
@@ -13723,6 +14064,12 @@ function savePanel(silent) {
     card.anchorId = (document.getElementById('pScheduleAnchor') || {}).value || '';
     card.caption = (document.getElementById('pScheduleCaption') || {}).value || '';
     card.tags = (document.getElementById('pScheduleTags') || {}).value || '';
+    const reviewNotesEl = document.getElementById('pScheduleReviewNotes');
+    if (reviewNotesEl) card.reviewNotes = sanitizeHtml(reviewNotesEl.innerHTML).trim();
+    const outcomeEl = document.getElementById('pScheduleOutcome');
+    if (outcomeEl) card.contentOutcome = sanitizeHtml(outcomeEl.innerHTML).trim();
+    const tweaksEl = document.getElementById('pScheduleTweaks');
+    if (tweaksEl) card.tweaks = sanitizeHtml(tweaksEl.innerHTML).trim();
     readSchedulePipelineNotes(card);
     if (!isDiscoverFormat(format)) {
       const ideaText = document.getElementById('pScheduleIdeaText');
@@ -13766,7 +14113,9 @@ function closePanel() {
   reviewContextOpen = false;
   scheduleContextOpen = false;
   schedulePostDetailsOpen = false;
-  scheduleCampaignOpen = false;
+  scheduleReviewOpen = false;
+  scheduleOutcomeOpen = false;
+  scheduleTweaksOpen = false;
   pendingReviewMedia = null;
   focusedReviewMedia = false;
   setPlanHintVisible(false);
@@ -13784,7 +14133,7 @@ function plainTextPaste(e) {
   const text = (e.clipboardData || window.clipboardData).getData('text/plain');
   document.execCommand('insertText', false, text);
 }
-['pDesc', 'pPlan', 'pExecPlan', 'pProducts', 'pLocation', 'pRequirements', 'pOutcome', 'pTweaks'].forEach(id => {
+['pDesc', 'pPlan', 'pExecPlan', 'pProducts', 'pLocation', 'pRequirements', 'pOutcome', 'pTweaks', 'pScheduleReviewNotes', 'pScheduleOutcome', 'pScheduleTweaks'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('paste', plainTextPaste);
 });
@@ -13808,6 +14157,30 @@ document.getElementById('scheduleContextToggle').addEventListener('click', () =>
   if (chev) chev.textContent = scheduleContextOpen ? '▾' : '▸';
 });
 
+function setScheduleReviewOpen(open) {
+  scheduleReviewOpen = !!open;
+  const wrap = document.getElementById('scheduleReviewSection');
+  if (wrap) wrap.classList.toggle('open', scheduleReviewOpen);
+  const chev = document.getElementById('scheduleReviewChev');
+  if (chev) chev.textContent = scheduleReviewOpen ? '▾' : '▸';
+}
+
+function setScheduleOutcomeOpen(open) {
+  scheduleOutcomeOpen = !!open;
+  const wrap = document.getElementById('scheduleOutcomeSection');
+  if (wrap) wrap.classList.toggle('open', scheduleOutcomeOpen);
+  const chev = document.getElementById('scheduleOutcomeChev');
+  if (chev) chev.textContent = scheduleOutcomeOpen ? '▾' : '▸';
+}
+
+function setScheduleTweaksOpen(open) {
+  scheduleTweaksOpen = !!open;
+  const wrap = document.getElementById('scheduleTweaksSection');
+  if (wrap) wrap.classList.toggle('open', scheduleTweaksOpen);
+  const chev = document.getElementById('scheduleTweaksChev');
+  if (chev) chev.textContent = scheduleTweaksOpen ? '▾' : '▸';
+}
+
 function setSchedulePostDetailsOpen(open) {
   schedulePostDetailsOpen = !!open;
   const wrap = document.getElementById('schedulePostDetails');
@@ -13816,20 +14189,81 @@ function setSchedulePostDetailsOpen(open) {
   if (chev) chev.textContent = schedulePostDetailsOpen ? '▾' : '▸';
 }
 
-function setScheduleCampaignOpen(open) {
-  scheduleCampaignOpen = !!open;
-  const wrap = document.getElementById('scheduleCampaignBody');
-  if (wrap) wrap.classList.toggle('open', scheduleCampaignOpen);
-  const chev = document.getElementById('scheduleCampaignChev');
-  if (chev) chev.textContent = scheduleCampaignOpen ? '▾' : '▸';
+(function setupPanelImageWell() {
+  const wrap = document.getElementById('pImageWrap');
+  if (!wrap) return;
+  wrap.tabIndex = 0;
+  wrap.title = 'Drop or paste an image onto this card';
+  wrap.addEventListener('click', () => {
+    if (panelMode === 'idea' && activeIdeaId) {
+      focusedWellId = activeIdeaId;
+      wrap.classList.add('drop-target');
+      setTimeout(() => wrap.classList.remove('drop-target'), 180);
+      wrap.focus();
+    }
+  });
+  setupDropZone(wrap, async file => {
+    if (panelMode === 'idea' && activeIdeaId) {
+      await applyImageToIdea(activeIdeaId, file);
+      return;
+    }
+    if (panelMode === 'prep' && activePrepId) {
+      await applyImageToPipelineCard('preparation', activePrepId, file);
+      return;
+    }
+    if (panelMode === 'exec' && activeExecId) {
+      await applyImageToPipelineCard('execution', activeExecId, file);
+    }
+  });
+  wrap.addEventListener('paste', async e => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (!items[i].type.startsWith('image/')) continue;
+      e.preventDefault();
+      e.stopPropagation();
+      const file = items[i].getAsFile();
+      if (!file) return;
+      if (panelMode === 'idea' && activeIdeaId) await applyImageToIdea(activeIdeaId, file);
+      else if (panelMode === 'prep' && activePrepId) await applyImageToPipelineCard('preparation', activePrepId, file);
+      else if (panelMode === 'exec' && activeExecId) await applyImageToPipelineCard('execution', activeExecId, file);
+      return;
+    }
+  });
+})();
+
+async function applyImageToPipelineCard(sectionKey, cardId, file) {
+  if (!isImageFile(file)) return;
+  const list = (DATA.sections && DATA.sections[sectionKey]) || [];
+  const card = list.find(c => c.id === cardId);
+  if (!card) return;
+  try {
+    const result = await processImageFile(file);
+    card.imageData = result.imageData;
+    card.imageW = result.imageW;
+    card.imageH = result.imageH;
+    scheduleSave();
+    renderBoard();
+    setPanelImage(card.imageData);
+  } catch (err) {
+    console.warn('Image load failed:', err);
+  }
 }
 
 document.getElementById('schedulePostDetailsToggle').addEventListener('click', () => {
   setSchedulePostDetailsOpen(!schedulePostDetailsOpen);
 });
 
-document.getElementById('scheduleCampaignToggle').addEventListener('click', () => {
-  setScheduleCampaignOpen(!scheduleCampaignOpen);
+document.getElementById('scheduleReviewToggle').addEventListener('click', () => {
+  setScheduleReviewOpen(!scheduleReviewOpen);
+});
+
+document.getElementById('scheduleOutcomeToggle').addEventListener('click', () => {
+  setScheduleOutcomeOpen(!scheduleOutcomeOpen);
+});
+
+document.getElementById('scheduleTweaksToggle').addEventListener('click', () => {
+  setScheduleTweaksOpen(!scheduleTweaksOpen);
 });
 
 (function setupReviewMediaWell() {
@@ -13848,44 +14282,35 @@ document.getElementById('scheduleCampaignToggle').addEventListener('click', () =
   setupDropZone(well, file => applyImageToReviewMedia(file));
 })();
 
-async function applyImageToScheduleDiscover(file) {
-  if (panelMode !== 'schedule' || !activeScheduleId) return;
-  const card = scheduleCards().find(c => c.id === activeScheduleId);
-  if (!card || !isDiscoverCard(card)) return;
-  const result = await processImageFile(file);
-  if (!result) return;
-  card.imageData = result.imageData;
-  card.imageW = result.imageW;
-  card.imageH = result.imageH;
-  const noteEl = document.getElementById('pScheduleNote');
-  if (noteEl) card.body = (noteEl.value || '').trim() || card.body;
-  card.reviewVideoUrl = (document.getElementById('pScheduleVideoUrl').value || '').trim() || card.reviewVideoUrl;
-  card.needContent = !discoverHasAsset(card);
-  if (card.publishStatus === 'need' && !card.needContent) card.publishStatus = 'scheduled';
-  refreshScheduleThumb(card);
-  scheduleSave();
-}
-
-(function setupScheduleDiscoverThumb() {
-  const thumb = document.getElementById('pScheduleThumb');
-  if (!thumb) return;
-  setupDropZone(thumb, file => applyImageToScheduleDiscover(file));
-  thumb.addEventListener('paste', async e => {
+(function setupScheduleMediaWell() {
+  const well = document.getElementById('pScheduleMediaWell');
+  if (!well) return;
+  well.addEventListener('click', e => {
+    if (e.target.closest('.review-media-clear')) return;
+    focusedReviewMedia = true;
+    well.classList.add('focused');
+    clearWellFocus();
+    const reviewWell = document.getElementById('pReviewMediaWell');
+    if (reviewWell) reviewWell.classList.remove('focused');
+  });
+  document.getElementById('pScheduleMediaClear').addEventListener('click', e => {
+    e.stopPropagation();
+    clearScheduleMedia();
+  });
+  setupDropZone(well, file => applyImageToScheduleMedia(file));
+  well.addEventListener('paste', async e => {
     if (panelMode !== 'schedule' || !activeScheduleId) return;
-    const card = scheduleCards().find(c => c.id === activeScheduleId);
-    if (!card || !isDiscoverCard(card)) return;
     const items = e.clipboardData && e.clipboardData.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type && items[i].type.indexOf('image') === 0) {
         e.preventDefault();
         const file = items[i].getAsFile();
-        if (file) applyImageToScheduleDiscover(file);
+        if (file) await applyImageToScheduleMedia(file);
         break;
       }
     }
   });
-  thumb.tabIndex = 0;
 })();
 
 (function setupMediaLightbox() {
@@ -13970,8 +14395,6 @@ function moveIdeaToPrep(idea, pillar, format) {
       liveSlot.sourceIdeaId = idea.id;
     }
   }
-  restackIdeas();
-  lastIdeaCardSize = ideaCardSize(DATA.ideas.length);
   expandedSections.add('preparation');
   expandedPillars.add(pillar);
   closePanel();
@@ -14039,10 +14462,12 @@ document.addEventListener('click', e => {
     }
   }
   if (!e.target.closest('.image-well')) clearWellFocus();
-  if (!e.target.closest('#pReviewMediaWell')) {
+  if (!e.target.closest('#pReviewMediaWell') && !e.target.closest('#pScheduleMediaWell')) {
     focusedReviewMedia = false;
     const well = document.getElementById('pReviewMediaWell');
     if (well) well.classList.remove('focused');
+    const schedWell = document.getElementById('pScheduleMediaWell');
+    if (schedWell) schedWell.classList.remove('focused');
   }
 });
 
@@ -14059,16 +14484,44 @@ document.addEventListener('paste', async e => {
       }
     }
   }
-  if (!focusedWellId) return;
+  if (focusedReviewMedia && panelMode === 'schedule') {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) await applyImageToScheduleMedia(file);
+        return;
+      }
+    }
+  }
   const items = e.clipboardData && e.clipboardData.items;
   if (!items) return;
+  let imageFile = null;
   for (let i = 0; i < items.length; i++) {
     if (items[i].type.startsWith('image/')) {
-      e.preventDefault();
-      const file = items[i].getAsFile();
-      if (file) await applyImageToIdea(focusedWellId, file);
-      return;
+      imageFile = items[i].getAsFile();
+      break;
     }
+  }
+  if (!imageFile) return;
+
+  // Prefer the focused board well; otherwise the open idea/prep/exec panel.
+  const ideaTarget = focusedWellId || (panelMode === 'idea' ? activeIdeaId : null);
+  if (ideaTarget) {
+    e.preventDefault();
+    await applyImageToIdea(ideaTarget, imageFile);
+    return;
+  }
+  if (panelMode === 'prep' && activePrepId) {
+    e.preventDefault();
+    await applyImageToPipelineCard('preparation', activePrepId, imageFile);
+    return;
+  }
+  if (panelMode === 'exec' && activeExecId) {
+    e.preventDefault();
+    await applyImageToPipelineCard('execution', activeExecId, imageFile);
   }
 });
 

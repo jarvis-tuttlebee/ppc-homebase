@@ -67,8 +67,9 @@ function isCatastrophicMarketingOverwrite(prev, incoming) {
   if (prevSched >= 10 && nextSched < Math.floor(prevSched * 0.4)) return true;
   // All events gone while calendar still has cards — likely a stale gut, not a normal delete
   if (prevAnchors >= 2 && nextAnchors === 0 && nextSched <= prevSched) return true;
-  // Never drop filled content cards via a thinner/stale save
-  if (prevFilled >= 1 && nextFilled < prevFilled) return true;
+  // Mass drop of filled cards (stale/empty overwrite). A single card delete is allowed.
+  if (prevFilled >= 8 && nextFilled < Math.floor(prevFilled * 0.5)) return true;
+  if (prevFilled >= 4 && nextFilled === 0) return true;
   // Note: dropping one event/cadence (nextAnchors < prevAnchors) is intentional —
   // stale tabs are blocked by revision_conflict instead.
   return false;
