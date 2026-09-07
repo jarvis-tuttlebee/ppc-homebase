@@ -144,11 +144,30 @@
       const board = await res.json().catch(() => ({}));
       if (!Array.isArray(board.cards)) board.cards = [];
       if (!board.cards.some(c => c.id === item.id)) board.cards.push(item);
+      if (item.srcEventId && Array.isArray(board.hiddenEventIds)) {
+        board.hiddenEventIds = board.hiddenEventIds.filter(id => id !== item.srcEventId);
+      }
       await fetch('/api/kanban', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(board)
       });
+      const plannerEvents = Array.isArray(meta.plannerEvents) ? meta.plannerEvents : [];
+      if (plannerEvents.length) {
+        const pres = await fetch('/api/data');
+        const pdata = await pres.json().catch(() => ({}));
+        if (!Array.isArray(pdata.events)) pdata.events = [];
+        plannerEvents.forEach(ev => {
+          if (!ev || !ev.id) return;
+          if (!pdata.events.some(e => e.id === ev.id)) pdata.events.push(ev);
+        });
+        await fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pdata)
+        });
+        return kanbanWhere(item) + ' + Annual Planner';
+      }
       return kanbanWhere(item);
     }
 
@@ -288,6 +307,53 @@
   flex: 1; min-width: 0; font-size: 12px; font-weight: 600; color: #2C2C2C;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.ppc-type-row {
+  display: flex; align-items: center; gap: 6px; padding: 4px 0;
+}
+.ppc-type-input {
+  flex: 1; min-width: 0; box-sizing: border-box;
+  font: inherit; font-size: 12px; font-weight: 600; color: #2C2C2C;
+  border: 1px solid transparent; border-radius: 5px;
+  background: transparent; padding: 5px 8px;
+}
+.ppc-type-input:hover { border-color: #E2DDD5; background: #faf9f7; }
+.ppc-type-input:focus {
+  outline: none; border-color: #6B7A8D; background: #fff;
+}
+.ppc-type-del {
+  flex-shrink: 0; width: 24px; height: 24px; padding: 0; border: none;
+  border-radius: 4px; background: transparent; color: #b5b0a8;
+  font-size: 16px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.ppc-type-del:hover { color: #8B3A3A; background: rgba(139, 58, 58, 0.08); }
+.ppc-type-add {
+  display: block; width: 100%; margin-top: 4px; padding: 6px 8px;
+  border: 1px dashed #E2DDD5; border-radius: 6px; background: transparent;
+  font: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  color: #6B7A8D; cursor: pointer; text-align: left;
+}
+.ppc-type-add:hover { border-color: #6B7A8D; color: #2C2C2C; background: #faf9f7; }
+.ppc-type-add[hidden] { display: none !important; }
+.ppc-type-add-form {
+  display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap;
+}
+.ppc-type-add-form .ppc-type-input {
+  flex: 1 1 120px; border-color: #E2DDD5; background: #fff;
+}
+.ppc-type-add-save,
+.ppc-type-add-cancel {
+  flex-shrink: 0; padding: 5px 10px; border-radius: 5px; font: inherit;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+}
+.ppc-type-add-save {
+  border: 1px solid #2C2C2C; background: #2C2C2C; color: #fff;
+}
+.ppc-type-add-save:hover { background: #1a1a1a; }
+.ppc-type-add-cancel {
+  border: 1px solid #E2DDD5; background: #fff; color: #6B7A8D;
+}
+.ppc-type-add-cancel:hover { border-color: #6B7A8D; color: #2C2C2C; }
 .ppc-colour-swatch {
   width: 28px; height: 28px; flex-shrink: 0; border: 1px solid #E2DDD5; border-radius: 6px;
   padding: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
@@ -342,6 +408,16 @@ body.dark .ppc-colour-section-toggle { color: #f0ede8; }
 body.dark .ppc-colour-section-toggle:hover { background: #1a2233; }
 body.dark .ppc-colour-section-body { border-top-color: #2e3a55; }
 body.dark .ppc-colour-row span { color: #f0ede8; }
+body.dark .ppc-type-input { color: #f0ede8; }
+body.dark .ppc-type-input:hover { background: #1a2233; border-color: #2e3a55; }
+body.dark .ppc-type-input:focus { background: #141d2e; border-color: #6B7A8D; }
+body.dark .ppc-type-del { color: #8a8580; }
+body.dark .ppc-type-del:hover { color: #d48a8a; background: rgba(212, 138, 138, 0.12); }
+body.dark .ppc-type-add { border-color: #2e3a55; color: #8a8580; }
+body.dark .ppc-type-add:hover { border-color: #6B7A8D; color: #f0ede8; background: #1a2233; }
+body.dark .ppc-type-add-form .ppc-type-input { background: #141d2e; border-color: #2e3a55; }
+body.dark .ppc-type-add-save { border-color: #f0ede8; background: #f0ede8; color: #141d2e; }
+body.dark .ppc-type-add-cancel { background: #141d2e; border-color: #2e3a55; color: #8a8580; }
 body.dark .ppc-colour-swatch.is-open { outline-color: #f0ede8; }
 body.dark .ppc-colour-grid button.is-selected { outline-color: #f0ede8; }
 body.dark { background: #0f141f; color: #f0ede8; }
@@ -567,6 +643,290 @@ body.dark .section-row { color: #f0ede8; }
     }
   }
 
+  /** ~50 Homebase-family accents for Settings colour picker (muted brand tones). */
+  const BRAND_COLOUR_PALETTE = [
+    '#2C2C2C', '#404040', '#505050', '#6e6e6e', '#6B7A8D', '#556070',
+    '#564A5E', '#6B5A9C', '#433674', '#9585c2', '#7a62af', '#302460',
+    '#4E6E6C', '#3a7048', '#3a6e72', '#478589', '#2d5658', '#4a8a5c',
+    '#C29A3B', '#d4763b', '#baa920', '#8a6a1a', '#d4c140', '#8e7c6c',
+    '#90a0b1', '#3f4853', '#2a3036', '#a89688', '#746250', '#5a4834',
+    '#3d5a80', '#4a6fa5', '#2f4a6e', '#6a8499',
+    '#7a4450', '#8b5a6b', '#6b3a4a', '#a66d7a',
+    '#a65d3f', '#8b4a32', '#c47a5a', '#8A5A3B', '#b86b5c',
+    '#5c6b3a', '#6e7a45', '#4a5530',
+    '#2f6f6a', '#1e7a72', '#3a3f6e', '#4a5080'
+  ];
+
+  let openColourPopover = null;
+  let projectTypesSettingsOpen = true;
+  let colourPopoverDocBound = false;
+
+  function closeColourPopovers() {
+    if (openColourPopover) {
+      openColourPopover.remove();
+      openColourPopover = null;
+    }
+    document.querySelectorAll('.ppc-colour-swatch.is-open').forEach(el => el.classList.remove('is-open'));
+  }
+
+  function ensureColourPopoverClose() {
+    if (colourPopoverDocBound) return;
+    colourPopoverDocBound = true;
+    document.addEventListener('click', () => closeColourPopovers());
+  }
+
+  function fgForBg(hex) {
+    const h = String(hex || '').replace('#', '');
+    if (h.length < 6) return '#fff';
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return '#fff';
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? '#2C2C2C' : '#fff';
+  }
+
+  function positionColourPopover(pop, anchorBtn) {
+    const rect = anchorBtn.getBoundingClientRect();
+    const pad = 8;
+    pop.style.visibility = 'hidden';
+    pop.style.left = '0px';
+    pop.style.top = '0px';
+    const w = pop.offsetWidth || 248;
+    const h = pop.offsetHeight || 280;
+    let left = rect.right - w;
+    let top = rect.bottom + 6;
+    if (left < pad) left = pad;
+    if (left + w > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - w - pad);
+    if (top + h > window.innerHeight - pad) top = rect.top - h - 6;
+    if (top < pad) top = pad;
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+    pop.style.visibility = '';
+  }
+
+  /**
+   * Shared Task Board / Annual Planner settings: rename / recolour / add / remove project types.
+   * opts: {
+   *   getCats,
+   *   onRename(cat, label),
+   *   onColor(cat, hex),
+   *   onAdd?(label, bg) → cat|null,
+   *   onDelete?(cat) → boolean,
+   *   onRefresh?(),
+   *   onAfterChange?()
+   * }
+   */
+  function renderProjectTypeSettings(host, opts) {
+    if (!host || !opts || typeof opts.getCats !== 'function') return;
+    ensureStyles();
+    ensureColourPopoverClose();
+    closeColourPopovers();
+    host.hidden = false;
+
+    const refresh = () => {
+      if (typeof opts.onRefresh === 'function') opts.onRefresh();
+      else if (typeof global.PPC.openSettings === 'function') global.PPC.openSettings();
+    };
+    const after = () => {
+      if (typeof opts.onAfterChange === 'function') opts.onAfterChange();
+    };
+
+    const typesToggle = document.createElement('button');
+    typesToggle.type = 'button';
+    typesToggle.className = 'ppc-colour-toggle';
+    typesToggle.innerHTML = '<span>Project types</span><span class="ppc-colour-chev">' +
+      (projectTypesSettingsOpen ? '▾' : '▸') + '</span>';
+    const typesBody = document.createElement('div');
+    typesBody.className = 'ppc-colour-panel';
+    typesBody.hidden = !projectTypesSettingsOpen;
+    typesToggle.addEventListener('click', e => {
+      e.stopPropagation();
+      projectTypesSettingsOpen = !projectTypesSettingsOpen;
+      typesBody.hidden = !projectTypesSettingsOpen;
+      typesToggle.querySelector('.ppc-colour-chev').textContent =
+        projectTypesSettingsOpen ? '▾' : '▸';
+      if (!projectTypesSettingsOpen) closeColourPopovers();
+    });
+    host.appendChild(typesToggle);
+    host.appendChild(typesBody);
+
+    const cats = opts.getCats() || [];
+    cats.forEach(cat => {
+      if (!cat || !cat.id) return;
+      const row = document.createElement('div');
+      row.className = 'ppc-type-row';
+
+      const swatch = document.createElement('button');
+      swatch.type = 'button';
+      swatch.className = 'ppc-colour-swatch';
+      swatch.title = 'Choose colour · ' + (cat.label || cat.id);
+      swatch.setAttribute('aria-label', 'Choose colour for ' + (cat.label || cat.id));
+      swatch.style.background = cat.bg || '#6B7A8D';
+      swatch.addEventListener('click', e => {
+        e.stopPropagation();
+        const wasOpen = swatch.classList.contains('is-open');
+        closeColourPopovers();
+        if (wasOpen) return;
+        swatch.classList.add('is-open');
+        const pop = document.createElement('div');
+        pop.className = 'ppc-colour-popover';
+        pop.addEventListener('click', ev => ev.stopPropagation());
+        pop.addEventListener('wheel', ev => ev.stopPropagation(), { passive: true });
+        const lab = document.createElement('div');
+        lab.className = 'ppc-colour-popover-label';
+        lab.textContent = 'Brand colours';
+        pop.appendChild(lab);
+        const grid = document.createElement('div');
+        grid.className = 'ppc-colour-grid';
+        BRAND_COLOUR_PALETTE.forEach(hex => {
+          const sw = document.createElement('button');
+          sw.type = 'button';
+          sw.title = hex;
+          sw.style.background = hex;
+          if (hex.toLowerCase() === String(cat.bg || '').toLowerCase()) sw.classList.add('is-selected');
+          sw.addEventListener('click', ev => {
+            ev.stopPropagation();
+            if (typeof opts.onColor === 'function') opts.onColor(cat, hex);
+            swatch.style.background = hex;
+            closeColourPopovers();
+            after();
+          });
+          grid.appendChild(sw);
+        });
+        pop.appendChild(grid);
+        document.body.appendChild(pop);
+        openColourPopover = pop;
+        positionColourPopover(pop, swatch);
+      });
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'ppc-type-input';
+      input.value = cat.label || cat.id;
+      input.maxLength = 48;
+      input.setAttribute('aria-label', 'Rename ' + (cat.label || cat.id));
+      const commitRename = () => {
+        const next = (input.value || '').trim().slice(0, 48);
+        if (!next) {
+          input.value = cat.label || cat.id;
+          return;
+        }
+        if (next === (cat.label || cat.id)) return;
+        if (typeof opts.onRename === 'function') opts.onRename(cat, next);
+        input.value = cat.label || next;
+        after();
+      };
+      input.addEventListener('keydown', e => {
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          input.blur();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          input.value = cat.label || cat.id;
+          input.blur();
+        }
+      });
+      input.addEventListener('blur', commitRename);
+      input.addEventListener('click', e => e.stopPropagation());
+
+      row.appendChild(swatch);
+      row.appendChild(input);
+
+      if (typeof opts.onDelete === 'function') {
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'ppc-type-del';
+        del.setAttribute('aria-label', 'Remove ' + (cat.label || cat.id));
+        del.title = cats.length <= 1 ? 'Keep at least one project type' : 'Remove type';
+        del.textContent = '\u00d7';
+        del.disabled = cats.length <= 1;
+        if (cats.length <= 1) del.style.opacity = '0.35';
+        del.addEventListener('click', e => {
+          e.stopPropagation();
+          if (cats.length <= 1) return;
+          Promise.resolve(opts.onDelete(cat)).then(ok => { if (ok) refresh(); });
+        });
+        row.appendChild(del);
+      }
+
+      typesBody.appendChild(row);
+    });
+
+    if (typeof opts.onAdd === 'function') {
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'ppc-type-add';
+      addBtn.textContent = '+ Add type';
+      addBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const wrap = document.createElement('div');
+        wrap.className = 'ppc-type-add-form';
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'ppc-type-input';
+        inp.placeholder = 'New type name';
+        inp.maxLength = 48;
+        const save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'ppc-type-add-save';
+        save.textContent = 'Add';
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'ppc-type-add-cancel';
+        cancel.textContent = 'Cancel';
+        const used = new Set((opts.getCats() || []).map(c => String(c.bg || '').toLowerCase()));
+        const defaultBg = BRAND_COLOUR_PALETTE.find(h => !used.has(h.toLowerCase())) || '#6B7A8D';
+        const finish = ok => {
+          if (ok) {
+            const label = (inp.value || '').trim().slice(0, 48);
+            if (!label) {
+              inp.focus();
+              return;
+            }
+            Promise.resolve(opts.onAdd(label, defaultBg)).then(created => {
+              if (!created) {
+                inp.focus();
+                return;
+              }
+              after();
+              refresh();
+            });
+            return;
+          }
+          wrap.remove();
+          addBtn.hidden = false;
+        };
+        save.addEventListener('click', ev => {
+          ev.stopPropagation();
+          finish(true);
+        });
+        cancel.addEventListener('click', ev => {
+          ev.stopPropagation();
+          finish(false);
+        });
+        inp.addEventListener('keydown', ev => {
+          ev.stopPropagation();
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            finish(true);
+          } else if (ev.key === 'Escape') {
+            ev.preventDefault();
+            finish(false);
+          }
+        });
+        inp.addEventListener('click', ev => ev.stopPropagation());
+        wrap.appendChild(inp);
+        wrap.appendChild(save);
+        wrap.appendChild(cancel);
+        addBtn.hidden = true;
+        addBtn.insertAdjacentElement('afterend', wrap);
+        inp.focus();
+      });
+      typesBody.appendChild(addBtn);
+    }
+  }
+
   global.PPC = {
     archivePush,
     archiveRecover,
@@ -580,6 +940,10 @@ body.dark .section-row { color: #f0ede8; }
     openSettings,
     closeSettings,
     mountSettings,
+    renderProjectTypeSettings,
+    closeColourPopovers,
+    fgForBg,
+    BRAND_COLOUR_PALETTE,
     plannerWhere,
     kanbanWhere,
     marketingWhere

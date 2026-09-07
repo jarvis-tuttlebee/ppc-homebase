@@ -496,6 +496,36 @@
     }
     .project-card:hover .project-del { display: block; }
     .project-del:hover { color: #8A5A3B; }
+
+    .ctx-menu {
+      display: none;
+      position: fixed;
+      background: #fff;
+      border: 1px solid #E2DDD5;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      z-index: 400;
+      min-width: 160px;
+      padding: 4px 0;
+    }
+    .ctx-menu.open { display: block; }
+    .ctx-item {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      padding: 8px 14px;
+      cursor: pointer;
+      color: #2C2C2C;
+      transition: background 0.1s;
+    }
+    .ctx-item:hover { background: rgba(44,44,44,0.06); }
+    .ctx-item.danger { color: #8A5A3B; }
+    .ctx-item.danger:hover { background: rgba(138,90,59,0.08); }
+    body.dark .ctx-menu { background: #1e2538; border-color: #2e3a55; }
+    body.dark .ctx-item { color: #f0ede8; }
+    body.dark .ctx-item:hover { background: rgba(240,237,232,0.06); }
+    body.dark .ctx-item.danger { color: #c47a5a; }
+    body.dark .ctx-item.danger:hover { background: rgba(196,122,90,0.12); }
+
     .project-add-card {
       border: 1.5px dashed #d5d0c8; background: none; border-radius: 12px; padding: 16px;
       cursor: pointer; color: #6B7A8D; font-family: 'DM Sans', sans-serif; font-size: 13px;
@@ -613,6 +643,29 @@
     .np-type .np-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     .np-type.sel { border-width: 1.5px; font-weight: 600; color: #2C2C2C; }
     .np-error { color: #8A5A3B; font-size: 12px; min-height: 16px; margin: 6px 0 2px; }
+    .np-dates {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;
+    }
+    .np-dates .np-label { margin-top: 0; }
+    .np-dates .ppc-date { margin-bottom: 0; }
+    .proj-modal .ppc-date .ppc-select-trigger {
+      width: 100%; box-sizing: border-box;
+      border: 1px solid #EAE2D6; border-radius: 8px;
+      padding: 10px 11px; min-height: 42px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      color: #2C2C2C; background: #fff;
+    }
+    .proj-modal .ppc-date.open .ppc-select-trigger,
+    .proj-modal .ppc-date .ppc-select-trigger:hover {
+      border-color: #2C2C2C;
+    }
+    body.dark .proj-modal .ppc-date .ppc-select-trigger {
+      background: #141d2e; border-color: #2e3a55; color: #f0ede8;
+    }
+    .np-hint {
+      font-size: 11px; color: #6B7A8D; line-height: 1.35; margin: 6px 0 2px;
+    }
+    body.dark .np-hint { color: #8a8580; }
     .proj-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 
     /* ── Rich-text toolbar for the description field ── */
@@ -845,6 +898,7 @@
       justify-content: center;
       gap: 6px;
       width: 100%;
+      flex-shrink: 0;
       padding: 8px;
       border-radius: 6px;
       border: 1.5px dashed #d0ccc6;
@@ -917,11 +971,23 @@
   <label class="np-label">Project type</label>
   <div class="np-types" id="npTypes"></div>
 
+  <div class="np-dates">
+    <div>
+      <label class="np-label" for="npStart">Start</label>
+      <input class="np-input" type="date" id="npStart">
+    </div>
+    <div>
+      <label class="np-label" for="npEnd">End</label>
+      <input class="np-input" type="date" id="npEnd">
+    </div>
+  </div>
+  <div class="np-hint">Used on Annual Planner Overview for the months this project spans.</div>
+
   <div class="np-error" id="npError"></div>
 
   <div class="proj-modal-actions">
     <button type="button" class="btn-cancel" onclick="closeProjectModal()">Cancel</button>
-    <button type="button" class="btn-save" onclick="submitProject()">Create project</button>
+    <button type="button" class="btn-save" id="npSaveBtn" onclick="submitProject()">Create project</button>
   </div>
 </div>
 
@@ -1044,15 +1110,15 @@
   </div>
 </div>
 
-<script src="/js/ppc-select.js?v=7"></script>
-<script src="/js/ppc-homebase.js"></script>
+<script src="/js/ppc-select.js?v=8"></script>
+<script src="/js/ppc-homebase.js?v=14"></script>
 <script>
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
 // Brand palette v4 (Colour & Identity Document 2026 v4): muted tertiary family,
 // Signal Yellow retired. Finance has no brand slot — dusty rust derived to fit the family.
 // Trial: Twilight Indigo (#344364) removed — UI chrome + Stockists use Graphite; conflicts with Slate.
-const CATS = [
+let CATS = [
   { id: 'col', label: 'Collections & Launches', bg: '#4E6E6C', fg: '#fff' },
   { id: 'evt', label: 'Events',                  bg: '#C29A3B', fg: '#2C2C2C' },
   { id: 'mkt', label: 'Marketing & Content',     bg: '#564A5E', fg: '#fff' },
@@ -1214,15 +1280,19 @@ const SEED_CARDS = [
 ];
 
 let CARDS = SEED_CARDS.map(c => ({ ...c }));
+// Planner events the user deleted from this board — sync must not remirror them.
+let HIDDEN_EVENT_IDS = [];
 
 // ─── PERSISTENCE (localStorage + Cloudflare Worker sync) ─────────────────────
 const STORAGE_KEY = 'kanban-board-data';
 const SYNC_URL = '/api/kanban';
-const APP_VERSION = '1.10.5';
+const PATCH_URL = SYNC_URL + '/patch';
+const APP_VERSION = '1.10.12';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
 let doneGroupCollapsed = true;
+let boardSaveInFlight = 0;
 
 // Moves a card into a column and stamps/clears its completion timestamp —
 // the Done column's "earlier" grouping is bucketed off this.
@@ -1230,24 +1300,60 @@ function moveCardToColumn(card, columnId) {
   card.column = columnId;
   if (columnId === 'done') {
     if (!card.doneAt) card.doneAt = new Date().toISOString();
+    card.status = 'complete';
   } else {
     delete card.doneAt;
+    if (card.status === 'complete') {
+      card.status = columnId === 'active' ? 'in-progress' : 'planned';
+    }
   }
 }
 
+function applyBoardData(data) {
+  CARDS = data.cards;
+  applyColumnOrder(data.order);
+  PROJECTS = Array.isArray(data.projects) ? data.projects : [];
+  if (Array.isArray(data.staff) && data.staff.length) STAFF = data.staff;
+  HIDDEN_EVENT_IDS = Array.isArray(data.hiddenEventIds) ? data.hiddenEventIds.filter(Boolean) : [];
+}
+
 function saveBoard() {
-  const payload = { cards: CARDS.map(c => ({ ...c })), order: COLUMN_ORDER.slice(), projects: PROJECTS.map(p => ({ ...p })), staff: STAFF.slice() };
+  const payload = {
+    cards: CARDS.map(c => ({ ...c })),
+    order: COLUMN_ORDER.slice(),
+    projects: PROJECTS.map(p => ({ ...p })),
+    staff: STAFF.slice(),
+    hiddenEventIds: HIDDEN_EVENT_IDS.slice()
+  };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch (err) {
     console.warn('Local save failed:', err);
   }
-  fetch(SYNC_URL, {
+  boardSaveInFlight++;
+  return fetch(SYNC_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
     cache: 'no-store'
-  }).catch(err => console.warn('Cloud sync failed:', err));
+  }).catch(err => console.warn('Cloud sync failed:', err))
+    .finally(() => { boardSaveInFlight = Math.max(0, boardSaveInFlight - 1); });
+}
+
+async function patchKanban(patch) {
+  try {
+    const res = await fetch(PATCH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch || {}),
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error('Kanban patch HTTP ' + res.status);
+    return true;
+  } catch (err) {
+    console.warn('Kanban patch failed:', err);
+    return false;
+  }
 }
 
 async function initApp() {
@@ -1270,30 +1376,27 @@ async function initApp() {
     }
   }
   if (data && data.cards && data.cards.length) {
-    CARDS = data.cards;
-    applyColumnOrder(data.order);
-    PROJECTS = Array.isArray(data.projects) ? data.projects : [];
-    if (Array.isArray(data.staff) && data.staff.length) STAFF = data.staff;
+    applyBoardData(data);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (err) {}
   }
   if (migrateAssignees()) saveBoard();   // single assignee → array, once
+  await syncCatsFromPlanner();
   showView('board');
 }
 
 async function refreshBoard() {
+  if (boardSaveInFlight) return;
   try {
     const res = await fetch(SYNC_URL);
     if (res.ok) {
       const remote = await res.json();
       if (remote && remote.cards && remote.cards.length) {
-        CARDS = remote.cards;
-        applyColumnOrder(remote.order);
-        PROJECTS = Array.isArray(remote.projects) ? remote.projects : [];
-        if (Array.isArray(remote.staff) && remote.staff.length) STAFF = remote.staff;
+        applyBoardData(remote);
         migrateAssignees();
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remote)); } catch (err) {}
         // Drop expanded sections that no longer exist after a remote refresh.
         expandedSections = new Set([...expandedSections].filter(id => id === MISC_ID || id === PRIORITY_ID || projectById(id)));
+        await syncCatsFromPlanner();
         renderCurrentView();
       }
     }
@@ -1516,20 +1619,31 @@ function makeCardPill(card) {
   delBtn.title = 'Delete card';
   delBtn.addEventListener('click', async e => {
     e.stopPropagation();
-    if (!confirm('Delete "' + card.title + '"? You can recover it from Settings → Archive for 30 days.')) return;
+    if (!confirm('Delete "' + card.title + '"? It will also be removed from the Annual Planner. You can recover it from Settings → Archive for 30 days.')) return;
+    const plannerEvents = await removePlannerLinks(card);
     try {
       await PPC.archivePush({
         source: 'kanban',
         item: JSON.parse(JSON.stringify(card)),
-        restoreMeta: { column: card.column, project: card.project || null },
+        restoreMeta: {
+          column: card.column,
+          project: card.project || null,
+          plannerEvents
+        },
         label: card.title || 'Untitled task'
       });
     } catch (_) {}
     const idx = CARDS.indexOf(card);
     if (idx !== -1) CARDS.splice(idx, 1);
-    saveBoard();
+    if (card.srcEventId && !HIDDEN_EVENT_IDS.includes(card.srcEventId)) {
+      HIDDEN_EVENT_IDS.push(card.srcEventId);
+    }
     renderBoard();
-    removePlannerMirror(card.id);
+    await patchKanban({
+      remove: [card.id],
+      hideEventIds: card.srcEventId ? [card.srcEventId] : []
+    });
+    await saveBoard();
   });
   pill.appendChild(delBtn);
 
@@ -1752,16 +1866,7 @@ function renderProjects() {
     del.title = 'Delete project';
     del.onclick = (e) => {
       e.stopPropagation();
-      const msg = cards.length
-        ? `Delete "${p.name}"? Its ${cards.length} task${cards.length === 1 ? '' : 's'} will move back to the main board.`
-        : `Delete "${p.name}"?`;
-      if (!confirm(msg)) return;
-      // Never destroy tasks with the project — hand them back to the main board.
-      CARDS.forEach(c => { if (c.project === p.id) delete c.project; });
-      PROJECTS = PROJECTS.filter(x => x.id !== p.id);
-      expandedSections.delete(p.id);
-      saveBoard();
-      renderCurrentView();
+      deleteProjectById(p.id);
     };
 
     card.appendChild(del);
@@ -1780,16 +1885,52 @@ function renderProjects() {
   grid.appendChild(add);
 }
 
-// ─── NEW PROJECT MODAL ───────────────────────────────────────────────────────
+// ─── NEW / EDIT PROJECT MODAL ────────────────────────────────────────────────
 // Project type reuses the board's colour-coding legend (CATS), so a project
-// carries the same identity colour as its tasks.
+// carries the same identity colour as its tasks. Start/end dates drive which
+// Annual Planner Overview months the project appears in.
 
 let npType = CATS[0].id;
+let editingProjectId = null;
 
 function openProjectModal() {
+  editingProjectId = null;
   npType = CATS[0].id;
+  document.getElementById('projModalTitle').textContent = 'New project';
+  document.getElementById('npSaveBtn').textContent = 'Create project';
   document.getElementById('npName').value = '';
   document.getElementById('npDesc').value = '';
+  if (typeof setPpcDateValue === 'function') {
+    setPpcDateValue('npStart', '');
+    setPpcDateValue('npEnd', '');
+  } else {
+    document.getElementById('npStart').value = '';
+    document.getElementById('npEnd').value = '';
+  }
+  document.getElementById('npError').textContent = '';
+  renderProjectTypes();
+  document.getElementById('projModal').classList.add('open');
+  document.getElementById('projModalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('npName').focus(), 40);
+}
+
+function openEditProjectModal(id) {
+  const p = projectById(id);
+  if (!p) return;
+  closeProjectCtxMenu();
+  editingProjectId = id;
+  npType = p.type || (CATS[0] && CATS[0].id);
+  document.getElementById('projModalTitle').textContent = 'Edit project';
+  document.getElementById('npSaveBtn').textContent = 'Save';
+  document.getElementById('npName').value = p.name || '';
+  document.getElementById('npDesc').value = p.description || '';
+  if (typeof setPpcDateValue === 'function') {
+    setPpcDateValue('npStart', p.startDate || '');
+    setPpcDateValue('npEnd', p.endDate || '');
+  } else {
+    document.getElementById('npStart').value = p.startDate || '';
+    document.getElementById('npEnd').value = p.endDate || '';
+  }
   document.getElementById('npError').textContent = '';
   renderProjectTypes();
   document.getElementById('projModal').classList.add('open');
@@ -1798,6 +1939,7 @@ function openProjectModal() {
 }
 
 function closeProjectModal() {
+  editingProjectId = null;
   document.getElementById('projModal').classList.remove('open');
   document.getElementById('projModalOverlay').classList.remove('open');
 }
@@ -1819,6 +1961,8 @@ function renderProjectTypes() {
 function submitProject() {
   const name = document.getElementById('npName').value.trim();
   const description = document.getElementById('npDesc').value.trim();
+  let startDate = document.getElementById('npStart').value || '';
+  let endDate = document.getElementById('npEnd').value || '';
   const err = document.getElementById('npError');
 
   if (!name) {
@@ -1826,8 +1970,26 @@ function submitProject() {
     document.getElementById('npName').focus();
     return;
   }
-  if (PROJECTS.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+  if (PROJECTS.some(p => p.id !== editingProjectId && p.name.toLowerCase() === name.toLowerCase())) {
     err.textContent = 'A project with that name already exists.';
+    return;
+  }
+  if (startDate && endDate && endDate < startDate) {
+    err.textContent = 'End date can’t be before start date.';
+    return;
+  }
+
+  if (editingProjectId) {
+    const p = projectById(editingProjectId);
+    if (!p) return;
+    p.name = name;
+    p.description = description;
+    p.type = npType;
+    if (startDate) p.startDate = startDate; else delete p.startDate;
+    if (endDate) p.endDate = endDate; else delete p.endDate;
+    saveBoard();
+    closeProjectModal();
+    renderCurrentView();
     return;
   }
 
@@ -1838,6 +2000,8 @@ function submitProject() {
     type: npType,
     createdAt: new Date().toISOString()
   };
+  if (startDate) proj.startDate = startDate;
+  if (endDate) proj.endDate = endDate;
   PROJECTS.push(proj);
   saveBoard();
   closeProjectModal();
@@ -1880,6 +2044,76 @@ function setProjectCompleted(id, completed) {
   p.completed = !!completed;
 }
 
+function deleteProjectById(id) {
+  const p = projectById(id);
+  if (!p) return false;
+  const cards = CARDS.filter(c => c.project === p.id);
+  const msg = cards.length
+    ? 'Delete "' + p.name + '"? Its ' + cards.length + ' task' + (cards.length === 1 ? '' : 's') +
+      ' will move back to the main board.'
+    : 'Delete "' + p.name + '"?';
+  if (!confirm(msg)) return false;
+  // Never destroy tasks with the project — hand them back to Misc.
+  CARDS.forEach(c => { if (c.project === p.id) delete c.project; });
+  PROJECTS = PROJECTS.filter(x => x.id !== p.id);
+  expandedSections.delete(p.id);
+  closeProjectCtxMenu();
+  saveBoard();
+  renderCurrentView();
+  return true;
+}
+
+function closeProjectCtxMenu() {
+  const existing = document.getElementById('projectCtxMenu');
+  if (existing) existing.remove();
+}
+
+function showProjectCtxMenu(clientX, clientY, projectId) {
+  closeProjectCtxMenu();
+  const p = projectById(projectId);
+  if (!p) return;
+  const menu = document.createElement('div');
+  menu.className = 'ctx-menu open';
+  menu.id = 'projectCtxMenu';
+  menu.setAttribute('role', 'menu');
+
+  const edit = document.createElement('div');
+  edit.className = 'ctx-item';
+  edit.setAttribute('role', 'menuitem');
+  edit.textContent = 'Edit project…';
+  edit.addEventListener('click', e => {
+    e.stopPropagation();
+    openEditProjectModal(projectId);
+  });
+  menu.appendChild(edit);
+
+  const del = document.createElement('div');
+  del.className = 'ctx-item danger';
+  del.setAttribute('role', 'menuitem');
+  del.textContent = 'Delete project…';
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    deleteProjectById(projectId);
+  });
+  menu.appendChild(del);
+
+  document.body.appendChild(menu);
+  const pad = 8;
+  const w = menu.offsetWidth || 160;
+  const h = menu.offsetHeight || 72;
+  let left = clientX;
+  let top = clientY;
+  if (left + w > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - w - pad);
+  if (top + h > window.innerHeight - pad) top = Math.max(pad, window.innerHeight - h - pad);
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+}
+
+document.addEventListener('click', () => closeProjectCtxMenu());
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeProjectCtxMenu();
+});
+
 function makeSectionRow(section, opts) {
   opts = opts || {};
   const cards = cardsInSection(section.id);
@@ -1901,6 +2135,13 @@ function makeSectionRow(section, opts) {
     clearTimeout(_rowClickTimer);
     _rowClickTimer = setTimeout(() => toggleSection(section.id), 200);
   });
+  if (isProject) {
+    row.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      showProjectCtxMenu(e.clientX, e.clientY, section.id);
+    });
+  }
 
   if (isProject) {
     const leading = document.createElement('div');
@@ -1979,7 +2220,7 @@ function makeSectionRow(section, opts) {
   if (accent) title.style.setProperty('--section-accent', accent);
   title.textContent = section.name;
   if (isProject) {
-    title.title = 'Double-click to rename';
+    title.title = 'Double-click to rename · Right-click to edit or delete';
     title.addEventListener('dblclick', (e) => {
       e.stopPropagation();
       clearTimeout(_rowClickTimer);
@@ -2189,6 +2430,12 @@ function makeColumn(col, sectionId) {
     renderBoard();
   });
 
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-card-btn';
+  addBtn.innerHTML = '<span style="font-size:14px;line-height:1">+</span> Add card';
+  addBtn.onclick = (e) => { e.stopPropagation(); openNewCardPanel(col.id, sectionId); };
+  body.appendChild(addBtn);
+
   if (col.id === 'done') {
     // Cards done in the last 7 days show directly; older ones collapse behind a
     // toggle so the column stays readable as it fills up.
@@ -2209,12 +2456,6 @@ function makeColumn(col, sectionId) {
   } else {
     cardsInCol.forEach(card => body.appendChild(makeCardPill(card)));
   }
-
-  const addBtn = document.createElement('button');
-  addBtn.className = 'add-card-btn';
-  addBtn.innerHTML = '<span style="font-size:14px;line-height:1">+</span> Add card';
-  addBtn.onclick = (e) => { e.stopPropagation(); openNewCardPanel(col.id, sectionId); };
-  body.appendChild(addBtn);
 
   colEl.appendChild(body);
   return colEl;
@@ -2240,17 +2481,29 @@ function initPanelSelects() {
     colorMap: catColors,
     onChange: updateCatColor
   });
-  replaceNativeSelect(document.getElementById('pColumn'), { bare: true, colored: false });
+  replaceNativeSelect(document.getElementById('pColumn'), {
+    bare: true,
+    colored: false,
+    onChange: () => syncPanelStatusColumn('column')
+  });
   replaceNativeSelect(document.getElementById('pStatus'), {
     bare: true,
     colored: true,
     colorMap: STATUS_COLORS,
-    onChange: updateStatusColor
+    onChange: () => syncPanelStatusColumn('status')
   });
   replaceNativeSelect(document.getElementById('pProject'), { bare: true, colored: false });
   if (typeof replaceNativeDate === 'function') {
     replaceNativeDate(document.getElementById('pDue'), { placeholder: 'Due date' });
   }
+}
+
+function initProjectDatePickers() {
+  if (typeof replaceNativeDate !== 'function') return;
+  const start = document.getElementById('npStart');
+  const end = document.getElementById('npEnd');
+  if (start) replaceNativeDate(start, { placeholder: 'Start date' });
+  if (end) replaceNativeDate(end, { placeholder: 'End date' });
 }
 function setKanbanDueDate(iso) {
   if (typeof setPpcDateValue === 'function' && setPpcDateValue('pDue', iso || '')) return;
@@ -2258,11 +2511,27 @@ function setKanbanDueDate(iso) {
   if (el) el.value = iso || '';
 }
 initPanelSelects();
+initProjectDatePickers();
 
 function updateStatusColor() {
   const val = document.getElementById('pStatus').value;
   document.getElementById('pStatusSmall').style.background = STATUS_COLORS[val] || '#9eabc0';
   document.getElementById('pStatusDot').classList.toggle('done', val === 'complete');
+}
+
+function syncPanelStatusColumn(source) {
+  let column = document.getElementById('pColumn').value;
+  let status = document.getElementById('pStatus').value;
+  if (source === 'status') {
+    if (status === 'complete') column = 'done';
+    else if (column === 'done') column = status === 'in-progress' ? 'active' : 'backlog';
+  } else {
+    if (column === 'done') status = 'complete';
+    else if (status === 'complete') status = column === 'active' ? 'in-progress' : 'planned';
+  }
+  setPpcSelectValue('pColumn', column);
+  setPpcSelectValue('pStatus', status);
+  updateStatusColor();
 }
 
 function updateCatColor() {
@@ -2274,7 +2543,7 @@ function toggleDone() {
   const sel = document.getElementById('pStatus');
   const next = sel.value === 'complete' ? 'planned' : 'complete';
   setPpcSelectValue('pStatus', next);
-  updateStatusColor();
+  syncPanelStatusColumn('status');
 }
 
 // ─── SUBTASKS (same "[x] " convention as Annual Planner) ─────────────────────
@@ -2601,6 +2870,7 @@ function openNewCardPanel(columnId, sectionId) {
   // A card added inside a section belongs to that section's project.
   const presetProject = (sectionId && sectionId !== MISC_ID && sectionId !== PRIORITY_ID) ? sectionId : '';
 
+  fillCatSelect(CATS[0] && CATS[0].id);
   document.getElementById('panelStrip').style.background = CATS[0].bg;
   document.getElementById('pTitle').textContent = '';
   setPpcSelectValue('pCat', CATS[0].id);
@@ -2624,6 +2894,7 @@ function openPanel(card) {
   activeNewColumn = null;
 
   const cat = CATS.find(c => c.id === card.cat) || CATS[0];
+  fillCatSelect(cat.id);
   document.getElementById('panelStrip').style.background = cat.bg;
   document.getElementById('pTitle').textContent = card.title;
   setPpcSelectValue('pCat', card.cat);
@@ -2753,7 +3024,15 @@ async function fetchPlannerData() {
   return data;
 }
 
-async function putPlannerData(data) {
+async function putPlannerData(data, opts) {
+  opts = opts || {};
+  // Event mirrors must not clobber a newer project-types list saved elsewhere.
+  if (opts.refreshCats) {
+    try {
+      const latest = await fetchPlannerData();
+      if (latest && Array.isArray(latest.cats)) data.cats = latest.cats.map(c => ({ ...c }));
+    } catch (_) { /* keep data.cats */ }
+  }
   await fetch(PLANNER_SYNC_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2762,17 +3041,169 @@ async function putPlannerData(data) {
   });
 }
 
-async function removePlannerMirror(cardId) {
-  if (!cardId) return;
+/** Project types live on the Annual Planner payload so both boards stay aligned. */
+function applyPlannerCats(cats) {
+  if (!Array.isArray(cats) || !cats.length) return false;
+  CATS.length = 0;
+  cats.forEach(c => {
+    if (!c || !c.id) return;
+    CATS.push({
+      id: c.id,
+      label: c.label || c.id,
+      bg: c.bg || '#6B7A8D',
+      fg: c.fg || (typeof PPC.fgForBg === 'function' ? PPC.fgForBg(c.bg) : '#fff')
+    });
+  });
+  if (CATS.length) {
+    fillCatSelect();
+    if (remapOrphanCats()) saveBoard();
+  }
+  return CATS.length > 0;
+}
+
+function remapOrphanCats() {
+  const ids = new Set(CATS.map(c => c.id));
+  const fallback = CATS[0] && CATS[0].id;
+  if (!fallback) return false;
+  let dirty = false;
+  CARDS.forEach(c => {
+    if (!ids.has(c.cat)) { c.cat = fallback; dirty = true; }
+  });
+  PROJECTS.forEach(p => {
+    if (p.type && !ids.has(p.type)) { p.type = fallback; dirty = true; }
+  });
+  return dirty;
+}
+
+async function syncCatsFromPlanner() {
   try {
     const data = await fetchPlannerData();
-    if (!data) return;
-    const before = data.events.length;
-    data.events = data.events.filter(e => e.srcCardId !== cardId);
-    if (data.events.length === before) return;
-    await putPlannerData(data);
+    if (data && applyPlannerCats(data.cats)) return true;
   } catch (err) {
-    console.warn('Timeline mirror remove failed:', err);
+    console.warn('Project type sync failed:', err);
+  }
+  return false;
+}
+
+async function saveCatsToPlanner() {
+  try {
+    const data = await fetchPlannerData();
+    if (!data) return false;
+    data.cats = CATS.map(c => ({ ...c }));
+    await putPlannerData(data);
+    return true;
+  } catch (err) {
+    console.warn('Project type save failed:', err);
+    return false;
+  }
+}
+
+function fillCatSelect(selectedId) {
+  const colorMap = {};
+  CATS.forEach(c => { colorMap[c.id] = c.bg; });
+  const value = selectedId || (document.getElementById('pCat') && document.getElementById('pCat').value) ||
+    (CATS[0] && CATS[0].id) || '';
+  if (!updatePpcSelect('pCat', {
+    options: CATS.map(c => ({ id: c.id, label: c.label, color: c.bg })),
+    value: CATS.some(c => c.id === value) ? value : (CATS[0] && CATS[0].id) || '',
+    colored: true,
+    colorMap
+  })) {
+    const sel = document.getElementById('pCat');
+    if (sel && sel.tagName === 'SELECT') {
+      sel.innerHTML = CATS.map(c =>
+        '<option value="' + escAttr(c.id) + '">' + escHtml(c.label) + '</option>'
+      ).join('');
+    }
+  }
+}
+
+function addProjectType(label, bg) {
+  const name = (label || '').trim().slice(0, 48);
+  if (!name) return null;
+  if (CATS.some(c => (c.label || '').toLowerCase() === name.toLowerCase())) {
+    PPC.showToast('That project type already exists');
+    return null;
+  }
+  const hex = bg || '#6B7A8D';
+  const cat = {
+    id: 'custom_' + Date.now().toString(36),
+    label: name,
+    bg: hex,
+    fg: typeof PPC.fgForBg === 'function' ? PPC.fgForBg(hex) : '#fff'
+  };
+  CATS.push(cat);
+  fillCatSelect(cat.id);
+  renderCurrentView();
+  return saveCatsToPlanner().then(() => cat);
+}
+
+async function deleteProjectType(cat) {
+  if (!cat || CATS.length <= 1) return false;
+  const fallback = CATS.find(c => c.id !== cat.id);
+  if (!fallback) return false;
+  const usedCards = CARDS.filter(c => c.cat === cat.id);
+  const usedProjects = PROJECTS.filter(p => p.type === cat.id);
+  const bits = [];
+  if (usedCards.length) {
+    bits.push(usedCards.length + ' card' + (usedCards.length === 1 ? '' : 's') +
+      ' will keep their place and be filed under "' + fallback.label + '"');
+  }
+  if (usedProjects.length) {
+    bits.push(usedProjects.length + ' project' + (usedProjects.length === 1 ? '' : 's') +
+      ' will switch to "' + fallback.label + '"');
+  }
+  const msg = bits.length
+    ? 'Remove "' + cat.label + '"?\n\n' + bits.join('. ') + '.\nNothing is deleted.'
+    : 'Remove "' + cat.label + '"?';
+  if (!confirm(msg)) return false;
+
+  // Never delete cards or projects — only refile the type.
+  usedCards.forEach(c => { c.cat = fallback.id; });
+  usedProjects.forEach(p => { p.type = fallback.id; });
+  const idx = CATS.findIndex(c => c.id === cat.id);
+  if (idx >= 0) CATS.splice(idx, 1);
+  fillCatSelect(fallback.id);
+  saveBoard();
+  try {
+    const data = await fetchPlannerData();
+    if (data) {
+      if (Array.isArray(data.events)) {
+        data.events.forEach(e => { if (e.cat === cat.id) e.cat = fallback.id; });
+      }
+      data.cats = CATS.map(c => ({ ...c }));
+      await putPlannerData(data);
+    } else {
+      await saveCatsToPlanner();
+    }
+  } catch (err) {
+    console.warn('Project type delete failed:', err);
+    await saveCatsToPlanner();
+  }
+  renderCurrentView();
+  return true;
+}
+
+function isPlannerLink(evt, card) {
+  if (!evt || !card) return false;
+  if (card.id && evt.srcCardId === card.id) return true;
+  if (card.srcEventId && evt.id === card.srcEventId) return true;
+  return false;
+}
+
+async function removePlannerLinks(card) {
+  if (!card) return [];
+  try {
+    const data = await fetchPlannerData();
+    if (!data || !Array.isArray(data.events)) return [];
+    const removed = data.events.filter(e => isPlannerLink(e, card));
+    if (!removed.length) return [];
+    data.events = data.events.filter(e => !isPlannerLink(e, card));
+    await putPlannerData(data, { refreshCats: true });
+    return removed.map(e => JSON.parse(JSON.stringify(e)));
+  } catch (err) {
+    console.warn('Timeline remove failed:', err);
+    return [];
   }
 }
 
@@ -2843,7 +3274,7 @@ async function upsertPlannerMirror(card) {
       }
     }
 
-    await putPlannerData(data);
+    await putPlannerData(data, { refreshCats: true });
   } catch (err) { console.warn('Timeline mirror failed:', err); }
 }
 
@@ -2876,7 +3307,7 @@ async function autoAssignToPlanner(card) {
       tasks: (card.tasks || []).slice(),
       project: card.project || null
     });
-    await putPlannerData(data);
+    await putPlannerData(data, { refreshCats: true });
   } catch (err) {
     console.warn('Auto-assign to planner failed:', err);
   }
@@ -2888,6 +3319,34 @@ PPC.mountSettings({
     if (entry && (entry.source === 'kanban' || entry.source === 'planner')) {
       await refreshBoard();
     }
+  },
+  onSettingsOpen: (panel) => {
+    const host = panel && panel.querySelector('#ppcSettingsExtra');
+    if (!host) return;
+    const paint = () => {
+      host.innerHTML = '';
+      PPC.renderProjectTypeSettings(host, {
+        getCats: () => CATS,
+        onRename: (cat, label) => {
+          cat.label = label;
+          fillCatSelect(cat.id);
+          saveCatsToPlanner();
+          renderCurrentView();
+        },
+        onColor: (cat, hex) => {
+          cat.bg = hex;
+          cat.fg = typeof PPC.fgForBg === 'function' ? PPC.fgForBg(hex) : '#fff';
+          fillCatSelect(cat.id);
+          saveCatsToPlanner();
+          renderCurrentView();
+        },
+        onAdd: (label, bg) => addProjectType(label, bg),
+        onDelete: (cat) => deleteProjectType(cat)
+      });
+    };
+    // Sync first, then paint — avoids a stale cloud fetch restoring a type
+    // we just deleted (save finishes before Settings re-opens).
+    syncCatsFromPlanner().finally(paint);
   }
 });
 PPC.applyStoredDark();

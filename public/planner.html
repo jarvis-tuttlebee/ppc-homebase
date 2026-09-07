@@ -1307,8 +1307,8 @@
   </div>
 </div>
 
-<script src="/js/ppc-select.js?v=7"></script>
-<script src="/js/ppc-homebase.js"></script>
+<script src="/js/ppc-select.js?v=8"></script>
+<script src="/js/ppc-homebase.js?v=14"></script>
 <script>
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -1432,7 +1432,7 @@ const REVENUE = [1000,1800,1500,5000,3000,3500,2000,5500,6500,8000,8000,8000];
 // ─── PERSISTENCE (localStorage + Cloudflare Worker sync) ─────────────────────
 const STORAGE_KEY = 'ppc-planner-data';
 const SYNC_URL = '/api/data';
-const APP_VERSION = '2.10.9';
+const APP_VERSION = '2.10.16';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
@@ -1460,7 +1460,7 @@ function saveToFirestore() {
   } catch (err) {
     console.warn('Local save failed:', err);
   }
-  fetch(SYNC_URL, {
+  return fetch(SYNC_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -1753,12 +1753,182 @@ function refreshMonthContent(mi) {
   }
 }
 
+// Overview shows projects (and month-level standalone items), not every card.
+// A project appears in a month when its start/end range overlaps that month,
+// or when it already has cards/events dated there. Day/week cards without a
+// project live on the calendar only.
+let overviewExpanded = {}; // `${mi}:${catId}:proj:${projectId}` → true
+
+function overviewBucketKey(mi, catId, projectId) {
+  return mi + ':' + catId + ':proj:' + projectId;
+}
+
+function isCalendarPlaced(evt) {
+  return evt.week != null || evt.day != null || !!evt.dueDate;
+}
+
+function monthIsoBounds(mi) {
+  const y = monthYear(mi);
+  const m = monthIndex(mi) + 1;
+  const last = daysInMonth(mi);
+  const pad = n => String(n).padStart(2, '0');
+  return { from: y + '-' + pad(m) + '-01', to: y + '-' + pad(m) + '-' + pad(last) };
+}
+
+/** Project start/end (ISO dates) overlap this planner month. */
+function projectOverlapsMonth(p, mi) {
+  if (!p) return false;
+  let from = p.startDate || null;
+  let to = p.endDate || null;
+  if (!from && !to) return false;
+  if (from && !to) to = from;
+  if (!from && to) from = to;
+  const bounds = monthIsoBounds(mi);
+  return from <= bounds.to && to >= bounds.from;
+}
+
+/** Group month items into project pills + standalone month-level events. */
+function overviewGroupsForCat(catId, mi, wantComplete) {
+  const byProject = new Map(); // projectId → events[]
+  const standalone = [];
+
+  const evts = EVENTS.filter(e => {
+    if (e.cat !== catId || e.m !== mi) return false;
+    const done = e.status === 'complete';
+    return wantComplete ? done : !done;
+  });
+
+  evts.forEach(e => {
+    if (e.project) {
+      if (!byProject.has(e.project)) byProject.set(e.project, []);
+      byProject.get(e.project).push(e);
+      return;
+    }
+    if (isCalendarPlaced(e)) return;
+    standalone.push(e);
+  });
+
+  // Date-ranged board projects of this type also appear even with no cards yet.
+  BOARD_PROJECTS.forEach(p => {
+    if (!p || !p.id) return;
+    if ((p.type || '') !== catId) return;
+    const isDone = !!p.completed;
+    if (wantComplete ? !isDone : isDone) return;
+    if (!projectOverlapsMonth(p, mi)) return;
+    if (!byProject.has(p.id)) byProject.set(p.id, []);
+  });
+
+  // Active overview: don't list a dated project only because it has complete cards.
+  // Complete overview: include completed projects by date even with no events.
+  if (!wantComplete) {
+    byProject.forEach((children, id) => {
+      const p = BOARD_PROJECTS.find(x => x.id === id);
+      if (p && p.completed && !children.length) byProject.delete(id);
+    });
+  }
+
+  return { byProject, standalone };
+}
+
+function makeOverviewEventPill(evt, cat, mi) {
+  const pill = document.createElement('span');
+  pill.className = 'pill';
+  pill.textContent = evt.title;
+  pill.style.background = PILL_BG;
+  pill.style.borderLeft = '3px solid ' + (cat ? cat.bg : '#9a958d');
+  pill.style.color = cat ? accentTextColor(cat.bg) : '#6B7A8D';
+  pill.style.fontWeight = '600';
+  pill.style.display = 'inline-block';
+  pill.style.marginRight = '6px';
+  pill.style.marginBottom = '4px';
+  if (evt.status === 'complete') pill.style.opacity = '0.72';
+  pill.addEventListener('click', e => { e.stopPropagation(); openPanel(evt, cat); });
+  attachPillDelete(pill, evt, mi);
+  return pill;
+}
+
+function makeOverviewProjectPill(projectId, children, cat, mi) {
+  const wrap = document.createElement('span');
+  wrap.style.cssText = 'display:inline-block;margin-right:6px;margin-bottom:4px;vertical-align:top;';
+
+  const key = overviewBucketKey(mi, cat.id, projectId);
+  const open = !!overviewExpanded[key];
+  const boardProj = BOARD_PROJECTS.find(x => x.id === projectId);
+  const name = projectName(projectId) || (children[0] && children[0].title) || 'Project';
+
+  const pill = document.createElement('span');
+  pill.className = 'pill';
+  pill.style.background = PILL_BG;
+  pill.style.borderLeft = '3px solid ' + cat.bg;
+  pill.style.color = accentTextColor(cat.bg);
+  pill.style.fontWeight = '600';
+  pill.style.display = 'inline-flex';
+  pill.style.alignItems = 'center';
+  pill.style.gap = '6px';
+  pill.style.cursor = 'pointer';
+  let tip = name;
+  if (boardProj && (boardProj.startDate || boardProj.endDate)) {
+    tip += ' · ' + [boardProj.startDate, boardProj.endDate].filter(Boolean).join(' → ');
+  }
+  if (children.length > 1) tip += ' · click to see cards';
+  else if (children.length === 1) tip += ' · click to open';
+  else tip += ' · no cards yet';
+  pill.title = tip;
+  pill.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+  const label = document.createElement('span');
+  label.textContent = name;
+  pill.appendChild(label);
+
+  if (children.length > 1) {
+    const count = document.createElement('span');
+    count.style.cssText = 'font-size:10px;font-weight:600;opacity:0.55;letter-spacing:0.02em;';
+    count.textContent = String(children.length);
+    pill.appendChild(count);
+    const chev = document.createElement('span');
+    chev.style.cssText = 'font-size:9px;opacity:0.5;';
+    chev.textContent = open ? '▾' : '▸';
+    pill.appendChild(chev);
+  }
+
+  pill.addEventListener('click', e => {
+    e.stopPropagation();
+    if (children.length === 1) {
+      openPanel(children[0], cat);
+      return;
+    }
+    if (children.length === 0) return;
+    overviewExpanded[key] = !overviewExpanded[key];
+    refreshMonthContent(mi);
+  });
+  wrap.appendChild(pill);
+
+  if (open && children.length > 1) {
+    const list = document.createElement('div');
+    list.style.cssText = 'display:flex;flex-wrap:wrap;gap:0;margin:4px 0 2px 10px;padding-left:8px;border-left:2px solid ' + cat.bg + '55;';
+    children.forEach(evt => list.appendChild(makeOverviewEventPill(evt, cat, mi)));
+    wrap.appendChild(list);
+  }
+
+  return wrap;
+}
+
+function appendOverviewGroups(evtCell, cat, mi, wantComplete) {
+  const { byProject, standalone } = overviewGroupsForCat(cat.id, mi, wantComplete);
+  byProject.forEach((children, projectId) => {
+    evtCell.appendChild(makeOverviewProjectPill(projectId, children, cat, mi));
+  });
+  standalone.forEach(evt => {
+    evtCell.appendChild(makeOverviewEventPill(evt, cat, mi));
+  });
+  return byProject.size + standalone.length;
+}
+
 function renderMonthOverview(container, mi) {
   const table = document.createElement('table');
   table.className = 'v-table';
 
   CATS.forEach(cat => {
-    const evts = EVENTS.filter(e => e.cat === cat.id && e.m === mi);
     const tr = document.createElement('tr');
 
     const catCell = document.createElement('td');
@@ -1782,33 +1952,18 @@ function renderMonthOverview(container, mi) {
 
     const evtCell = document.createElement('td');
     evtCell.className = 'v-evt-cell';
-    evts.forEach(evt => {
-      const pill = document.createElement('span');
-      pill.className = 'pill';
-      pill.textContent = evt.title;
-      pill.style.background = PILL_BG;
-      pill.style.borderLeft = '3px solid ' + cat.bg;
-      pill.style.color = accentTextColor(cat.bg);
-      pill.style.fontWeight = '600';
-      pill.style.display = 'inline-block';
-      pill.style.marginRight = '6px';
-      pill.style.marginBottom = '4px';
-      if (evt.status === 'complete') pill.classList.add('pill--complete');
-      pill.addEventListener('click', e => { e.stopPropagation(); openPanel(evt, cat); });
-      attachPillDelete(pill, evt, mi);
-      evtCell.appendChild(pill);
-    });
+    appendOverviewGroups(evtCell, cat, mi, false);
     const addBtn = document.createElement('button');
     addBtn.className = 'add-event-btn-inline';
     addBtn.textContent = '+';
-    addBtn.title = 'Add event';
+    addBtn.title = 'Add month-level item';
     addBtn.onclick = (e) => { e.stopPropagation(); openNewEventPanel(cat, mi, null); };
     evtCell.appendChild(addBtn);
     tr.appendChild(evtCell);
     table.appendChild(tr);
   });
 
-  // "Add section" row at the bottom
+  // "Add section" row
   const addSecRow = document.createElement('tr');
   const addSecCell = document.createElement('td');
   addSecCell.colSpan = 2;
@@ -1823,6 +1978,29 @@ function renderMonthOverview(container, mi) {
   addSecCell.appendChild(addSecBtn);
   addSecRow.appendChild(addSecCell);
   table.appendChild(addSecRow);
+
+  // Completed projects / month-level items for this month
+  const doneRow = document.createElement('tr');
+  const doneLabel = document.createElement('td');
+  doneLabel.className = 'v-cat-label';
+  doneLabel.style.cssText = 'padding-top:14px;color:#9a958d;';
+  const doneTitle = document.createElement('span');
+  doneTitle.style.cssText = "font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9a958d;";
+  doneTitle.textContent = 'Complete Tasks';
+  doneLabel.appendChild(doneTitle);
+  doneRow.appendChild(doneLabel);
+
+  const doneCell = document.createElement('td');
+  doneCell.className = 'v-evt-cell';
+  doneCell.style.paddingTop = '14px';
+  let doneCount = 0;
+  CATS.forEach(cat => {
+    doneCount += appendOverviewGroups(doneCell, cat, mi, true);
+  });
+  if (doneCount) {
+    doneRow.appendChild(doneCell);
+    table.appendChild(doneRow);
+  }
 
   container.appendChild(table);
 }
@@ -2074,6 +2252,7 @@ async function syncDateMirrors(opts) {
   } catch (err) { return false; }                      // offline: leave mirrors alone
   if (!board || !Array.isArray(board.cards)) return false;
   BOARD_PROJECTS = Array.isArray(board.projects) ? board.projects : [];
+  const hiddenEventIds = new Set(Array.isArray(board.hiddenEventIds) ? board.hiddenEventIds : []);
 
   let eventsChanged = ensureEventIds();
   const liveCardIds = new Set(board.cards.map(c => c.id));
@@ -2130,11 +2309,11 @@ async function syncDateMirrors(opts) {
   // ── Timeline → Task Board ────────────────────────────────────────────────
   // A dated timeline event gets its own card, so the item lives on both boards.
   // Writes go through the single-card patch endpoint, never a whole-board POST.
-  const datedEvents = EVENTS.filter(e => e.dueDate && !e.srcCardId);
+  const datedEvents = EVENTS.filter(e => e.dueDate && !e.srcCardId && !hiddenEventIds.has(e.id));
   const liveEventIds = new Set(datedEvents.map(e => e.id));
   const upserts = [];
   const removals = board.cards
-    .filter(c => c.srcEventId && !liveEventIds.has(c.srcEventId))
+    .filter(c => c.srcEventId && (!liveEventIds.has(c.srcEventId) || hiddenEventIds.has(c.srcEventId)))
     .map(c => c.id);
 
   datedEvents.forEach(evt => {
@@ -3378,15 +3557,84 @@ function renderSettingsList() {
 
 function toggleKanbanAutoAssign(cb) {
   SETTINGS.kanbanAutoAssign = cb.checked;
-  saveToFirestore();
+  saveToCloud();
+}
+
+function addProjectType(label, bg) {
+  const name = (label || '').trim().slice(0, 48);
+  if (!name) return null;
+  if (CATS.some(c => (c.label || '').toLowerCase() === name.toLowerCase())) {
+    PPC.showToast('That project type already exists');
+    return null;
+  }
+  const hex = bg || '#6B7A8D';
+  const cat = {
+    id: 'custom_' + Date.now().toString(36),
+    label: name,
+    bg: hex,
+    fg: typeof PPC.fgForBg === 'function' ? PPC.fgForBg(hex) : getFgForBg(hex)
+  };
+  CATS.push(cat);
+  fillCatSelect(cat.id);
+  renderVertical();
+  return Promise.resolve(saveToCloud()).then(() => cat);
+}
+
+async function deleteProjectType(cat) {
+  if (!cat || CATS.length <= 1) return false;
+  const fallback = CATS.find(c => c.id !== cat.id);
+  if (!fallback) return false;
+  const used = EVENTS.filter(e => e.cat === cat.id);
+  const msg = used.length
+    ? 'Remove "' + cat.label + '"?\n\n' + used.length + ' item' +
+      (used.length === 1 ? '' : 's') + ' will keep their place and be filed under "' +
+      fallback.label + '".\nNothing is deleted.'
+    : 'Remove "' + cat.label + '"?';
+  if (!confirm(msg)) return false;
+  used.forEach(e => { e.cat = fallback.id; });
+  Object.keys(MONTH_CAT_LABELS).forEach(k => {
+    if (MONTH_CAT_LABELS[k] && MONTH_CAT_LABELS[k][cat.id] != null) {
+      delete MONTH_CAT_LABELS[k][cat.id];
+    }
+  });
+  const idx = CATS.findIndex(c => c.id === cat.id);
+  if (idx >= 0) CATS.splice(idx, 1);
+  fillCatSelect(fallback.id);
+  renderVertical();
+  await saveToCloud();
+  return true;
 }
 
 PPC.mountSettings({
   onRefresh: async () => { await refreshPlanner(); },
   onAfterRecover: async (entry) => {
     if (entry && entry.source === 'planner') await refreshPlanner();
+  },
+  onSettingsOpen: (panel) => {
+    const host = panel && panel.querySelector('#ppcSettingsExtra');
+    if (!host) return;
+    host.innerHTML = '';
+    PPC.renderProjectTypeSettings(host, {
+      getCats: () => CATS,
+      onRename: (cat, label) => {
+        cat.label = label;
+        saveToCloud();
+        fillCatSelect(cat.id);
+        renderVertical();
+      },
+      onColor: (cat, hex) => {
+        cat.bg = hex;
+        cat.fg = typeof PPC.fgForBg === 'function' ? PPC.fgForBg(hex) : getFgForBg(hex);
+        saveToCloud();
+        fillCatSelect(cat.id);
+        renderVertical();
+      },
+      onAdd: (label, bg) => addProjectType(label, bg),
+      onDelete: (cat) => deleteProjectType(cat)
+    });
   }
 });
+
 darkMode = PPC.applyStoredDark();
 initApp();
 window.addEventListener('resize', () => {

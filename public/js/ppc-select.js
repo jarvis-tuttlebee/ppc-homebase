@@ -594,9 +594,17 @@ body.dark .ppc-datetime-time {
       getOutlineDate: typeof options.getOutlineDate === 'function' ? options.getOutlineDate : null,
       onChange: val => {
         if (typeof options.onChange === 'function') options.onChange(val);
-        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+        const hidden = id ? document.getElementById(id) : null;
+        if (hidden) hidden.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });
+    const hidden = id ? wrap.querySelector('input[type="hidden"]') : null;
+    if (hidden && inputEl.dataset) {
+      Object.keys(inputEl.dataset).forEach(key => {
+        if (key === 'ppcDateReplaced') return;
+        hidden.dataset[key] = inputEl.dataset[key];
+      });
+    }
     if (inputEl.className) wrap.className = (wrap.className + ' ' + inputEl.className).trim();
     if (inputEl.style && inputEl.style.cssText) wrap.style.cssText = inputEl.style.cssText;
     inputEl.dataset.ppcDateReplaced = '1';
@@ -691,9 +699,19 @@ body.dark .ppc-datetime-time {
       defaultTime: options.defaultTime,
       onChange: val => {
         if (typeof options.onChange === 'function') options.onChange(val);
-        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+        const hidden = id ? document.getElementById(id) : null;
+        if (hidden) hidden.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });
+    const hidden = id ? wrap.querySelector(':scope > input[type="hidden"]') : null;
+    if (hidden && inputEl.dataset) {
+      Object.keys(inputEl.dataset).forEach(key => {
+        if (key === 'ppcDateReplaced') return;
+        hidden.dataset[key] = inputEl.dataset[key];
+      });
+    }
+    if (inputEl.className) wrap.className = (wrap.className + ' ' + inputEl.className).trim();
+    if (inputEl.style && inputEl.style.cssText) wrap.style.cssText = inputEl.style.cssText;
     inputEl.dataset.ppcDateReplaced = '1';
     inputEl.replaceWith(wrap);
     return wrap;
