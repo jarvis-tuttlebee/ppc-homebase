@@ -5,6 +5,197 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-07 — Deploy: Marketing Calendar fix + project-type safety (Cursor)
+
+### Live
+- Version ID: `bb0d617a-1d68-453b-9ef5-35bf3987fb24`
+- Marketing **`0.12.44`**, Task Board **`1.10.12`**, Planner **`2.10.16`**, `ppc-homebase.js?v=14`
+- Hard-refresh Marketing (and Board/Planner)
+
+### What
+1. Marketing Calendar blank screen — missing `});` after schedule-notes forEach
+2. Also ships: project-type delete race + safe refile (no card wipe)
+
+### Open / next
+1. Confirm Marketing → Calendar shows grid after hard-refresh
+
+---
+
+## 2026-09-07 — Fix blank Marketing Calendar (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.44`**
+
+### What
+1. Missing `});` after schedule-notes `fields.forEach` (from ppc-date datetime work) — JS parse error blanked the whole Calendar view
+
+### Open / next
+1. Deploy when asked; hard-refresh Marketing → Calendar
+
+---
+
+## 2026-09-07 — Fix project-type delete race + safe refile (Cursor)
+
+### Local (not deployed)
+- Task Board **`1.10.12`**, Planner **`2.10.16`**, `ppc-homebase.js?v=14`
+
+### What
+1. Deleting a project type **never deletes cards/projects** — they keep their place and are refiled under another type
+2. Save completes before Settings refreshes (fixes Personal Milestones bouncing back)
+3. Timeline event writes refresh cats so they can’t overwrite a delete
+
+### Open / next
+1. Soak / deploy when asked
+
+---
+
+## 2026-09-07 — Deploy: Homebase date pickers + prior local work (Cursor)
+
+### Live
+- Version ID: `0fbd2c4e-4d63-4980-acff-541acb18786c`
+- Task Board **`1.10.11`**, Planner **`2.10.15`**, Marketing **`0.12.43`**, `ppc-select.js?v=8`
+- Hard-refresh all pages
+
+### What
+1. Project Start/End use Homebase **ppc-date** (no native OS dark calendar)
+2. Marketing schedule note shoot-date also uses ppc-date + time
+3. Includes prior: project edit dates, status↔column sync, overview projects
+
+### Open / next
+1. Hard-refresh; open Edit project → Start/End should be cream/sage Homebase calendar
+
+---
+
+## 2026-09-07 — Deploy: project dates + status/column sync (Cursor)
+
+### Live
+- Version ID: `229a1212-3a80-47ba-aba0-20bc64d33f3b`
+- Task Board **`1.10.10`**, Planner **`2.10.14`**
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/kanban and `/planner`
+
+### What
+1. Right-click project → Edit (dates) / Delete; Overview uses date range + cards
+2. Status ↔ Column synced (Complete ⇄ Done)
+
+### Open / next
+1. Hard-refresh; set project dates; smoke Complete/Done once each
+
+---
+
+## 2026-09-07 — Project dates + status/column sync (Cursor)
+
+### Local (not deployed)
+- Task Board **`1.10.10`**, Planner **`2.10.14`**
+
+### What
+1. Right-click project → **Edit project…** (name, type, description, start/end dates) or Delete
+2. New project modal also has start/end dates
+3. Overview shows a project in a month if its date range overlaps **or** it has cards there
+4. Task Board: Status ↔ Column stay in sync (Complete ⇄ Done; drag to Done marks complete; status dot too)
+
+### How to use
+1. Hard-refresh `/kanban` + `/planner`
+2. Right-click a project → Edit → set Start/End → check Overview months
+3. On a card: set Status Complete **or** Column Done — one change updates both
+
+### Open / next
+1. Soak locally; deploy when asked
+
+---
+
+## 2026-09-07 — Overview shows projects, not every card (Cursor)
+
+### Local (not deployed)
+- Planner **`2.10.13`**
+
+### What
+1. Overview per category: **project pills** (cards with a project fold into one name) + month-level standalone items
+2. Day/week-placed cards without a project stay on **Calendar** only
+3. Click project (2+ cards) expands the card list; single-card project opens that card
+4. Complete Tasks uses the same grouping
+
+### How to use
+1. Hard-refresh `/planner` → **v2.10.13**
+2. Overview: see projects under Events / Collections / etc.; switch to Calendar for day cards
+
+### Open / next
+1. Soak locally; deploy when asked
+
+---
+
+## 2026-09-07 — Deploy: type add/delete + right-click project delete (Cursor)
+
+### Live
+- Version ID: `7855a9c8-e49c-47c9-8ce7-9d9c60fcc92a`
+- Planner **`2.10.12`**, Task Board **`1.10.9`**, `ppc-homebase.js?v=13`
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/planner and `/kanban`
+
+### What
+1. Settings → Project types: add / remove / rename / colour
+2. Task Board: right-click project row → Delete project…
+
+### Open / next
+1. Hard-refresh; smoke add/remove type + right-click delete
+
+---
+
+## 2026-09-07 — Project type add/delete + right-click project delete (Cursor)
+
+### Local (not deployed)
+- Planner **`2.10.12`**, Task Board **`1.10.9`**, `ppc-homebase.js?v=13`
+
+### What
+1. Settings → Project types: **+ Add type** and **×** remove (confirm; in-use items reassigned). Keep ≥1 type.
+2. Task Board: **right-click** a project row → **Delete project…** (confirm; tasks return to Misc). Tooltip: “Right-click to delete”.
+
+### How to use
+1. Hard-refresh `/planner` + `/kanban`
+2. Settings → Project types → add/remove
+3. Right-click a project section header → Delete project…
+
+### Open / next
+1. Soak locally; deploy when asked
+
+---
+
+## 2026-09-07 — Deploy: Project types + overview Complete Tasks (Cursor)
+
+### Live
+- Version ID: `d28cd389-4d75-40c1-9536-d47c4f6be33a`
+- Planner **`2.10.11`**, Task Board **`1.10.8`**, `ppc-homebase.js?v=12`
+- Hard-refresh https://ppc-homebase.pressplaycollective.workers.dev/planner and `/kanban`
+
+### What
+1. Settings → **Project types** (rename + colour) on Task Board + Annual Planner; shared `cats` on `/api/data`
+2. Overview: completed pills → **Complete Tasks** below Add section
+
+### Open / next
+1. Hard-refresh both pages; confirm versions + Project types + Complete Tasks
+
+---
+
+## 2026-09-07 — Project types settings + overview Complete Tasks (Cursor)
+
+### Local (not deployed)
+- Planner **`2.10.11`**, Task Board **`1.10.8`**, shared `ppc-homebase.js?v=12`
+- Marketing live still **`0.12.42`**
+
+### What
+1. **Settings → Project types** on Task Board + Annual Planner: rename + recolour (brand swatch picker). Shared via `PPC.renderProjectTypeSettings`.
+2. Types persist on planner `/api/data` `cats`; Task Board loads/saves the same list so both stay aligned.
+3. Overview: completed pills leave category rows; month **Complete Tasks** block sits below **Add section**.
+
+### How to use
+1. `npm run dev` → hard-refresh `/planner` (v2.10.11) and `/kanban` (v1.10.8)
+2. Settings → Project types: rename / pick colour; confirm both boards match
+3. Overview: mark a pill Complete → it drops into Complete Tasks under Add section
+
+### Open / next
+1. Soak locally; deploy when asked
+2. Optional later: add/remove project types from Settings (Add section still creates customs)
+
+---
+
 ## 2026-08-21 — EOD: Ideas board UX restored (Cursor)
 
 ### Live

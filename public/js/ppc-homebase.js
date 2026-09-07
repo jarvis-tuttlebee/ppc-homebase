@@ -643,6 +643,290 @@ body.dark .section-row { color: #f0ede8; }
     }
   }
 
+  /** ~50 Homebase-family accents for Settings colour picker (muted brand tones). */
+  const BRAND_COLOUR_PALETTE = [
+    '#2C2C2C', '#404040', '#505050', '#6e6e6e', '#6B7A8D', '#556070',
+    '#564A5E', '#6B5A9C', '#433674', '#9585c2', '#7a62af', '#302460',
+    '#4E6E6C', '#3a7048', '#3a6e72', '#478589', '#2d5658', '#4a8a5c',
+    '#C29A3B', '#d4763b', '#baa920', '#8a6a1a', '#d4c140', '#8e7c6c',
+    '#90a0b1', '#3f4853', '#2a3036', '#a89688', '#746250', '#5a4834',
+    '#3d5a80', '#4a6fa5', '#2f4a6e', '#6a8499',
+    '#7a4450', '#8b5a6b', '#6b3a4a', '#a66d7a',
+    '#a65d3f', '#8b4a32', '#c47a5a', '#8A5A3B', '#b86b5c',
+    '#5c6b3a', '#6e7a45', '#4a5530',
+    '#2f6f6a', '#1e7a72', '#3a3f6e', '#4a5080'
+  ];
+
+  let openColourPopover = null;
+  let projectTypesSettingsOpen = true;
+  let colourPopoverDocBound = false;
+
+  function closeColourPopovers() {
+    if (openColourPopover) {
+      openColourPopover.remove();
+      openColourPopover = null;
+    }
+    document.querySelectorAll('.ppc-colour-swatch.is-open').forEach(el => el.classList.remove('is-open'));
+  }
+
+  function ensureColourPopoverClose() {
+    if (colourPopoverDocBound) return;
+    colourPopoverDocBound = true;
+    document.addEventListener('click', () => closeColourPopovers());
+  }
+
+  function fgForBg(hex) {
+    const h = String(hex || '').replace('#', '');
+    if (h.length < 6) return '#fff';
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return '#fff';
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? '#2C2C2C' : '#fff';
+  }
+
+  function positionColourPopover(pop, anchorBtn) {
+    const rect = anchorBtn.getBoundingClientRect();
+    const pad = 8;
+    pop.style.visibility = 'hidden';
+    pop.style.left = '0px';
+    pop.style.top = '0px';
+    const w = pop.offsetWidth || 248;
+    const h = pop.offsetHeight || 280;
+    let left = rect.right - w;
+    let top = rect.bottom + 6;
+    if (left < pad) left = pad;
+    if (left + w > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - w - pad);
+    if (top + h > window.innerHeight - pad) top = rect.top - h - 6;
+    if (top < pad) top = pad;
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+    pop.style.visibility = '';
+  }
+
+  /**
+   * Shared Task Board / Annual Planner settings: rename / recolour / add / remove project types.
+   * opts: {
+   *   getCats,
+   *   onRename(cat, label),
+   *   onColor(cat, hex),
+   *   onAdd?(label, bg) → cat|null,
+   *   onDelete?(cat) → boolean,
+   *   onRefresh?(),
+   *   onAfterChange?()
+   * }
+   */
+  function renderProjectTypeSettings(host, opts) {
+    if (!host || !opts || typeof opts.getCats !== 'function') return;
+    ensureStyles();
+    ensureColourPopoverClose();
+    closeColourPopovers();
+    host.hidden = false;
+
+    const refresh = () => {
+      if (typeof opts.onRefresh === 'function') opts.onRefresh();
+      else if (typeof global.PPC.openSettings === 'function') global.PPC.openSettings();
+    };
+    const after = () => {
+      if (typeof opts.onAfterChange === 'function') opts.onAfterChange();
+    };
+
+    const typesToggle = document.createElement('button');
+    typesToggle.type = 'button';
+    typesToggle.className = 'ppc-colour-toggle';
+    typesToggle.innerHTML = '<span>Project types</span><span class="ppc-colour-chev">' +
+      (projectTypesSettingsOpen ? '▾' : '▸') + '</span>';
+    const typesBody = document.createElement('div');
+    typesBody.className = 'ppc-colour-panel';
+    typesBody.hidden = !projectTypesSettingsOpen;
+    typesToggle.addEventListener('click', e => {
+      e.stopPropagation();
+      projectTypesSettingsOpen = !projectTypesSettingsOpen;
+      typesBody.hidden = !projectTypesSettingsOpen;
+      typesToggle.querySelector('.ppc-colour-chev').textContent =
+        projectTypesSettingsOpen ? '▾' : '▸';
+      if (!projectTypesSettingsOpen) closeColourPopovers();
+    });
+    host.appendChild(typesToggle);
+    host.appendChild(typesBody);
+
+    const cats = opts.getCats() || [];
+    cats.forEach(cat => {
+      if (!cat || !cat.id) return;
+      const row = document.createElement('div');
+      row.className = 'ppc-type-row';
+
+      const swatch = document.createElement('button');
+      swatch.type = 'button';
+      swatch.className = 'ppc-colour-swatch';
+      swatch.title = 'Choose colour · ' + (cat.label || cat.id);
+      swatch.setAttribute('aria-label', 'Choose colour for ' + (cat.label || cat.id));
+      swatch.style.background = cat.bg || '#6B7A8D';
+      swatch.addEventListener('click', e => {
+        e.stopPropagation();
+        const wasOpen = swatch.classList.contains('is-open');
+        closeColourPopovers();
+        if (wasOpen) return;
+        swatch.classList.add('is-open');
+        const pop = document.createElement('div');
+        pop.className = 'ppc-colour-popover';
+        pop.addEventListener('click', ev => ev.stopPropagation());
+        pop.addEventListener('wheel', ev => ev.stopPropagation(), { passive: true });
+        const lab = document.createElement('div');
+        lab.className = 'ppc-colour-popover-label';
+        lab.textContent = 'Brand colours';
+        pop.appendChild(lab);
+        const grid = document.createElement('div');
+        grid.className = 'ppc-colour-grid';
+        BRAND_COLOUR_PALETTE.forEach(hex => {
+          const sw = document.createElement('button');
+          sw.type = 'button';
+          sw.title = hex;
+          sw.style.background = hex;
+          if (hex.toLowerCase() === String(cat.bg || '').toLowerCase()) sw.classList.add('is-selected');
+          sw.addEventListener('click', ev => {
+            ev.stopPropagation();
+            if (typeof opts.onColor === 'function') opts.onColor(cat, hex);
+            swatch.style.background = hex;
+            closeColourPopovers();
+            after();
+          });
+          grid.appendChild(sw);
+        });
+        pop.appendChild(grid);
+        document.body.appendChild(pop);
+        openColourPopover = pop;
+        positionColourPopover(pop, swatch);
+      });
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'ppc-type-input';
+      input.value = cat.label || cat.id;
+      input.maxLength = 48;
+      input.setAttribute('aria-label', 'Rename ' + (cat.label || cat.id));
+      const commitRename = () => {
+        const next = (input.value || '').trim().slice(0, 48);
+        if (!next) {
+          input.value = cat.label || cat.id;
+          return;
+        }
+        if (next === (cat.label || cat.id)) return;
+        if (typeof opts.onRename === 'function') opts.onRename(cat, next);
+        input.value = cat.label || next;
+        after();
+      };
+      input.addEventListener('keydown', e => {
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          input.blur();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          input.value = cat.label || cat.id;
+          input.blur();
+        }
+      });
+      input.addEventListener('blur', commitRename);
+      input.addEventListener('click', e => e.stopPropagation());
+
+      row.appendChild(swatch);
+      row.appendChild(input);
+
+      if (typeof opts.onDelete === 'function') {
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'ppc-type-del';
+        del.setAttribute('aria-label', 'Remove ' + (cat.label || cat.id));
+        del.title = cats.length <= 1 ? 'Keep at least one project type' : 'Remove type';
+        del.textContent = '\u00d7';
+        del.disabled = cats.length <= 1;
+        if (cats.length <= 1) del.style.opacity = '0.35';
+        del.addEventListener('click', e => {
+          e.stopPropagation();
+          if (cats.length <= 1) return;
+          Promise.resolve(opts.onDelete(cat)).then(ok => { if (ok) refresh(); });
+        });
+        row.appendChild(del);
+      }
+
+      typesBody.appendChild(row);
+    });
+
+    if (typeof opts.onAdd === 'function') {
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'ppc-type-add';
+      addBtn.textContent = '+ Add type';
+      addBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const wrap = document.createElement('div');
+        wrap.className = 'ppc-type-add-form';
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'ppc-type-input';
+        inp.placeholder = 'New type name';
+        inp.maxLength = 48;
+        const save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'ppc-type-add-save';
+        save.textContent = 'Add';
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'ppc-type-add-cancel';
+        cancel.textContent = 'Cancel';
+        const used = new Set((opts.getCats() || []).map(c => String(c.bg || '').toLowerCase()));
+        const defaultBg = BRAND_COLOUR_PALETTE.find(h => !used.has(h.toLowerCase())) || '#6B7A8D';
+        const finish = ok => {
+          if (ok) {
+            const label = (inp.value || '').trim().slice(0, 48);
+            if (!label) {
+              inp.focus();
+              return;
+            }
+            Promise.resolve(opts.onAdd(label, defaultBg)).then(created => {
+              if (!created) {
+                inp.focus();
+                return;
+              }
+              after();
+              refresh();
+            });
+            return;
+          }
+          wrap.remove();
+          addBtn.hidden = false;
+        };
+        save.addEventListener('click', ev => {
+          ev.stopPropagation();
+          finish(true);
+        });
+        cancel.addEventListener('click', ev => {
+          ev.stopPropagation();
+          finish(false);
+        });
+        inp.addEventListener('keydown', ev => {
+          ev.stopPropagation();
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            finish(true);
+          } else if (ev.key === 'Escape') {
+            ev.preventDefault();
+            finish(false);
+          }
+        });
+        inp.addEventListener('click', ev => ev.stopPropagation());
+        wrap.appendChild(inp);
+        wrap.appendChild(save);
+        wrap.appendChild(cancel);
+        addBtn.hidden = true;
+        addBtn.insertAdjacentElement('afterend', wrap);
+        inp.focus();
+      });
+      typesBody.appendChild(addBtn);
+    }
+  }
+
   global.PPC = {
     archivePush,
     archiveRecover,
@@ -656,6 +940,10 @@ body.dark .section-row { color: #f0ede8; }
     openSettings,
     closeSettings,
     mountSettings,
+    renderProjectTypeSettings,
+    closeColourPopovers,
+    fgForBg,
+    BRAND_COLOUR_PALETTE,
     plannerWhere,
     kanbanWhere,
     marketingWhere

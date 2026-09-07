@@ -4060,13 +4060,13 @@
   <div class="ctx-item" data-action="add-card">Add card</div>
 </div>
 
-<script src="/js/ppc-select.js?v=7"></script>
+<script src="/js/ppc-select.js?v=8"></script>
 <script src="/js/ppc-homebase.js?v=9"></script>
 <script>
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.42';
+const APP_VERSION = '0.12.44';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -13081,6 +13081,7 @@ function fillScheduleContext(card) {
     if (f.type === 'datetime-local') {
       input = document.createElement('input');
       input.type = 'datetime-local';
+      input.id = 'scheduleNote_' + f.key;
       input.value = f.value || '';
     } else if (f.multiline) {
       input = document.createElement('textarea');
@@ -13096,6 +13097,12 @@ function fillScheduleContext(card) {
     input.placeholder = f.label + '…';
     row.appendChild(input);
     wrap.appendChild(row);
+    if (f.type === 'datetime-local' && typeof replaceNativeDateTimeLocal === 'function') {
+      replaceNativeDateTimeLocal(input, {
+        placeholder: f.label,
+        defaultTime: String(DEFAULT_PUBLISH_HOUR).padStart(2, '0') + ':00'
+      });
+    }
   });
 
   wrap.classList.toggle('open', !!scheduleContextOpen);
