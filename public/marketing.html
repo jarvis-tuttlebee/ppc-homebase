@@ -4167,7 +4167,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.48';
+const APP_VERSION = '0.12.49';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6663,6 +6663,12 @@ let moodBlurHandler = null;
 let moodWheelHandler = null;
 let moodMouseDownHandler = null;
 let moodContextHandler = null;
+let moodTouchStartHandler = null;
+let moodTouchMoveHandler = null;
+let moodTouchEndHandler = null;
+const IS_TOUCH = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+const SCHEDULE_PANE_PIPELINE_KEY = 'ppc-schedule-pipeline-open';
+const SCHEDULE_PANE_CONTENT_KEY = 'ppc-schedule-content-open';
 
 function cleanupMoodPan() {
   if (panMoveHandler) window.removeEventListener('mousemove', panMoveHandler);

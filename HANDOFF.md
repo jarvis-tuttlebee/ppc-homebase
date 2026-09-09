@@ -7,9 +7,14 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ## 2026-09-09 — Marketing mobile Ideas + schedule panes (Cursor Cloud)
 
-### Live (after deploy)
-- Marketing **`0.12.48`**
-- Also synced workspace to live baselines before this change: Marketing was **0.12.47**, Task Board **1.10.17**, Planner **2.10.16**, `ppc-homebase.js?v=17`
+### Note
+- Hotfix: declared missing `IS_TOUCH` / schedule-pane keys (startup ReferenceError blanked the board). Now **0.12.49**.
+
+### Live
+- Version ID: `534f94a6-f0dd-42da-8559-ceec3fc27d1a`
+- Marketing **`0.12.49`** (deployed this session)
+- Synced from prior live baselines: Marketing **0.12.47**, Task Board **1.10.17**, Planner **2.10.16**, `ppc-homebase.js?v=17`
+- Hard-refresh Marketing on phone
 
 ### What
 1. Content Ideas board: real finger pan, card drag, and pinch-zoom (was mouse-only)
