@@ -8,7 +8,7 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-09 — Add to calendar: publish + make-by (Cursor Cloud)
 
 ### Live
-- Version ID: _(pending deploy)_
+- Version ID: `b60cb045-06e5-4f80-a658-3f75dc282e4d`
 - Marketing **`0.12.61`**
 - Hard-refresh Marketing → Pipeline
 
