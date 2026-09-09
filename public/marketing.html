@@ -3962,15 +3962,19 @@
       color: #6B7A8D;
     }
     .panel-cal-place-date {
-      font: inherit;
-      font-size: 12px;
-      color: #2C2C2C;
-      border: 1.5px solid #E2DDD5;
-      border-radius: 8px;
-      background: #fff;
-      padding: 7px 10px;
-      min-height: 36px;
       width: 100%;
+    }
+    .panel-cal-place-date.ppc-date .ppc-select-trigger {
+      min-height: 36px;
+      border-radius: 8px;
+      border: 1.5px solid #E2DDD5;
+      background: #fff;
+      font-size: 12px;
+      padding: 7px 10px;
+    }
+    .panel-cal-place-date.ppc-date.open .ppc-select-trigger,
+    .panel-cal-place-date.ppc-date .ppc-select-trigger:hover {
+      border-color: #6B7A8D;
     }
     .panel-cal-place-hint {
       width: 100%;
@@ -4734,7 +4738,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.62';
+const APP_VERSION = '0.12.63';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -8732,8 +8736,8 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue) {
     return;
   }
 
-  if (typeof savePanelEdits === 'function') {
-    try { savePanelEdits(true); } catch (_) {}
+  if (typeof savePanel === 'function') {
+    try { savePanel(true); } catch (_) {}
   }
 
   if (existing) {
@@ -8790,13 +8794,17 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue) {
 function buildAddToCalendarDateFields(slot) {
   const fields = document.createElement('div');
   fields.className = 'panel-cal-place-fields';
+  const uid = 'addcal-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const pubId = uid + '-publish';
+  const makeId = uid + '-make';
 
-  const pubField = document.createElement('label');
+  const pubField = document.createElement('div');
   pubField.className = 'panel-cal-place-field';
   const pubLab = document.createElement('span');
   pubLab.textContent = 'Publish date';
   const pubInput = document.createElement('input');
   pubInput.type = 'date';
+  pubInput.id = pubId;
   pubInput.className = 'panel-cal-place-date';
   pubInput.value = slot
     ? (isoToDateInputValue(slot.scheduledAt || slot.scheduleAt) || todayDateInputValue())
@@ -8805,12 +8813,13 @@ function buildAddToCalendarDateFields(slot) {
   pubField.appendChild(pubLab);
   pubField.appendChild(pubInput);
 
-  const makeField = document.createElement('label');
+  const makeField = document.createElement('div');
   makeField.className = 'panel-cal-place-field';
   const makeLab = document.createElement('span');
   makeLab.textContent = 'Make by (optional)';
   const makeInput = document.createElement('input');
   makeInput.type = 'date';
+  makeInput.id = makeId;
   makeInput.className = 'panel-cal-place-date';
   makeInput.value = slot ? (prepByOf(slot) || '') : '';
   makeInput.setAttribute('aria-label', 'Make by date');
@@ -8819,7 +8828,29 @@ function buildAddToCalendarDateFields(slot) {
 
   fields.appendChild(pubField);
   fields.appendChild(makeField);
-  return { fields, pubInput, makeInput };
+
+  // Swap natives for Homebase ppc-date (same picker as calendar / prep-by).
+  if (typeof replaceNativeDate === 'function') {
+    replaceNativeDate(pubInput, { placeholder: 'Publish date' });
+    replaceNativeDate(makeInput, {
+      placeholder: 'Make by',
+      getOutlineDate: () => {
+        const pub = document.getElementById(pubId);
+        return pub ? String(pub.value || '').slice(0, 10) : '';
+      }
+    });
+  }
+
+  const readPub = () => {
+    const el = document.getElementById(pubId);
+    return el ? String(el.value || '').slice(0, 10) : '';
+  };
+  const readMake = () => {
+    const el = document.getElementById(makeId);
+    return el ? String(el.value || '').slice(0, 10) : '';
+  };
+
+  return { fields, readPub, readMake, pubId };
 }
 
 /** Panel control: Add to calendar (publish + make-by) or jump / edit if linked. */
@@ -8871,7 +8902,7 @@ function appendAddToCalendarAction(host, card, stage) {
       : 'Pin to a publish day (and optional make-by). Stays in this pipeline stage.';
     wrap.appendChild(hint);
 
-    const { fields, pubInput, makeInput } = buildAddToCalendarDateFields(editing ? linked : null);
+    const { fields, readPub, readMake, pubId } = buildAddToCalendarDateFields(editing ? linked : null);
     wrap.appendChild(fields);
 
     const placeBtn = document.createElement('button');
@@ -8879,7 +8910,7 @@ function appendAddToCalendarAction(host, card, stage) {
     placeBtn.className = 'btn-secondary active';
     placeBtn.textContent = editing ? 'Save dates' : 'Place on calendar';
     placeBtn.addEventListener('click', () => {
-      placeCardOnCalendar(card, stage, pubInput.value, makeInput.value);
+      placeCardOnCalendar(card, stage, readPub(), readMake());
     });
     const cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
@@ -8888,7 +8919,9 @@ function appendAddToCalendarAction(host, card, stage) {
     cancelBtn.addEventListener('click', renderCollapsed);
     wrap.appendChild(placeBtn);
     wrap.appendChild(cancelBtn);
-    try { pubInput.focus(); } catch (_) {}
+    requestAnimationFrame(() => {
+      if (typeof focusPpcDate === 'function') focusPpcDate(pubId);
+    });
   };
 
   renderCollapsed();
@@ -14563,8 +14596,8 @@ function updateIdeaSaveBtn() {
   } else {
     btn.textContent = 'Save changes';
     if (hint) hint.textContent = IS_TOUCH
-      ? 'Tap Save · ' + closeHint
-      : 'Ctrl+Enter to save · ' + closeHint;
+      ? 'Tap Save to apply and close'
+      : 'Ctrl+Enter to save and close';
   }
 }
 
@@ -14658,7 +14691,7 @@ function buildExecActions(card) {
   backBtn.className = 'btn-secondary';
   backBtn.textContent = 'Back to Preparation';
   backBtn.addEventListener('click', () => {
-    savePanelEdits(true);
+    savePanel(true);
     moveExecToPreparation(card.id);
   });
   actions.appendChild(backBtn);
@@ -14705,7 +14738,7 @@ function buildReviewActions(card) {
   backBtn.className = 'btn-secondary';
   backBtn.textContent = 'Back to Execution';
   backBtn.addEventListener('click', () => {
-    savePanelEdits(true);
+    savePanel(true);
     moveReviewToExecution(card.id);
   });
   actions.appendChild(backBtn);
@@ -15822,7 +15855,7 @@ function savePanel(silent) {
 
     scheduleSave();
     renderBoard();
-    // Keep panel open — click outside / Close to leave.
+    if (!silent) closePanel();
     return;
   }
   if (panelMode === 'prep' && activePrepId) {
@@ -15848,6 +15881,7 @@ function savePanel(silent) {
     syncLinkedSchedulePreview(card, 'prep');
     scheduleSave();
     renderBoard();
+    if (!silent) closePanel();
     return;
   }
   if (panelMode === 'exec' && activeExecId) {
@@ -15877,6 +15911,7 @@ function savePanel(silent) {
     syncLinkedSchedulePreview(card, 'execution');
     scheduleSave();
     renderBoard();
+    if (!silent) closePanel();
     return;
   }
   if (panelMode === 'review' && activeReviewId) {
@@ -15912,6 +15947,7 @@ function savePanel(silent) {
     syncLinkedSchedulePreview(card, 'review');
     scheduleSave();
     renderBoard();
+    if (!silent) closePanel();
     return;
   }
   if (panelMode === 'schedule' && activeScheduleId) {
@@ -16001,7 +16037,10 @@ function savePanel(silent) {
     clearTimeout(saveTimer);
     saveData();
     renderBoard();
-    if (!silent) PPC.showToast('Saved');
+    if (!silent) {
+      if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Saved');
+      closePanel();
+    }
   }
 }
 

@@ -5,6 +5,22 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Add-to-calendar branded ppc-date + Save closes (Cursor Cloud)
+
+### Live
+- Marketing **`0.12.63`** (deploy pending / see Version ID after wrangler)
+- Hard-refresh Marketing → Pipeline → Add to calendar
+
+### What
+1. Add to calendar Publish / Make by use Homebase **ppc-date** (no native OS dark picker)
+2. **Save changes** closes the Marketing panel (Ideas / Prep / Exec / Review / Schedule), same as Task Board
+3. Fixed dead `savePanelEdits` calls → `savePanel`
+
+### Open / next
+1. Hard-refresh; Add to calendar → confirm light ppc-date menu; Save changes → panel closes
+
+---
+
 ## 2026-09-09 — Execution: how-to + optional sections (Cursor Cloud)
 
 ### Live
