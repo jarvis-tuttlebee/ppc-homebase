@@ -4702,7 +4702,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.72';
+const APP_VERSION = '0.12.74';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6012,7 +6012,9 @@ const SECTIONS = [
   { id: 'ideas', name: 'Content Ideas', swatch: '#564A5E', built: true },
   { id: 'preparation', name: 'Content Preparation', swatch: '#4E6E6C', built: true },
   { id: 'execution', name: 'Content Execution', swatch: '#C29A3B', built: true },
-  { id: 'review', name: 'Content Review', swatch: '#6B7A8D', built: true }
+  { id: 'review', name: 'Content Review', swatch: '#6B7A8D', built: true },
+  // Posted archive — keeps history after calendar status is Posted.
+  { id: 'complete', name: 'Content Complete', swatch: '#5A6B5A', built: true }
 ];
 
 const SAMPLE_IDEAS = [
@@ -6161,7 +6163,7 @@ function statusOptionsForCard(card) {
 const DEFAULT_STAFF = ['Jarvis', 'Louis', 'Gregor'];
 const ADD_STAFF_ID = '__add_staff__';
 
-let DATA = { ideas: [], sections: { preparation: [], execution: [], review: [], schedule: [] }, anchors: [], cadence: cloneCadence(), weekGoals: {}, dayMarks: {}, leadUpRules: DEFAULT_LEAD_UP_RULES.map(r => ({ ...r })), customAnchorTypes: [], customPillars: [], customFormats: [], pillarLabels: {}, formatLabels: {}, removedFormats: [], staff: DEFAULT_STAFF.slice(), scheduleModeLabels: {}, colourPrefs: { formats: {}, eventTypes: {} }, layoutPrefs: null };
+let DATA = { ideas: [], sections: { preparation: [], execution: [], review: [], schedule: [], complete: [] }, anchors: [], cadence: cloneCadence(), weekGoals: {}, dayMarks: {}, leadUpRules: DEFAULT_LEAD_UP_RULES.map(r => ({ ...r })), customAnchorTypes: [], customPillars: [], customFormats: [], pillarLabels: {}, formatLabels: {}, removedFormats: [], staff: DEFAULT_STAFF.slice(), scheduleModeLabels: {}, colourPrefs: { formats: {}, eventTypes: {} }, layoutPrefs: null };
 const expandedSections = new Set(['schedule']);
 const expandedPillars = new Set(PILLARS.filter(p => p.defaultOpen).map(p => p.id));
 let saveTimer = null;
@@ -6472,6 +6474,13 @@ function migrateReview(card) {
   if (card.tags == null) card.tags = '';
   if (card.music == null) card.music = '';
   if (card.scheduleAt == null) card.scheduleAt = '';
+  return card;
+}
+
+function migrateComplete(card) {
+  migrateReview(card);
+  if (card.postedAt == null) card.postedAt = card.movedAt || card.scheduledAt || card.scheduleAt || '';
+  if (card.linkedScheduleId == null) card.linkedScheduleId = '';
   return card;
 }
 
@@ -7533,7 +7542,8 @@ function defaultData() {
       preparation: SAMPLE_PREP.map(c => ({ ...c })),
       execution: [],
       review: [],
-      schedule: []
+      schedule: [],
+      complete: []
     },
     anchors: DEFAULT_ANCHORS.map(a => ({ ...a })),
     cadence: cloneCadence(),
@@ -7561,9 +7571,17 @@ function newPrepId() {
   return 'prep-' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 }
 
-function prepCards() {
-  if (!DATA.sections) DATA.sections = { preparation: [], execution: [], review: [], schedule: [] };
+function ensureSectionArrays() {
+  if (!DATA.sections) DATA.sections = { preparation: [], execution: [], review: [], schedule: [], complete: [] };
   if (!Array.isArray(DATA.sections.preparation)) DATA.sections.preparation = [];
+  if (!Array.isArray(DATA.sections.execution)) DATA.sections.execution = [];
+  if (!Array.isArray(DATA.sections.review)) DATA.sections.review = [];
+  if (!Array.isArray(DATA.sections.schedule)) DATA.sections.schedule = [];
+  if (!Array.isArray(DATA.sections.complete)) DATA.sections.complete = [];
+}
+
+function prepCards() {
+  ensureSectionArrays();
   return DATA.sections.preparation;
 }
 
@@ -7581,21 +7599,27 @@ function sortPrepCardsNewestFirst(cards) {
 }
 
 function execCards() {
-  if (!DATA.sections) DATA.sections = { preparation: [], execution: [], review: [], schedule: [] };
-  if (!Array.isArray(DATA.sections.execution)) DATA.sections.execution = [];
+  ensureSectionArrays();
   return DATA.sections.execution;
 }
 
 function reviewCards() {
-  if (!DATA.sections) DATA.sections = { preparation: [], execution: [], review: [], schedule: [] };
-  if (!Array.isArray(DATA.sections.review)) DATA.sections.review = [];
+  ensureSectionArrays();
   return DATA.sections.review;
 }
 
 function scheduleCards() {
-  if (!DATA.sections) DATA.sections = { preparation: [], execution: [], review: [], schedule: [] };
-  if (!Array.isArray(DATA.sections.schedule)) DATA.sections.schedule = [];
+  ensureSectionArrays();
   return DATA.sections.schedule;
+}
+
+function completeCards() {
+  ensureSectionArrays();
+  return DATA.sections.complete;
+}
+
+function newCompleteId() {
+  return 'done-' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 }
 
 function typeLabel(id) {
@@ -7637,7 +7661,8 @@ function buildMarketingPayload() {
       preparation: prepCards().map(c => ({ ...c })),
       execution: execCards().map(c => ({ ...c })),
       review: reviewCards().map(c => ({ ...c })),
-      schedule: scheduleCards().map(c => ({ ...c }))
+      schedule: scheduleCards().map(c => ({ ...c })),
+      complete: completeCards().map(c => ({ ...c }))
     },
     anchors: anchors().map(a => ({ ...a })),
     cadence: cloneCadence(cadenceSettings()),
@@ -7756,11 +7781,12 @@ function normalizeLoaded(data) {
   DATA.removedFormats = parseRemovedFormats(data);
   DATA.staff = parseMarketingStaff(data);
 
-  const sections = data.sections || { preparation: [], execution: [], review: [], schedule: [] };
+  const sections = data.sections || { preparation: [], execution: [], review: [], schedule: [], complete: [] };
   let preparation = Array.isArray(sections.preparation) ? sections.preparation.map(migratePrep) : [];
   let execution = Array.isArray(sections.execution) ? sections.execution.map(migrateExec) : [];
   let review = Array.isArray(sections.review) ? sections.review.map(migrateReview) : [];
   let schedule = Array.isArray(sections.schedule) ? sections.schedule.map(migrateSchedule) : [];
+  let complete = Array.isArray(sections.complete) ? sections.complete.map(migrateComplete) : [];
   let loadedAnchors = Array.isArray(data.anchors) ? data.anchors.map(migrateAnchor).filter(Boolean) : [];
   const cadence = data.cadence && typeof data.cadence === 'object'
     ? cloneCadence({ ...DEFAULT_CADENCE, ...data.cadence, publishDays: data.cadence.publishDays || DEFAULT_PUBLISH_DAYS })
@@ -7802,7 +7828,7 @@ function normalizeLoaded(data) {
   }
   return {
     ideas: (data.ideas || []).map(migrateIdea),
-    sections: { preparation, execution, review, schedule },
+    sections: { preparation, execution, review, schedule, complete },
     anchors: loadedAnchors,
     cadence,
     weekGoals,
@@ -7960,7 +7986,7 @@ function parseCustomPillars(data) {
     });
   };
   const sections = (data && data.sections) || {};
-  ['preparation', 'execution', 'review', 'schedule'].forEach(key => {
+  ['preparation', 'execution', 'review', 'schedule', 'complete'].forEach(key => {
     (Array.isArray(sections[key]) ? sections[key] : []).forEach(c => recover(c && c.pillar));
   });
   (Array.isArray(data && data.customFormats) ? data.customFormats : []).forEach(f => recover(f && f.pillar));
@@ -8053,7 +8079,7 @@ async function initApp() {
         ideas: DATA.ideas.map(i => ({ ...i })),
         sections: {
           preparation: (DATA.sections.preparation || []).map(c => ({ ...c })),
-          execution: [], review: [], schedule: []
+          execution: [], review: [], schedule: [], complete: []
         }
       }));
     } catch (e) {}
@@ -8069,6 +8095,7 @@ async function initApp() {
   if (!hadAnchors && anchors().length) scheduleSave();
   // Local Ideas height wins; cloud layoutPrefs only fill gaps (new browser / cleared storage).
   resolveLayoutPrefs(DATA);
+  if (backfillCompleteFromPosted()) scheduleSave();
   renderBoard();
   applyMoodHeight(marketingMoodH);
   maybeShowMarketingDigest();
@@ -10026,8 +10053,114 @@ function sectionBodyFor(section) {
   if (section.id === 'preparation') return renderPreparationBody();
   if (section.id === 'execution') return renderExecutionBody();
   if (section.id === 'review') return renderReviewBody();
+  if (section.id === 'complete') return renderCompleteBody();
   if (section.id === 'schedule') return renderScheduleBody();
   return renderSkeletonBody();
+}
+
+function renderCompleteBody() {
+  const body = document.createElement('div');
+  body.className = 'section-body';
+
+  const cards = completeCards().slice().sort((a, b) => {
+    const ta = Date.parse(a.postedAt || a.scheduleAt || a.movedAt || '') || 0;
+    const tb = Date.parse(b.postedAt || b.scheduleAt || b.movedAt || '') || 0;
+    return tb - ta;
+  });
+  if (!cards.length) {
+    const empty = document.createElement('div');
+    empty.className = 'exec-empty';
+    empty.textContent = 'Posted content lands here — mark a calendar card Posted to archive it.';
+    body.appendChild(empty);
+    return body;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'exec-list';
+  cards.forEach(card => list.appendChild(renderCompleteCard(card)));
+  body.appendChild(list);
+  return body;
+}
+
+function renderCompleteCard(card) {
+  const el = document.createElement('div');
+  const thumbSrc = cardThumbSrc(card);
+  el.className = 'exec-card' + (thumbSrc ? '' : ' no-photo');
+  el.dataset.completeId = card.id;
+  applyPrepCardStyle(el, card.pillar, card.format);
+  el.title = 'Open on calendar';
+
+  if (thumbSrc) {
+    const thumb = document.createElement('div');
+    thumb.className = 'exec-card-thumb';
+    const img = document.createElement('img');
+    img.src = thumbSrc;
+    img.alt = '';
+    thumb.appendChild(img);
+    el.appendChild(thumb);
+  }
+
+  const body = document.createElement('div');
+  body.className = 'exec-card-body';
+
+  const desc = document.createElement('div');
+  const ideaPlain = stripHtml(card.body || '');
+  desc.className = 'exec-card-desc' + (ideaPlain ? '' : ' empty');
+  desc.textContent = ideaPlain || 'Posted content';
+  body.appendChild(desc);
+
+  const meta = document.createElement('div');
+  meta.className = 'exec-card-meta';
+  const bits = [
+    formatLabel(card.pillar, card.format),
+    card.postedAt ? ('Posted ' + formatPostedDate(card.postedAt)) : ''
+  ].filter(Boolean);
+  meta.textContent = bits.join(' · ');
+  const cat = catById(card.pillar);
+  if (cat) meta.style.color = accentTextColor(cat.bg);
+  body.appendChild(meta);
+
+  const flag = document.createElement('span');
+  flag.className = 'exec-chip';
+  flag.textContent = 'Posted';
+  flag.style.background = '#E8F0EA';
+  flag.style.color = '#3D5A40';
+  body.appendChild(flag);
+
+  el.appendChild(body);
+
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'card-delete';
+  del.setAttribute('aria-label', 'Remove from Complete');
+  del.textContent = '×';
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!confirm('Remove this from Content Complete? The calendar card stays.')) return;
+    removeCompleteCard(card.id);
+  });
+  el.appendChild(del);
+
+  el.addEventListener('click', e => {
+    if (e.target.closest('.card-delete')) return;
+    if (card.linkedScheduleId) {
+      expandedSections.add('schedule');
+      setMarketingViewMode('calendar');
+      renderBoard();
+      openSchedulePanel(card.linkedScheduleId);
+      return;
+    }
+    if (typeof PPC !== 'undefined' && PPC.showToast) {
+      PPC.showToast('No linked calendar card');
+    }
+  });
+  return el;
+}
+
+function formatPostedDate(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function renderExecutionBody() {
@@ -10184,6 +10317,233 @@ function syncLinkedSchedulePreview(card, stage) {
       ? slot.publishStatus
       : previewStatus
   });
+}
+
+/**
+ * Push calendar edits (format, idea text, notes, etc.) onto the linked
+ * Prep / Exec / Review / Complete card and, when still present, the Ideas card.
+ * Calendar is source of truth when saving from the schedule panel.
+ */
+function syncLinkedPipelineFromSchedule(slot) {
+  if (!slot || isDiscoverCard(slot)) return null;
+  let updated = null;
+
+  // Ideas still on the board (linked or source).
+  if (slot.sourceIdeaId || slot.linkedPipelineStage === 'ideas') {
+    const ideas = DATA.ideas || [];
+    const idea = ideas.find(i =>
+      (slot.sourceIdeaId && i.id === slot.sourceIdeaId) ||
+      (i.linkedScheduleId && i.linkedScheduleId === slot.id)
+    );
+    if (idea) {
+      if (slot.body != null) idea.body = slot.body;
+      if (slot.pillar && pillarById(slot.pillar)) idea.cat = slot.pillar;
+      if (slot.format) idea.format = slot.format;
+      if (slot.imageData) {
+        idea.imageData = slot.imageData;
+        idea.imageW = slot.imageW != null ? slot.imageW : idea.imageW;
+        idea.imageH = slot.imageH != null ? slot.imageH : idea.imageH;
+      }
+      updated = idea;
+    }
+  }
+
+  let target = null;
+  let stage = slot.linkedPipelineStage || '';
+  if (slot.linkedPipelineId) {
+    const entry = findPipelineCardById(slot.linkedPipelineId);
+    if (entry) {
+      target = entry.card;
+      stage = entry.stage;
+    } else {
+      const done = completeCards().find(c => c.id === slot.linkedPipelineId);
+      if (done) {
+        target = done;
+        stage = 'complete';
+      }
+    }
+  }
+  if (!target && slot.id) {
+    // Heal: pipeline card pointing at this schedule slot.
+    const healed = allPipelineCards().find(e => e.card && e.card.linkedScheduleId === slot.id);
+    if (healed) {
+      target = healed.card;
+      stage = healed.stage;
+      slot.linkedPipelineId = target.id;
+      slot.linkedPipelineStage = stage;
+    } else {
+      const done = completeCards().find(c => c.linkedScheduleId === slot.id);
+      if (done) {
+        target = done;
+        stage = 'complete';
+        slot.linkedPipelineId = done.id;
+        slot.linkedPipelineStage = 'complete';
+      }
+    }
+  }
+  if (!target) return updated;
+
+  if (slot.body != null) target.body = slot.body;
+  if (slot.pillar && pillarById(slot.pillar)) target.pillar = slot.pillar;
+  if (slot.format) target.format = slot.format;
+  if (slot.productionPlan != null) target.productionPlan = slot.productionPlan;
+  if (slot.executionHowTo != null) target.executionHowTo = slot.executionHowTo;
+  if (slot.productsUsed != null) target.productsUsed = slot.productsUsed;
+  if (slot.location != null) target.location = slot.location;
+  if (slot.requirements != null) target.requirements = slot.requirements;
+  if (slot.imageData) {
+    target.imageData = slot.imageData;
+    target.imageW = slot.imageW != null ? slot.imageW : target.imageW;
+    target.imageH = slot.imageH != null ? slot.imageH : target.imageH;
+  }
+  if (slot.reviewMedia) {
+    target.reviewMedia = slot.reviewMedia;
+    target.reviewMediaW = slot.reviewMediaW;
+    target.reviewMediaH = slot.reviewMediaH;
+  }
+  if (slot.reviewVideoUrl != null) target.reviewVideoUrl = slot.reviewVideoUrl;
+  if (slot.caption != null) target.caption = slot.caption;
+  if (slot.tags != null) target.tags = slot.tags;
+  if (slot.music != null) target.music = slot.music;
+  if (slot.contentOutcome != null) target.contentOutcome = slot.contentOutcome;
+  if (slot.tweaks != null) target.tweaks = slot.tweaks;
+  if (!target.linkedScheduleId) target.linkedScheduleId = slot.id;
+  if (slot.sourceIdeaId) target.sourceIdeaId = slot.sourceIdeaId;
+  return target;
+}
+
+/** Move / create a Content Complete card when a calendar slot is Posted. */
+function archiveScheduleToComplete(slot, opts) {
+  if (!slot || isDiscoverCard(slot)) return null;
+  if (publishStatusOf(slot) !== 'posted') return null;
+  if (isEmptyNeedSlot(slot) && !scheduleSlotHasContent(slot)) return null;
+
+  const existing = completeCards().find(c =>
+    c.linkedScheduleId === slot.id ||
+    (slot.linkedPipelineId && c.id === slot.linkedPipelineId)
+  );
+  if (existing) {
+    // Keep Complete in sync with the posted calendar card.
+    existing.body = slot.body || existing.body;
+    existing.pillar = slot.pillar || existing.pillar;
+    existing.format = slot.format || existing.format;
+    existing.productionPlan = slot.productionPlan || existing.productionPlan || '';
+    existing.executionHowTo = slot.executionHowTo || existing.executionHowTo || '';
+    existing.productsUsed = slot.productsUsed || existing.productsUsed || '';
+    existing.location = slot.location || existing.location || '';
+    existing.requirements = slot.requirements || existing.requirements || '';
+    existing.imageData = slot.imageData || existing.imageData || null;
+    existing.imageW = slot.imageW != null ? slot.imageW : existing.imageW;
+    existing.imageH = slot.imageH != null ? slot.imageH : existing.imageH;
+    existing.reviewMedia = slot.reviewMedia || existing.reviewMedia || null;
+    existing.caption = slot.caption || existing.caption || '';
+    existing.tags = slot.tags || existing.tags || '';
+    existing.music = slot.music || existing.music || '';
+    existing.scheduleAt = slot.scheduledAt || slot.scheduleAt || existing.scheduleAt || '';
+    existing.linkedScheduleId = slot.id;
+    if (!existing.postedAt) existing.postedAt = new Date().toISOString();
+    slot.linkedPipelineId = existing.id;
+    slot.linkedPipelineStage = 'complete';
+    return existing;
+  }
+
+  // Prefer moving the live pipeline card so Prep/Exec/Review clears.
+  let moved = null;
+  if (slot.linkedPipelineId) {
+    const entry = findPipelineCardById(slot.linkedPipelineId);
+    if (entry) {
+      moved = entry.card;
+      if (entry.stage === 'prep') {
+        DATA.sections.preparation = prepCards().filter(c => c.id !== moved.id);
+      } else if (entry.stage === 'execution') {
+        DATA.sections.execution = execCards().filter(c => c.id !== moved.id);
+      } else if (entry.stage === 'review') {
+        DATA.sections.review = reviewCards().filter(c => c.id !== moved.id);
+      }
+    }
+  }
+  if (!moved) {
+    const healed = allPipelineCards().find(e => e.card && e.card.linkedScheduleId === slot.id);
+    if (healed) {
+      moved = healed.card;
+      if (healed.stage === 'prep') {
+        DATA.sections.preparation = prepCards().filter(c => c.id !== moved.id);
+      } else if (healed.stage === 'execution') {
+        DATA.sections.execution = execCards().filter(c => c.id !== moved.id);
+      } else if (healed.stage === 'review') {
+        DATA.sections.review = reviewCards().filter(c => c.id !== moved.id);
+      }
+    }
+  }
+
+  const done = migrateComplete({
+    ...(moved || {}),
+    id: (moved && moved.id) || newCompleteId(),
+    body: slot.body || (moved && moved.body) || '',
+    pillar: slot.pillar || (moved && moved.pillar) || 'organic',
+    format: slot.format || (moved && moved.format) || defaultFormatForPillar('organic'),
+    imageData: slot.imageData || (moved && moved.imageData) || null,
+    imageW: slot.imageW != null ? slot.imageW : (moved && moved.imageW),
+    imageH: slot.imageH != null ? slot.imageH : (moved && moved.imageH),
+    productionPlan: slot.productionPlan || (moved && moved.productionPlan) || '',
+    executionHowTo: slot.executionHowTo || (moved && moved.executionHowTo) || '',
+    productsUsed: slot.productsUsed || (moved && moved.productsUsed) || '',
+    location: slot.location || (moved && moved.location) || '',
+    requirements: slot.requirements || (moved && moved.requirements) || '',
+    reviewMedia: slot.reviewMedia || (moved && moved.reviewMedia) || null,
+    reviewMediaW: slot.reviewMediaW || (moved && moved.reviewMediaW) || null,
+    reviewMediaH: slot.reviewMediaH || (moved && moved.reviewMediaH) || null,
+    reviewVideoUrl: slot.reviewVideoUrl || (moved && moved.reviewVideoUrl) || '',
+    caption: slot.caption || (moved && moved.caption) || '',
+    tags: slot.tags || (moved && moved.tags) || '',
+    music: slot.music || (moved && moved.music) || '',
+    contentOutcome: slot.contentOutcome || (moved && moved.contentOutcome) || '',
+    tweaks: slot.tweaks || (moved && moved.tweaks) || '',
+    scheduleAt: slot.scheduledAt || slot.scheduleAt || (moved && moved.scheduleAt) || '',
+    sourceIdeaId: slot.sourceIdeaId || (moved && moved.sourceIdeaId) || null,
+    linkedScheduleId: slot.id,
+    postedAt: new Date().toISOString(),
+    movedAt: new Date().toISOString(),
+    createdAt: (moved && moved.createdAt) || new Date().toISOString()
+  });
+  completeCards().push(done);
+  slot.linkedPipelineId = done.id;
+  slot.linkedPipelineStage = 'complete';
+  if (!(opts && opts.silent) && typeof PPC !== 'undefined' && PPC.showToast) {
+    PPC.showToast('Moved to Content Complete');
+  }
+  return done;
+}
+
+/** Ensure every Posted calendar card has a Complete archive entry. */
+function backfillCompleteFromPosted() {
+  let changed = false;
+  scheduleCards().forEach(slot => {
+    if (publishStatusOf(slot) !== 'posted') return;
+    if (isEmptyNeedSlot(slot) && !scheduleSlotHasContent(slot)) return;
+    const before = completeCards().length;
+    const linkedId = slot.linkedPipelineId;
+    archiveScheduleToComplete(slot, { silent: true });
+    if (completeCards().length !== before || slot.linkedPipelineId !== linkedId) changed = true;
+  });
+  return changed;
+}
+
+function removeCompleteCard(id) {
+  const card = completeCards().find(c => c.id === id);
+  if (!card) return;
+  DATA.sections.complete = completeCards().filter(c => c.id !== id);
+  // Detach schedule link so a later re-post can archive again.
+  if (card.linkedScheduleId) {
+    const slot = scheduleCards().find(c => c.id === card.linkedScheduleId);
+    if (slot && slot.linkedPipelineId === id) {
+      slot.linkedPipelineId = '';
+      if (slot.linkedPipelineStage === 'complete') slot.linkedPipelineStage = '';
+    }
+  }
+  clearTimeout(saveTimer);
+  saveData();
+  renderBoard();
 }
 
 function renderReviewCard(card) {
@@ -13166,6 +13526,7 @@ function setPublishStatus(cardId, status, opts) {
       if (statusEl) statusEl.value = next;
     }
   }
+  if (next === 'posted') archiveScheduleToComplete(card, { silent: true });
   // Persist immediately — debounced scheduleSave can be cancelled by closePanel/savePanel.
   clearTimeout(saveTimer);
   saveData();
@@ -13933,6 +14294,9 @@ function renderBoard() {
     } else if (section.id === 'review') {
       const n = reviewCards().length;
       count.textContent = n ? n + ' cards' : 'empty';
+    } else if (section.id === 'complete') {
+      const n = completeCards().length;
+      count.textContent = n ? n + ' posted' : 'empty';
     } else if (section.id === 'schedule') {
       const n = scheduleCards().length;
       count.textContent = n ? n + ' items' : 'empty';
@@ -14330,6 +14694,8 @@ function buildPrepPanelProps(card) {
           const fmtEl = document.getElementById('pFormat');
           live.pillar = pillar === ADD_PILLAR_ID ? live.pillar : pillar;
           if (fmtEl && fmtEl.value && fmtEl.value !== ADD_FORMAT_ID) live.format = fmtEl.value;
+          syncLinkedPipelineFromSchedule(live);
+          scheduleSave();
           applySchedulePanelLayout(live);
           const statusWrap = document.getElementById('pScheduleStatusWrap');
           if (statusWrap) {
@@ -14364,6 +14730,8 @@ function buildPrepPanelProps(card) {
           const noteEl = document.getElementById('pScheduleNote');
           if (isDiscoverCard(live) && noteEl) live.body = (noteEl.value || '').trim();
           live.format = next;
+          syncLinkedPipelineFromSchedule(live);
+          scheduleSave();
           applySchedulePanelLayout(live);
           const statusWrap = document.getElementById('pScheduleStatusWrap');
           if (statusWrap) {
@@ -16009,6 +16377,8 @@ function savePanel(silent) {
     const tweaksEl = document.getElementById('pScheduleTweaks');
     if (tweaksEl) card.tweaks = sanitizeHtml(tweaksEl.innerHTML).trim();
     readSchedulePipelineNotes(card);
+    syncLinkedPipelineFromSchedule(card);
+    if (publishStatusOf(card) === 'posted') archiveScheduleToComplete(card, { silent: true });
     if (!isDiscoverFormat(format)) {
       const ideaText = document.getElementById('pScheduleIdeaText');
       if (ideaText) {
