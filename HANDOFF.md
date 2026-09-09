@@ -7,8 +7,10 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ## 2026-09-09 — Team polish pack (Cursor Cloud)
 
-### Live (after deploy)
-- Marketing **`0.12.53`**, `ppc-homebase.js?v=18`
+### Live
+- Version ID: `2174cb2a-3494-49a4-bbb5-eeaf2667a1b0`
+- Marketing **`0.12.53`**, Task Board / Planner / Home use `ppc-homebase.js?v=18`
+- Hard-refresh all Homebase pages
 
 ### What
 1. Prep cards: long-press touch drag between lanes
