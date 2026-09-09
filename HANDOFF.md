@@ -7,8 +7,10 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ## 2026-09-09 — Calendar header cleanup on mobile (Cursor Cloud)
 
-### Live (after deploy)
+### Live
+- Version ID: `9d1150de-b3bd-4e5d-a4fa-712c39fc2937`
 - Marketing **`0.12.52`**
+- Hard-refresh Marketing → Calendar on phone
 
 ### What
 1. Events row → single **Events** dropdown (list + Add event), matching Types
