@@ -5,6 +5,23 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Pipeline no-photo card consistency (Cursor Cloud)
+
+### Live
+- Version ID: `446d99ce-5511-46e4-9dfd-aeb82f4500cf`
+- Marketing **`0.12.56`**
+- Hard-refresh Marketing → Preparation / Execution / Review
+
+### What
+1. Prep / Exec / Review / Unscheduled list cards: no empty “No image” boxes
+2. Text-only cards keep accent wash + left border (same idea as Ideas List/Grid + calendar)
+3. Mild Ideas List max-width on desktop so rows don’t stretch forever
+
+### Open / next
+1. Hard-refresh; check Prep lanes with mixed photo / text-only cards
+
+---
+
 ## 2026-09-09 — Ideas List/Grid text-first cards (Cursor Cloud)
 
 ### Live
