@@ -2484,22 +2484,6 @@
     }
     .btn-danger:hover { background: rgba(196,92,92,0.08); }
     .btn-danger[hidden] { display: none; }
-    .cal-dow-header {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 4px;
-      padding: 0 8px 4px;
-      border-bottom: 1px solid #ece9e4;
-    }
-    .cal-dow-cell {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #6B7A8D;
-      text-align: center;
-      padding: 4px 0;
-    }
     .cal-week-block { margin-bottom: 4px; }
     .cal-week-section + .cal-week-section { border-top: 1px solid #E2DDD5; }
     .cal-week-earlier-body > * + * { border-top: 1px solid #E2DDD5; }
@@ -2693,6 +2677,18 @@
       padding: 2px 2px 4px;
       border-bottom: none;
     }
+    .cal-day-dow {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6B7A8D;
+      text-align: center;
+      line-height: 1.2;
+      padding: 2px 0 0;
+    }
+    .cal-day--weekend .cal-day-dow { color: #8a8580; }
+    .cal-day--other .cal-day-dow { color: #b5b0a8; }
     .cal-day-num-row {
       display: flex;
       align-items: center;
@@ -4623,7 +4619,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.56';
+const APP_VERSION = '0.12.57';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -10284,16 +10280,6 @@ function renderScheduleBody() {
   body.appendChild(buildEventsBar());
   body.appendChild(buildCalendarTriageStrip());
 
-  const dow = document.createElement('div');
-  dow.className = 'cal-dow-header';
-  DOW_SHORT.forEach((label, i) => {
-    const cell = document.createElement('div');
-    cell.className = 'cal-dow-cell' + (i === 0 || i === 6 ? ' cal-dow-cell--weekend' : '');
-    cell.textContent = label;
-    dow.appendChild(cell);
-  });
-  body.appendChild(dow);
-
   const cardsByDay = groupScheduleByDay();
   const leadUpByDay = collectLeadUpByDay();
   const prepByDay = collectPrepByDay();
@@ -10646,6 +10632,10 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
 
   const head = document.createElement('div');
   head.className = 'cal-day-head';
+  const dowLabel = document.createElement('div');
+  dowLabel.className = 'cal-day-dow';
+  dowLabel.textContent = DOW_SHORT[wd] || '';
+  head.appendChild(dowLabel);
   const numRow = document.createElement('div');
   numRow.className = 'cal-day-num-row';
   const num = document.createElement('div');
