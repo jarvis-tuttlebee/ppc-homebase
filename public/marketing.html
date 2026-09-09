@@ -14011,6 +14011,7 @@ function duplicateScheduleCard(scheduleId) {
   } catch (_) {
     return;
   }
+  const emptyNeed = isNeedContentCard(raw) && !stripHtml(raw.body || '').trim();
   const copy = migrateSchedule({
     ...raw,
     id: newScheduleId(),
@@ -14019,7 +14020,9 @@ function duplicateScheduleCard(scheduleId) {
     linkedPipelineId: '',
     linkedPipelineStage: '',
     sourceIdeaId: null,
-    slotMoved: true
+    // Filled copies are user-owned; empty Need copies keep the original flag
+    // so event quota pruning doesn’t treat them as protected filled slots.
+    slotMoved: emptyNeed ? !!(raw.slotMoved) : true
   });
   delete copy.linkedScheduleId;
   scheduleCards().push(copy);
