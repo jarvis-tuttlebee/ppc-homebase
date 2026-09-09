@@ -4784,7 +4784,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.64';
+const APP_VERSION = '0.12.65';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6335,6 +6335,8 @@ let schedulePostDetailsOpen = false;
 let scheduleReviewOpen = false;
 let scheduleOutcomeOpen = false;
 let scheduleTweaksOpen = false;
+/** When Add-to-calendar date form is open: { card, stage, readPub, readMake }. */
+let pendingCalendarPlace = null;
 let pendingReviewMedia = null; // { imageData, imageW, imageH } while panel open
 let dragCalSlotId = null;
 let calSlotDragMoved = false;
@@ -8769,9 +8771,11 @@ function isoToDateInputValue(iso) {
 /**
  * Place or update a live calendar link for Ideas / Prep / Exec / Review.
  * Sets publish date + optional make-by date. Card stays in the pipeline.
+ * opts.skipSave — caller already persisted panel fields (e.g. Save changes).
  */
-function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue) {
-  if (!card) return;
+function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts) {
+  if (!card) return false;
+  const options = opts || {};
   const existing = stage === 'ideas'
     ? linkedScheduleForIdea(card)
     : linkedScheduleForPipelineCard(card);
@@ -8779,12 +8783,14 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue) {
   const iso = dateInputToLocalIso(publishDateValue);
   if (!iso) {
     if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Pick a publish date');
-    return;
+    return false;
   }
 
-  if (typeof savePanel === 'function') {
+  if (!options.skipSave && typeof savePanel === 'function') {
     try { savePanel(true); } catch (_) {}
   }
+
+  pendingCalendarPlace = null;
 
   if (existing) {
     existing.scheduledAt = iso;
@@ -8796,7 +8802,7 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue) {
     if (typeof PPC !== 'undefined' && PPC.showToast) {
       PPC.showToast('Calendar dates updated');
     }
-    return;
+    return true;
   }
 
   const pillar = stage === 'ideas'
@@ -8831,10 +8837,45 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue) {
   if (stage === 'ideas') linkNeedToIdea(slot.id, card.id);
   else linkNeedToPipelineCard(slot.id, card.id);
 
-  setMarketingViewMode('calendar');
+  clearTimeout(saveTimer);
+  saveData();
+  jumpToLinkedSchedule(slot.id);
   if (typeof PPC !== 'undefined' && PPC.showToast) {
     PPC.showToast('On calendar — keep working from Pipeline or Calendar');
   }
+  return true;
+}
+
+/** If Add-to-calendar form is open, place on Save. Returns none | blocked | placed. */
+function commitPendingCalendarPlace(silent) {
+  if (silent || !pendingCalendarPlace) return 'none';
+  const pending = pendingCalendarPlace;
+  const pub = pending.readPub ? pending.readPub() : '';
+  if (!pub) {
+    if (typeof PPC !== 'undefined' && PPC.showToast) {
+      PPC.showToast('Pick a publish date to place on calendar');
+    }
+    return 'blocked';
+  }
+  const make = pending.readMake ? pending.readMake() : '';
+  const card = pending.card;
+  const stage = pending.stage;
+  pendingCalendarPlace = null;
+  const ok = placeCardOnCalendar(card, stage, pub, make, { skipSave: true });
+  return ok ? 'placed' : 'blocked';
+}
+
+function finishPipelinePanelSave(silent) {
+  scheduleSave();
+  renderBoard();
+  if (silent) return;
+  const place = commitPendingCalendarPlace(false);
+  if (place === 'blocked') {
+    updateIdeaSaveBtn();
+    return;
+  }
+  if (place === 'placed') return;
+  closePanel();
 }
 
 function buildAddToCalendarDateFields(slot) {
@@ -8910,6 +8951,8 @@ function appendAddToCalendarAction(host, card, stage) {
   wrap.className = 'panel-cal-place';
 
   const renderCollapsed = () => {
+    pendingCalendarPlace = null;
+    updateIdeaSaveBtn();
     wrap.innerHTML = '';
     if (linked) {
       const jump = document.createElement('button');
@@ -8944,12 +8987,15 @@ function appendAddToCalendarAction(host, card, stage) {
     const hint = document.createElement('div');
     hint.className = 'panel-cal-place-hint';
     hint.textContent = editing
-      ? 'Update the publish day and optional make-by reminder.'
-      : 'Pin to a publish day (and optional make-by). Stays in this pipeline stage.';
+      ? 'Update the publish day and optional make-by. Save changes also applies these dates.'
+      : 'Pin to a publish day (and optional make-by). Save changes places it — or use Place on calendar.';
     wrap.appendChild(hint);
 
     const { fields, readPub, readMake, pubId } = buildAddToCalendarDateFields(editing ? linked : null);
     wrap.appendChild(fields);
+
+    pendingCalendarPlace = { card, stage, readPub, readMake, editing: !!editing };
+    updateIdeaSaveBtn();
 
     const placeBtn = document.createElement('button');
     placeBtn.type = 'button';
@@ -14639,6 +14685,11 @@ function updateIdeaSaveBtn() {
     if (hint) hint.textContent = IS_TOUCH
       ? closeHint
       : 'Enter or Ctrl+Enter to send to Calendar · ' + closeHint;
+  } else if (pendingCalendarPlace) {
+    btn.textContent = pendingCalendarPlace.editing ? 'Save & update dates' : 'Save & place on calendar';
+    if (hint) hint.textContent = IS_TOUCH
+      ? 'Tap Save to place on calendar and close'
+      : 'Ctrl+Enter to save, place on calendar, and close';
   } else {
     btn.textContent = 'Save changes';
     if (hint) hint.textContent = IS_TOUCH
@@ -15995,9 +16046,7 @@ function savePanel(silent) {
       syncLinkedSchedulePreview(idea, 'ideas');
     }
 
-    scheduleSave();
-    renderBoard();
-    if (!silent) closePanel();
+    finishPipelinePanelSave(silent);
     return;
   }
   if (panelMode === 'prep' && activePrepId) {
@@ -16021,9 +16070,7 @@ function savePanel(silent) {
     }
 
     syncLinkedSchedulePreview(card, 'prep');
-    scheduleSave();
-    renderBoard();
-    if (!silent) closePanel();
+    finishPipelinePanelSave(silent);
     return;
   }
   if (panelMode === 'exec' && activeExecId) {
@@ -16051,9 +16098,7 @@ function savePanel(silent) {
     }
 
     syncLinkedSchedulePreview(card, 'execution');
-    scheduleSave();
-    renderBoard();
-    if (!silent) closePanel();
+    finishPipelinePanelSave(silent);
     return;
   }
   if (panelMode === 'review' && activeReviewId) {
@@ -16087,9 +16132,7 @@ function savePanel(silent) {
     }
 
     syncLinkedSchedulePreview(card, 'review');
-    scheduleSave();
-    renderBoard();
-    if (!silent) closePanel();
+    finishPipelinePanelSave(silent);
     return;
   }
   if (panelMode === 'schedule' && activeScheduleId) {
@@ -16211,6 +16254,7 @@ function closePanel() {
   executeArmed = false;
   reviewArmed = false;
   scheduleArmed = false;
+  pendingCalendarPlace = null;
   reviewContextOpen = false;
   scheduleContextOpen = false;
   schedulePostDetailsOpen = false;

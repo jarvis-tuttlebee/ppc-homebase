@@ -5,6 +5,22 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Save places on calendar when dates form open (Cursor Cloud)
+
+### Live
+- Marketing **`0.12.65`** (deploy pending)
+- Hard-refresh Marketing → Pipeline
+
+### What
+1. With Add to calendar dates open, **Save changes** also places/updates the calendar link (same as Place on calendar)
+2. Save button label becomes **Save & place on calendar** while the form is open
+3. New placements jump to the calendar card (same as date updates)
+
+### Open / next
+1. Hard-refresh; open Add to calendar → set dates → Save changes → should land on calendar
+
+---
+
 ## 2026-09-09 — Calendar card: full-width panes + Prep/Exec notes (Cursor Cloud)
 
 ### Live
