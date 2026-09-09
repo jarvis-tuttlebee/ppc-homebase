@@ -8,7 +8,7 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-09 — Prep cards newest-first (Cursor Cloud)
 
 ### Live
-- Version ID: _(pending deploy)_
+- Version ID: `749214de-953f-4f47-9cdc-065a1e604f21`
 - Marketing **`0.12.58`**
 - Hard-refresh Marketing → Preparation
 
