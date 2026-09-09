@@ -273,6 +273,7 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
+      max-width: 42rem;
     }
     .ideas-list-row {
       display: grid;
@@ -1226,10 +1227,8 @@
       object-position: center;
       display: block;
     }
-    .prep-card-thumb.empty {
-      font-size: 9px;
-      color: #c4bfb7;
-      letter-spacing: 0.04em;
+    .prep-card.no-photo .prep-card-desc {
+      -webkit-line-clamp: 5;
     }
     .prep-card-desc {
       font-size: 11px;
@@ -1289,6 +1288,10 @@
     }
     .exec-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
     .exec-card.has-cat { background: #F0EDE8; }
+    .exec-card.no-photo {
+      grid-template-columns: 1fr;
+      min-height: 0;
+    }
     .exec-card-thumb {
       width: 140px;
       height: 140px;
@@ -1307,12 +1310,8 @@
       object-fit: cover;
       display: block;
     }
-    .exec-card-thumb.empty {
-      font-size: 10px;
-      color: #c4bfb7;
-      letter-spacing: 0.04em;
-      text-align: center;
-      padding: 8px;
+    .exec-card.no-photo .exec-card-desc {
+      -webkit-line-clamp: 5;
     }
     .exec-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
     .exec-card-desc {
@@ -1992,6 +1991,9 @@
     .schedule-card.dragging {
       outline: 1px dashed #6B7A8D;
       cursor: grabbing;
+    }
+    .schedule-card.no-photo {
+      grid-template-columns: 1fr;
     }
     .schedule-card-thumb {
       width: 88px;
@@ -4124,8 +4126,10 @@
         max-height: 240px;
       }
       .exec-card { grid-template-columns: 96px 1fr; min-height: 0; }
+      .exec-card.no-photo { grid-template-columns: 1fr; }
       .exec-card-thumb { width: 96px; height: 96px; }
       .schedule-card { grid-template-columns: 72px 1fr; }
+      .schedule-card.no-photo { grid-template-columns: 1fr; }
       .schedule-card-thumb { width: 72px; height: 72px; }
       .schedule-source-layout { grid-template-columns: 1fr; }
       .schedule-pane-toggle { min-height: 36px; padding: 4px 0; }
@@ -4619,7 +4623,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.55';
+const APP_VERSION = '0.12.56';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -9627,7 +9631,7 @@ function attachPrepTouchDrag(cardEl, card) {
 
 function renderPrepCard(card) {
   const el = document.createElement('div');
-  el.className = 'prep-card';
+  el.className = 'prep-card' + (card.imageData ? '' : ' no-photo');
   el.draggable = !IS_TOUCH;
   el.dataset.prepId = card.id;
   applyPrepCardStyle(el, card.pillar, card.format);
@@ -9646,9 +9650,9 @@ function renderPrepCard(card) {
   });
   el.appendChild(del);
 
-  const thumb = document.createElement('div');
-  thumb.className = 'prep-card-thumb' + (card.imageData ? '' : ' empty');
   if (card.imageData) {
+    const thumb = document.createElement('div');
+    thumb.className = 'prep-card-thumb';
     const img = document.createElement('img');
     img.src = mediaSrc(card.imageData);
     img.alt = '';
@@ -9657,9 +9661,6 @@ function renderPrepCard(card) {
     thumb.appendChild(img);
     el.appendChild(thumb);
     sizePrepThumb(thumb, card);
-  } else {
-    thumb.textContent = 'No image';
-    el.appendChild(thumb);
   }
 
   const desc = document.createElement('div');
@@ -10016,25 +10017,23 @@ function syncLinkedSchedulePreview(card, stage) {
 
 function renderReviewCard(card) {
   const el = document.createElement('div');
-  el.className = 'exec-card';
+  const thumbSrc = cardThumbSrc(card);
+  el.className = 'exec-card' + (thumbSrc ? '' : ' no-photo');
   el.dataset.reviewId = card.id;
   applyPrepCardStyle(el, card.pillar, card.format);
 
   const needsDate = !card.scheduleAt || !String(card.scheduleAt).trim();
   if (needsDate) el.classList.add('exec-card--need-date');
 
-  const thumbSrc = cardThumbSrc(card);
-  const thumb = document.createElement('div');
-  thumb.className = 'exec-card-thumb' + (thumbSrc ? '' : ' empty');
   if (thumbSrc) {
+    const thumb = document.createElement('div');
+    thumb.className = 'exec-card-thumb';
     const img = document.createElement('img');
     img.src = thumbSrc;
     img.alt = '';
     thumb.appendChild(img);
-  } else {
-    thumb.textContent = 'No media';
+    el.appendChild(thumb);
   }
-  el.appendChild(thumb);
 
   const body = document.createElement('div');
   body.className = 'exec-card-body';
@@ -13575,17 +13574,17 @@ function renderScheduleCard(card) {
     : 'Drag onto a calendar day or Unscheduled · click to open';
 
   const thumbSrc = cardThumbSrc(card);
-  const thumb = document.createElement('div');
-  thumb.className = 'schedule-card-thumb';
   if (thumbSrc) {
+    const thumb = document.createElement('div');
+    thumb.className = 'schedule-card-thumb';
     const img = document.createElement('img');
     img.src = thumbSrc;
     img.alt = '';
     thumb.appendChild(img);
+    el.appendChild(thumb);
   } else {
-    thumb.textContent = emptyNeed ? 'Need' : 'No media';
+    el.classList.add('no-photo');
   }
-  el.appendChild(thumb);
 
   const body = document.createElement('div');
   body.className = 'schedule-card-body';
@@ -13655,21 +13654,19 @@ function renderScheduleCard(card) {
 
 function renderExecCard(card) {
   const el = document.createElement('div');
-  el.className = 'exec-card';
+  el.className = 'exec-card' + (card.imageData ? '' : ' no-photo');
   el.dataset.execId = card.id;
   applyPrepCardStyle(el, card.pillar, card.format);
 
-  const thumb = document.createElement('div');
-  thumb.className = 'exec-card-thumb' + (card.imageData ? '' : ' empty');
   if (card.imageData) {
+    const thumb = document.createElement('div');
+    thumb.className = 'exec-card-thumb';
     const img = document.createElement('img');
     img.src = mediaSrc(card.imageData);
     img.alt = '';
     thumb.appendChild(img);
-  } else {
-    thumb.textContent = 'No image';
+    el.appendChild(thumb);
   }
-  el.appendChild(thumb);
 
   const body = document.createElement('div');
   body.className = 'exec-card-body';
