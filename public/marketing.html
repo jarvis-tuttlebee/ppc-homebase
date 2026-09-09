@@ -2122,26 +2122,114 @@
     }
     .cal-events-bar {
       display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px 10px;
+    }
+    .cal-events-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .cal-events-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      z-index: 40;
+      min-width: 260px;
+      max-width: min(320px, 88vw);
+      max-height: min(360px, 55vh);
+      overflow: auto;
+      background: #fff;
+      border: 1px solid #E2DDD5;
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(44,44,44,0.12);
+      padding: 6px;
+      display: none;
+    }
+    .cal-events-menu.open { display: block; }
+    .cal-events-menu-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #9a958d;
+      padding: 6px 8px 4px;
+    }
+    .cal-events-item {
+      display: flex;
       align-items: flex-start;
       gap: 10px;
-      padding: 0 10px 10px;
-      flex-wrap: wrap;
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      padding: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      color: #2C2C2C;
     }
-    .cal-events-label {
-      flex: 0 0 auto;
-      margin-top: 6px;
-      font-size: 10px;
+    .cal-events-item:hover { background: #f7f5f2; }
+    .cal-events-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+      border: 1px solid rgba(44,44,44,0.12);
+    }
+    .cal-events-item-text { min-width: 0; flex: 1; }
+    .cal-events-item-title {
+      display: block;
+      font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      line-height: 1.3;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cal-events-item-meta {
+      display: block;
+      margin-top: 2px;
+      font-size: 10px;
+      color: #8a8580;
+      line-height: 1.3;
+    }
+    .cal-events-empty {
+      padding: 10px 8px;
+      font-size: 12px;
       color: #8a8580;
     }
-    .cal-events-chips {
+    .cal-events-add {
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin-top: 4px;
+      padding: 9px 10px;
+      border: 1px dashed #E2DDD5;
+      border-radius: 6px;
+      background: transparent;
+      color: #6B7A8D;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .cal-events-add:hover {
+      border-color: #2C2C2C;
+      color: #2C2C2C;
+    }
+    .cal-nav-tools,
+    .cal-nav-jump {
+      display: inline-flex;
+      align-items: center;
       gap: 6px;
-      flex: 1 1 200px;
-      min-width: 0;
+      flex-wrap: wrap;
+    }
+    .cal-events-chips {
+      display: none;
     }
     .cal-event-chip {
       font-family: inherit;
@@ -3758,6 +3846,55 @@
       .schedule-source-layout { grid-template-columns: 1fr; }
       .schedule-pane-toggle { min-height: 36px; padding: 4px 0; }
       .btn-add, .btn-secondary, .btn-primary { min-height: 40px; }
+
+      /* Calendar header: date on its own row; tools + jump stay compact. */
+      .cal-nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 4px 8px 8px;
+      }
+      .cal-nav-title {
+        font-size: 15px;
+        line-height: 1.2;
+      }
+      .cal-nav-btns {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+      }
+      .cal-nav-tools {
+        flex: 1 1 auto;
+        min-width: 0;
+        flex-wrap: nowrap;
+      }
+      .cal-nav-jump {
+        flex: 0 0 auto;
+        flex-wrap: nowrap;
+      }
+      .cal-nav-jump .cal-nav-btn {
+        padding: 6px 9px;
+        min-height: 34px;
+      }
+      .cal-nav-jump .cal-nav-btn--icon {
+        min-width: 34px;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .cal-range-toggle .cal-nav-btn {
+        padding: 6px 9px;
+        min-height: 34px;
+      }
+      .cal-events-bar {
+        padding: 0 8px 10px;
+      }
+      .cal-events-menu {
+        left: 0;
+        right: auto;
+        max-width: calc(100vw - 32px);
+      }
     }
   </style>
 </head>
@@ -4194,7 +4331,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.51';
+const APP_VERSION = '0.12.52';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5344,6 +5481,7 @@ function buildTypesFilterControl() {
   btn.addEventListener('click', e => {
     e.stopPropagation();
     typesFilterOpen = !typesFilterOpen;
+    if (typesFilterOpen) eventsMenuOpen = false;
     renderBoard();
   });
   wrap.appendChild(btn);
@@ -5676,6 +5814,7 @@ let hiddenCalFormats = (() => {
   } catch (_) { return new Set(); }
 })();
 let typesFilterOpen = false;
+let eventsMenuOpen = false;
 /** Expanded pillar ids in the Types dropdown (Organic open by default). */
 let typesFilterExpanded = new Set(['organic']);
 let unscheduledQueueOpen = true;
@@ -9274,11 +9413,32 @@ function renderScheduleBody() {
     e.stopPropagation();
     jumpScheduleToDate(new Date());
   });
-  btns.appendChild(rangeToggle);
-  btns.appendChild(buildTypesFilterControl());
-  btns.appendChild(prev);
-  btns.appendChild(todayBtn);
-  btns.appendChild(next);
+  const compactCalChrome = !!(window.matchMedia && window.matchMedia('(max-width: 700px)').matches);
+  if (compactCalChrome) {
+    prev.classList.add('cal-nav-btn--icon');
+    prev.textContent = '‹';
+    next.classList.add('cal-nav-btn--icon');
+    next.textContent = '›';
+  } else {
+    prev.textContent = '← Prev';
+    next.textContent = 'Next →';
+  }
+  prev.setAttribute('aria-label', 'Previous');
+  prev.title = 'Previous';
+  next.setAttribute('aria-label', 'Next');
+  next.title = 'Next';
+
+  const tools = document.createElement('div');
+  tools.className = 'cal-nav-tools';
+  tools.appendChild(rangeToggle);
+  tools.appendChild(buildTypesFilterControl());
+  const jump = document.createElement('div');
+  jump.className = 'cal-nav-jump';
+  jump.appendChild(prev);
+  jump.appendChild(todayBtn);
+  jump.appendChild(next);
+  btns.appendChild(tools);
+  btns.appendChild(jump);
   nav.appendChild(title);
   nav.appendChild(btns);
   body.appendChild(nav);
@@ -9484,48 +9644,88 @@ function marketingWeekBandFromStart(sunStart) {
 function buildEventsBar() {
   const bar = document.createElement('div');
   bar.className = 'cal-events-bar';
-  const label = document.createElement('div');
-  label.className = 'cal-events-label';
-  label.textContent = 'Events';
-  bar.appendChild(label);
-  const chips = document.createElement('div');
-  chips.className = 'cal-events-chips';
-  const addChip = document.createElement('button');
-  addChip.type = 'button';
-  addChip.className = 'cal-event-chip cal-event-chip--add';
-  addChip.textContent = '+ Event';
-  addChip.title = 'Create event';
-  addChip.addEventListener('click', e => {
-    e.stopPropagation();
-    openNewEventPanel();
-  });
-  chips.appendChild(addChip);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'cal-events-wrap';
+
   const list = anchors().slice().sort((a, b) => String(a.startDate || '').localeCompare(String(b.startDate || '')));
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'cal-nav-btn' + (eventsMenuOpen ? ' is-toggled' : '');
+  btn.setAttribute('aria-haspopup', 'true');
+  btn.setAttribute('aria-expanded', eventsMenuOpen ? 'true' : 'false');
+  btn.textContent = list.length ? ('Events · ' + list.length) : 'Events';
+  btn.title = 'Active events and campaigns';
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    eventsMenuOpen = !eventsMenuOpen;
+    if (eventsMenuOpen) typesFilterOpen = false;
+    renderBoard();
+  });
+  wrap.appendChild(btn);
+
+  const menu = document.createElement('div');
+  menu.className = 'cal-events-menu' + (eventsMenuOpen ? ' open' : '');
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', 'Events');
+  menu.addEventListener('click', e => e.stopPropagation());
+
+  const head = document.createElement('div');
+  head.className = 'cal-events-menu-label';
+  head.textContent = 'Active events';
+  menu.appendChild(head);
+
   if (!list.length) {
-    const empty = document.createElement('span');
-    empty.className = 'cal-event-chip cal-event-chip--empty';
-    empty.textContent = 'None yet';
-    chips.appendChild(empty);
+    const empty = document.createElement('div');
+    empty.className = 'cal-events-empty';
+    empty.textContent = 'None yet — add a campaign or shoot week.';
+    menu.appendChild(empty);
   } else {
     list.forEach(anchor => {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'cal-event-chip cal-event-chip--' + anchorTypePinClass(anchor.type);
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'cal-events-item';
+      item.setAttribute('role', 'menuitem');
       const tone = anchorTypeColor(anchor.type);
-      chip.style.background = hexWash(tone, 0.12);
-      chip.style.borderColor = hexWash(tone, 0.28);
+      const swatch = document.createElement('span');
+      swatch.className = 'cal-events-swatch';
+      swatch.style.background = tone;
+      const text = document.createElement('span');
+      text.className = 'cal-events-item-text';
+      const title = document.createElement('span');
+      title.className = 'cal-events-item-title';
+      title.textContent = anchor.title || 'Untitled';
+      const meta = document.createElement('span');
+      meta.className = 'cal-events-item-meta';
       const mode = anchor.scheduleMode === 'through' ? 'Cadence' : (normalizeAnchorType(anchor.type) === 'release' ? 'Release' : 'Event');
-      const title = anchor.title || 'Untitled';
-      chip.textContent = title;
-      chip.title = mode + ' · ' + formatAnchorChipWhen(anchor) + ' · click to edit';
-      chip.addEventListener('click', e => {
+      meta.textContent = mode + ' · ' + formatAnchorChipWhen(anchor);
+      text.appendChild(title);
+      text.appendChild(meta);
+      item.appendChild(swatch);
+      item.appendChild(text);
+      item.title = 'Edit event';
+      item.addEventListener('click', e => {
         e.stopPropagation();
+        eventsMenuOpen = false;
         openAnchorPanel(anchor.id);
       });
-      chips.appendChild(chip);
+      menu.appendChild(item);
     });
   }
-  bar.appendChild(chips);
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'cal-events-add';
+  addBtn.textContent = '+ Add event';
+  addBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    eventsMenuOpen = false;
+    openNewEventPanel();
+  });
+  menu.appendChild(addBtn);
+
+  wrap.appendChild(menu);
+  bar.appendChild(wrap);
   return bar;
 }
 
@@ -14972,6 +15172,20 @@ document.addEventListener('click', e => {
       if (btn) {
         btn.setAttribute('aria-expanded', 'false');
         if (!hiddenCalFormats.size) btn.classList.remove('is-toggled');
+      }
+    } else {
+      renderBoard();
+    }
+  }
+  if (eventsMenuOpen && !e.target.closest('.cal-events-wrap')) {
+    eventsMenuOpen = false;
+    const openMenu = document.querySelector('.cal-events-menu.open');
+    if (openMenu) {
+      openMenu.classList.remove('open');
+      const btn = openMenu.parentElement && openMenu.parentElement.querySelector('.cal-nav-btn');
+      if (btn) {
+        btn.setAttribute('aria-expanded', 'false');
+        btn.classList.remove('is-toggled');
       }
     } else {
       renderBoard();

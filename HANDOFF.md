@@ -5,6 +5,20 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Calendar header cleanup on mobile (Cursor Cloud)
+
+### Live (after deploy)
+- Marketing **`0.12.52`**
+
+### What
+1. Events row → single **Events** dropdown (list + Add event), matching Types
+2. Mobile nav: date on its own row; Week/Month + Types left, ‹ Today › right
+
+### Open / next
+1. Hard-refresh Marketing → Calendar on phone
+
+---
+
 ## 2026-09-09 — Mobile panel ✕ no longer overlaps Pillar (Cursor Cloud)
 
 ### Live
