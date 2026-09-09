@@ -4784,7 +4784,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.65';
+const APP_VERSION = '0.12.66';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -15014,16 +15014,29 @@ function fillScheduleContext(card) {
     { key: 'requirements', id: 'requirements', label: 'Requirements', addLabel: '+ Requirements', multiline: true, placeholder: 'Talent, kit, access, approvals…' }
   ];
 
+  function appendStage(title) {
+    const stage = document.createElement('div');
+    stage.className = 'schedule-note-stage';
+    const lab = document.createElement('div');
+    lab.className = 'schedule-note-stage-label';
+    lab.textContent = title;
+    stage.appendChild(lab);
+    wrap.appendChild(stage);
+    return stage;
+  }
+
   function appendNoteField(host, spec) {
     const row = document.createElement('div');
     row.className = 'review-context-row';
-    const strong = document.createElement('strong');
-    strong.textContent = spec.label;
-    row.appendChild(strong);
+    if (spec.label) {
+      const strong = document.createElement('strong');
+      strong.textContent = spec.label;
+      row.appendChild(strong);
+    }
     let input;
     if (spec.multiline) {
       input = document.createElement('textarea');
-      input.rows = 2;
+      input.rows = spec.rows || 2;
       input.value = spec.value || '';
     } else {
       input = document.createElement('input');
@@ -15032,7 +15045,7 @@ function fillScheduleContext(card) {
     }
     input.className = 'prop-select schedule-note-input';
     input.dataset.scheduleNote = spec.key;
-    input.placeholder = spec.placeholder || (spec.label + '…');
+    input.placeholder = spec.placeholder || ((spec.label || 'Note') + '…');
     row.appendChild(input);
     host.appendChild(row);
     return input;
@@ -15062,37 +15075,29 @@ function fillScheduleContext(card) {
     pillsHost.style.display = pillsHost.childNodes.length ? 'flex' : 'none';
   }
 
-  // —— Prep (idea) ——
-  const prepStage = document.createElement('div');
-  prepStage.className = 'schedule-note-stage';
-  const prepLab = document.createElement('div');
-  prepLab.className = 'schedule-note-stage-label';
-  prepLab.textContent = 'Prep';
-  prepStage.appendChild(prepLab);
-  appendNoteField(prepStage, {
+  // 1. Idea
+  const ideaStage = appendStage('Idea');
+  appendNoteField(ideaStage, {
     key: 'body',
-    label: 'Idea',
     multiline: true,
+    rows: 3,
     value: stripHtml(card.body || ''),
     placeholder: 'Idea…'
   });
-  wrap.appendChild(prepStage);
 
-  // —— Execution (how-to + optional pills) ——
-  const execStage = document.createElement('div');
-  execStage.className = 'schedule-note-stage';
-  const execLab = document.createElement('div');
-  execLab.className = 'schedule-note-stage-label';
-  execLab.textContent = 'Execution';
-  execStage.appendChild(execLab);
-  appendNoteField(execStage, {
+  // 2. Prep — production plan (same field as pipeline Prep)
+  const prepStage = appendStage('Prep');
+  appendNoteField(prepStage, {
     key: 'productionPlan',
-    label: 'How to execute',
+    label: 'Production plan',
     multiline: true,
+    rows: 3,
     value: stripHtml(card.productionPlan || ''),
-    placeholder: 'Programs, editing approach, steps…'
+    placeholder: 'What needs to happen to produce this…'
   });
 
+  // 3. Execute — optional details (same pills as pipeline Execution)
+  const execStage = appendStage('Execute');
   const openMap = {};
   SCHEDULE_EXEC_OPTIONAL.forEach(spec => {
     openMap[spec.id] = !!stripHtml(card[spec.key] || '').trim();
@@ -15143,7 +15148,6 @@ function fillScheduleContext(card) {
   });
 
   renderScheduleOptPills(pillsHost, openMap);
-  wrap.appendChild(execStage);
 
   wrap.classList.toggle('open', !!scheduleContextOpen);
   const chev = document.getElementById('scheduleContextChev');
