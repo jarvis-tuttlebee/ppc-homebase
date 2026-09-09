@@ -5,6 +5,19 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Restore How to execute in calendar notes (Cursor Cloud)
+
+### Live
+- Version ID: `e360b967-54f0-4195-abfa-d7f3cb1d38e4`
+- Marketing **`0.12.67`**
+- Hard-refresh → Calendar → Pipeline notes
+
+### What
+1. Execute section again has **How to execute** text box (+ optional pills)
+2. Still Idea → Prep (Production plan) → Execute; plan/how-to share `productionPlan` and stay in sync
+
+---
+
 ## 2026-09-09 — Calendar pipeline notes: Idea / Prep / Execute (Cursor Cloud)
 
 ### Live
