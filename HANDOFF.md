@@ -5,6 +5,19 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Mobile panel ✕ no longer overlaps Pillar (Cursor Cloud)
+
+### Live (after deploy)
+- Marketing **`0.12.51`**
+
+### What
+1. Extra top padding in the card panel so the close control clears Pillar/Format
+
+### Open / next
+1. Hard-refresh Marketing on phone
+
+---
+
 ## 2026-09-09 — Mobile: tap outside to close cards (Cursor Cloud)
 
 ### Live

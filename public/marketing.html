@@ -3727,17 +3727,18 @@
       .panel-close {
         top: 10px;
         right: 10px;
-        width: 44px;
-        height: 44px;
-        font-size: 22px;
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
         color: #2C2C2C;
         background: #f7f5f2;
         border: 1px solid #E2DDD5;
         border-radius: 8px;
         z-index: 5;
       }
+      /* Clear the absolute ✕ so Pillar / top fields never sit underneath it. */
       .panel-body-wrap {
-        padding: 18px 16px 16px;
+        padding: 58px 16px 16px;
         -webkit-overflow-scrolling: touch;
       }
       .panel-footer { padding: 10px 16px 14px; }
@@ -4193,7 +4194,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.50';
+const APP_VERSION = '0.12.51';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
