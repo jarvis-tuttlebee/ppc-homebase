@@ -5,6 +5,19 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Prep/Execute calendar notes independent (Cursor Cloud)
+
+### Live
+- Version ID: `ffc98a39-94d9-44f1-8129-f776984b0075`
+- Marketing **`0.12.69`**
+- Hard-refresh → Calendar → Pipeline notes
+
+### What
+1. Prep **Production plan** and Execute **How to execute** are separate fields (no longer synced)
+2. Execute stores `executionHowTo`; clearing one box no longer clears the other
+
+---
+
 ## 2026-09-09 — EOD (Cursor Cloud)
 
 ### Live
