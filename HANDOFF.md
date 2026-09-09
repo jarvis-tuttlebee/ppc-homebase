@@ -5,6 +5,23 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — EOD (Cursor Cloud)
+
+### Live
+- Marketing **`0.12.68`** — Version ID `9ff5ba3e-abd5-42a0-a58c-9b69abfeb402`
+- https://ppc-homebase.pressplaycollective.workers.dev/marketing.html (hard-refresh)
+- PR #13 on `cursor/marketing-mobile-ux-2e5d`
+
+### Shipped today (session)
+1. Add-to-calendar uses Homebase **ppc-date**; **Save** places when dates form is open
+2. Calendar panes **full-width**; Pipeline notes **Idea → Prep → Execute** (+ How to execute + pills)
+3. Pipeline note fields **auto-expand** + **fmt bars** (bold / list / etc.)
+
+### Open / next
+- None blocking — session closed clean
+
+---
+
 ## 2026-09-09 — Calendar pipeline notes: auto-size + fmt bars (Cursor Cloud)
 
 ### Live
