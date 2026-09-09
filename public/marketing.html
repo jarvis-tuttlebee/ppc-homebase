@@ -4692,6 +4692,9 @@
 <div class="ctx-menu" id="ctxMenu">
   <div class="ctx-item" data-action="add-card">Add card</div>
 </div>
+<div class="ctx-menu" id="calSlotCtxMenu">
+  <div class="ctx-item" data-action="duplicate-slot">Duplicate</div>
+</div>
 
 <script src="/js/ppc-select.js?v=8"></script>
 <script src="/js/ppc-homebase.js?v=18"></script>
@@ -4699,7 +4702,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.71';
+const APP_VERSION = '0.12.72';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -9625,7 +9628,9 @@ function fillEmptyNeedSlot(slot, content) {
     anchorId: content.anchorId || slot.anchorId || '',
     leadUp: !!slot.leadUp,
     slotMoved: slot.slotMoved != null ? slot.slotMoved : false,
-    needLabel: '',
+    needLabel: (content.needLabel != null && String(content.needLabel).trim())
+      ? String(content.needLabel).trim().slice(0, 36)
+      : (slot.needLabel || ''),
     needContent: !hasContent,
     publishStatus: content.publishStatus || 'scheduled',
     assignees: (() => {
@@ -13479,9 +13484,10 @@ function renderCalSlot(card) {
   let eventName = '';
   if (anchor) eventName = anchor.title || 'Event';
   else if (card.leadUp) eventName = 'Lead-up';
-  let title = stripHtml(card.body || '').trim();
+  const customLabel = String(card.needLabel || '').trim();
+  // Prefer a short slot label when set — full idea text is often too long for the calendar.
+  let title = customLabel || stripHtml(card.body || '').trim();
   if (!title) {
-    // Discover/Need slots often use needLabel + format instead of caption body.
     title = needTypeDisplayLabel(card) || eventName || 'Need content';
   }
 
@@ -13705,6 +13711,12 @@ function renderCalSlot(card) {
     if (calSlotDragMoved) return;
     if (e.target.closest('.cal-slot-del, .cal-slot-details, .cal-slot-flag, .cal-slot-title')) return;
     openSchedulePanel(card.id);
+  });
+  el.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (calSlotDragMoved) return;
+    showCalSlotCtxMenu(e.clientX, e.clientY, card.id);
   });
   return el;
 }
@@ -13964,13 +13976,58 @@ function renderBoard() {
 }
 
 const ctxMenu = document.getElementById('ctxMenu');
+const calSlotCtxMenu = document.getElementById('calSlotCtxMenu');
+let ctxCalSlotId = null;
+
 function showCtxMenu(x, y) {
+  hideCalSlotCtxMenu();
   ctxMenu.style.left = x + 'px';
   ctxMenu.style.top = y + 'px';
   ctxMenu.classList.add('open');
 }
 function hideCtxMenu() {
   ctxMenu.classList.remove('open');
+}
+function showCalSlotCtxMenu(x, y, scheduleId) {
+  hideCtxMenu();
+  ctxCalSlotId = scheduleId || null;
+  if (!calSlotCtxMenu || !ctxCalSlotId) return;
+  calSlotCtxMenu.style.left = x + 'px';
+  calSlotCtxMenu.style.top = y + 'px';
+  calSlotCtxMenu.classList.add('open');
+}
+function hideCalSlotCtxMenu() {
+  if (calSlotCtxMenu) calSlotCtxMenu.classList.remove('open');
+  ctxCalSlotId = null;
+}
+
+/** Duplicate a calendar slot onto the same day (content copy; no shared pipeline link). */
+function duplicateScheduleCard(scheduleId) {
+  const card = scheduleCards().find(c => c.id === scheduleId);
+  if (!card) return;
+  let raw;
+  try {
+    raw = JSON.parse(JSON.stringify(card));
+  } catch (_) {
+    return;
+  }
+  const copy = migrateSchedule({
+    ...raw,
+    id: newScheduleId(),
+    createdAt: new Date().toISOString(),
+    // Independent slot — don’t steal the original’s pipeline / idea links.
+    linkedPipelineId: '',
+    linkedPipelineStage: '',
+    sourceIdeaId: null,
+    slotMoved: true
+  });
+  delete copy.linkedScheduleId;
+  scheduleCards().push(copy);
+  clearTimeout(saveTimer);
+  saveData();
+  renderBoard();
+  openSchedulePanel(copy.id);
+  if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Duplicated on calendar');
 }
 
 // ─── PANEL ───────────────────────────────────────────────────────────────────
@@ -14320,14 +14377,14 @@ function buildPrepPanelProps(card) {
   wrap.appendChild(formatRow);
 }
 
-/** Short glance override for empty Need cards (replaces format prefix on calendar). */
+/** Short glance label for calendar cards (empty Needs and filled slots). */
 function buildScheduleNeedLabelProp(card) {
   const wrap = document.getElementById('panelProps');
   if (!wrap) return;
   const existing = document.getElementById('pNeedLabelRow');
   if (existing) existing.remove();
+  if (!card || isDiscoverCard(card)) return;
   const emptyNeed = isNeedContentCard(card) && !stripHtml(card.body || '').trim();
-  if (!emptyNeed) return;
   const row = document.createElement('div');
   row.className = 'prop-row';
   row.id = 'pNeedLabelRow';
@@ -14337,10 +14394,11 @@ function buildScheduleNeedLabelProp(card) {
   input.className = 'prop-select';
   input.id = 'pNeedLabel';
   input.type = 'text';
-  input.maxLength = 24;
-  input.placeholder = 'IG, Reel, Story…';
+  input.maxLength = 36;
+  input.placeholder = emptyNeed ? 'IG, Reel, Story…' : 'Short calendar title…';
   input.value = String(card.needLabel || '').trim();
   input.setAttribute('aria-label', 'Slot label');
+  input.title = 'Shown on the calendar instead of the full idea text';
   value.appendChild(input);
   const label = document.createElement('span');
   label.className = 'prop-label';
@@ -15905,13 +15963,12 @@ function savePanel(silent) {
       }
     }
     card.needContent = !scheduleSlotHasContent(card);
-    const needLabelEl = document.getElementById('pNeedLabel');
+  const needLabelEl = document.getElementById('pNeedLabel');
     if (needLabelEl) {
-      card.needLabel = (needLabelEl.value || '').trim().slice(0, 24);
+      card.needLabel = (needLabelEl.value || '').trim().slice(0, 36);
     } else if (card.needLabel == null) {
       card.needLabel = '';
     }
-    if (prevFormat !== format) card.needLabel = '';
     const st = document.getElementById('pScheduleEditAt').value;
     card.scheduledAt = st ? new Date(st).toISOString() : '';
     card.scheduleAt = card.scheduledAt;
@@ -16405,6 +16462,14 @@ ctxMenu.querySelector('[data-action="add-card"]').addEventListener('click', () =
   addIdea(x, y);
 });
 
+if (calSlotCtxMenu) {
+  calSlotCtxMenu.querySelector('[data-action="duplicate-slot"]').addEventListener('click', () => {
+    const id = ctxCalSlotId;
+    hideCalSlotCtxMenu();
+    if (id) duplicateScheduleCard(id);
+  });
+}
+
 document.addEventListener('keydown', e => {
   // Stop browsers from hijacking "/" for find/search while working on the board.
   if (e.key === '/' || e.key === '?') {
@@ -16437,6 +16502,7 @@ document.addEventListener('keydown', e => {
 
 document.addEventListener('click', e => {
   hideCtxMenu();
+  if (!e.target.closest('#calSlotCtxMenu')) hideCalSlotCtxMenu();
   if (moodNavMenuEl && !e.target.closest('.mood-viewport-nav')) {
     moodNavMenuEl.classList.remove('open');
   }
