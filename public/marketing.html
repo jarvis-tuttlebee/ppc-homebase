@@ -1932,6 +1932,22 @@
     textarea.schedule-note-input {
       min-height: 52px;
     }
+    .review-context.schedule-notes-edit .fmt-bar {
+      margin-top: 2px;
+      margin-bottom: 4px;
+    }
+    .review-context.schedule-notes-edit .schedule-note-rich {
+      min-height: 52px;
+      height: auto;
+      overflow: visible;
+      font-size: 12px;
+      line-height: 1.45;
+      padding: 8px 10px;
+      resize: none;
+    }
+    .review-context.schedule-notes-edit .schedule-note-rich.short {
+      min-height: 40px;
+    }
     .review-context-row strong {
       display: block;
       font-size: 9.5px;
@@ -4784,7 +4800,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.67';
+const APP_VERSION = '0.12.68';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -15009,10 +15025,20 @@ function fillScheduleContext(card) {
   wrap.classList.add('schedule-notes-edit');
 
   const SCHEDULE_EXEC_OPTIONAL = [
-    { key: 'productsUsed', id: 'products', label: 'Products', addLabel: '+ Products', multiline: true, placeholder: 'Garments, SKUs, props…' },
-    { key: 'location', id: 'location', label: 'Location', addLabel: '+ Location', multiline: false, placeholder: 'Where this is shot or set…' },
-    { key: 'requirements', id: 'requirements', label: 'Requirements', addLabel: '+ Requirements', multiline: true, placeholder: 'Talent, kit, access, approvals…' }
+    { key: 'productsUsed', id: 'products', label: 'Products', addLabel: '+ Products', multiline: true, rich: true, placeholder: 'Garments, SKUs, props…' },
+    { key: 'location', id: 'location', label: 'Location', addLabel: '+ Location', multiline: false, rich: true, placeholder: 'Where this is shot or set…' },
+    { key: 'requirements', id: 'requirements', label: 'Requirements', addLabel: '+ Requirements', multiline: true, rich: true, fmt: true, placeholder: 'Talent, kit, access, approvals…' }
   ];
+
+  let noteUid = 0;
+  function scheduleNoteHtml(raw) {
+    const s = String(raw || '');
+    if (!s.trim()) return '';
+    if (/<[a-z][\s\S]*>/i.test(s)) return sanitizeHtml(s);
+    return sanitizeHtml(
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
+    );
+  }
 
   function appendStage(title) {
     const stage = document.createElement('div');
@@ -15025,6 +15051,29 @@ function fillScheduleContext(card) {
     return stage;
   }
 
+  function appendFmtBar(host, fieldId) {
+    const bar = document.createElement('div');
+    bar.className = 'fmt-bar';
+    const buttons = [
+      { cmd: 'bold', title: 'Bold', html: '<b>B</b>' },
+      { cmd: 'italic', title: 'Italic', html: '<i>I</i>' },
+      { cmd: 'underline', title: 'Underline', html: '<u>U</u>' },
+      { cmd: 'insertUnorderedList', title: 'Bulleted list', html: '&#8226;' },
+      { cmd: 'removeFormat', title: 'Clear formatting', html: 'Clear', wide: true }
+    ];
+    buttons.forEach(b => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'fmt-btn' + (b.wide ? ' wide' : '');
+      btn.title = b.title;
+      btn.innerHTML = b.html;
+      btn.addEventListener('mousedown', e => e.preventDefault());
+      btn.addEventListener('click', () => fmtField(fieldId, b.cmd));
+      bar.appendChild(btn);
+    });
+    host.appendChild(bar);
+  }
+
   function appendNoteField(host, spec) {
     const row = document.createElement('div');
     row.className = 'review-context-row';
@@ -15033,19 +15082,16 @@ function fillScheduleContext(card) {
       strong.textContent = spec.label;
       row.appendChild(strong);
     }
-    let input;
-    if (spec.multiline) {
-      input = document.createElement('textarea');
-      input.rows = spec.rows || 2;
-      input.value = spec.value || '';
-    } else {
-      input = document.createElement('input');
-      input.type = 'text';
-      input.value = spec.value || '';
-    }
-    input.className = 'prop-select schedule-note-input';
+    const fieldId = 'scheduleNote_' + spec.key + '_' + (++noteUid);
+    appendFmtBar(row, fieldId);
+    const input = document.createElement('div');
+    input.id = fieldId;
+    input.className = 'panel-desc schedule-note-rich' + (spec.short || spec.multiline === false ? ' short' : '');
+    input.contentEditable = 'true';
     input.dataset.scheduleNote = spec.key;
-    input.placeholder = spec.placeholder || ((spec.label || 'Note') + '…');
+    input.setAttribute('placeholder', spec.placeholder || ((spec.label || 'Note') + '…'));
+    input.innerHTML = scheduleNoteHtml(spec.value);
+    input.addEventListener('paste', plainTextPaste);
     row.appendChild(input);
     host.appendChild(row);
     return input;
@@ -15080,35 +15126,31 @@ function fillScheduleContext(card) {
   appendNoteField(ideaStage, {
     key: 'body',
     multiline: true,
-    rows: 3,
-    value: stripHtml(card.body || ''),
+    value: card.body || '',
     placeholder: 'Idea…'
   });
 
-  // 2. Prep — production plan (same field as pipeline Prep)
+  // 2. Prep — production plan
   const prepStage = appendStage('Prep');
   const prepPlanInput = appendNoteField(prepStage, {
     key: 'productionPlan',
     label: 'Production plan',
     multiline: true,
-    rows: 3,
-    value: stripHtml(card.productionPlan || ''),
+    value: card.productionPlan || '',
     placeholder: 'What needs to happen to produce this…'
   });
 
-  // 3. Execute — how to execute + optional pills (same as pipeline Execution)
+  // 3. Execute — how to execute + optional pills
   const execStage = appendStage('Execute');
   const execHowInput = appendNoteField(execStage, {
     key: 'productionPlan',
     label: 'How to execute',
     multiline: true,
-    rows: 3,
-    value: stripHtml(card.productionPlan || ''),
+    value: card.productionPlan || '',
     placeholder: 'Programs, editing approach, steps…'
   });
-  // Prep plan + Exec how-to share productionPlan in pipeline data — keep both in sync.
-  prepPlanInput.addEventListener('input', () => { execHowInput.value = prepPlanInput.value; });
-  execHowInput.addEventListener('input', () => { prepPlanInput.value = execHowInput.value; });
+  prepPlanInput.addEventListener('input', () => { execHowInput.innerHTML = prepPlanInput.innerHTML; });
+  execHowInput.addEventListener('input', () => { prepPlanInput.innerHTML = execHowInput.innerHTML; });
 
   const openMap = {};
   SCHEDULE_EXEC_OPTIONAL.forEach(spec => {
@@ -15137,24 +15179,23 @@ function fillScheduleContext(card) {
       openMap[spec.id] = false;
       block.hidden = true;
       const field = block.querySelector('[data-schedule-note]');
-      if (field) field.value = '';
+      if (field) field.innerHTML = '';
       renderScheduleOptPills(pillsHost, openMap);
     });
     head.appendChild(strong);
     head.appendChild(remove);
     block.appendChild(head);
-    let input;
-    if (spec.multiline) {
-      input = document.createElement('textarea');
-      input.rows = 2;
-    } else {
-      input = document.createElement('input');
-      input.type = 'text';
-    }
-    input.className = 'prop-select schedule-note-input';
+
+    const fieldId = 'scheduleNote_' + spec.key + '_' + (++noteUid);
+    appendFmtBar(block, fieldId);
+    const input = document.createElement('div');
+    input.id = fieldId;
+    input.className = 'panel-desc schedule-note-rich short';
+    input.contentEditable = 'true';
     input.dataset.scheduleNote = spec.key;
-    input.placeholder = spec.placeholder;
-    input.value = stripHtml(card[spec.key] || '');
+    input.setAttribute('placeholder', spec.placeholder);
+    input.innerHTML = scheduleNoteHtml(card[spec.key] || '');
+    input.addEventListener('paste', plainTextPaste);
     block.appendChild(input);
     execStage.appendChild(block);
   });
@@ -15172,16 +15213,22 @@ function readSchedulePipelineNotes(card) {
   const wrap = document.getElementById('scheduleContext');
   if (!wrap || !wrap.classList.contains('schedule-notes-edit')) return;
 
-  const bodyEl = wrap.querySelector('[data-schedule-note="body"]');
-  if (bodyEl) card.body = (bodyEl.value || '').trim();
-  const planEl = wrap.querySelector('[data-schedule-note="productionPlan"]');
-  if (planEl) card.productionPlan = (planEl.value || '').trim();
+  function readRich(key) {
+    const el = wrap.querySelector('[data-schedule-note="' + key + '"]');
+    if (!el) return null;
+    if (el.closest('[hidden]')) return '';
+    return sanitizeHtml(el.innerHTML || '').trim();
+  }
+
+  const body = readRich('body');
+  if (body != null) card.body = body;
+  const plan = readRich('productionPlan');
+  if (plan != null) card.productionPlan = plan;
 
   ['productsUsed', 'location', 'requirements'].forEach(key => {
-    const el = wrap.querySelector('[data-schedule-note="' + key + '"]');
-    if (!el) return;
-    if (el.closest('[hidden]')) card[key] = '';
-    else card[key] = (el.value || '').trim();
+    const val = readRich(key);
+    if (val == null) return;
+    card[key] = val;
   });
 }
 
