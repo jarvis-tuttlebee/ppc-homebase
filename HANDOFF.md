@@ -5,6 +5,24 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Prepare moves off Ideas; keep calendar progress (Cursor Cloud)
+
+### Live
+- Version ID: `703c73a0-18de-43d2-b370-687069e69872`
+- Marketing **`0.12.70`**
+- Hard-refresh → Pipeline → Ideas list/grid → Prepare
+
+### What
+1. Prepare always leaves Ideas (list/grid/board), including calendar-linked ideas
+2. Stop resurrecting prepared Ideas from calendar slots already in Prep/Exec/Review
+3. Pipeline→calendar sync **merges** notes so empty Prep fields don’t wipe calendar progress
+4. Re-Prepare opens existing Prep card (no duplicate)
+
+### Open / next
+1. Hard-refresh; Prepare from list/grid — idea leaves Ideas, Prep opens; calendar notes intact
+
+---
+
 ## 2026-09-09 — Prep/Execute calendar notes independent (Cursor Cloud)
 
 ### Live
