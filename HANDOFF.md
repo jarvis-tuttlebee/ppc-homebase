@@ -5,6 +5,22 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Calendar weekday labels scroll with days (Cursor Cloud)
+
+### Live
+- Version ID: _(pending deploy)_
+- Marketing **`0.12.57`**
+- Hard-refresh Marketing → Calendar (narrow / phone)
+
+### What
+1. Removed detached SUN–SAT header that stayed put while the week grid scrolled
+2. Each day column now shows its own weekday + date (Wed / 9) so swipe keeps context
+
+### Open / next
+1. Hard-refresh; swipe week view on phone and confirm Wed moves with the 9th
+
+---
+
 ## 2026-09-09 — Pipeline no-photo card consistency (Cursor Cloud)
 
 ### Live
