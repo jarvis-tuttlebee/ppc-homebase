@@ -5,6 +5,22 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Sticky pipeline section titles (Cursor Cloud)
+
+### Live
+- Version ID: _(pending deploy)_
+- Marketing **`0.12.59`**
+- Hard-refresh Marketing → Pipeline
+
+### What
+1. Section headers (Content Ideas / Preparation / Execution / Review / Calendar) stick while you scroll that section
+2. Tap the stuck title to collapse without scrolling back up
+
+### Open / next
+1. Hard-refresh; open Prep, scroll down, confirm title stays and can minimize
+
+---
+
 ## 2026-09-09 — Prep cards newest-first (Cursor Cloud)
 
 ### Live
