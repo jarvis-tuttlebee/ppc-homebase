@@ -5,6 +5,18 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Ideas grid only (Cursor Cloud)
+
+### Live
+- Version ID: `152be0b6-7fcc-4d0c-a01f-a1d72d63d240`
+- Marketing **`0.12.71`**
+- Hard-refresh → Pipeline → Ideas
+
+### What
+1. Removed Board / List Ideas layout toggle — Ideas is always **grid**
+
+---
+
 ## 2026-09-09 — Prepare moves off Ideas; keep calendar progress (Cursor Cloud)
 
 ### Live
