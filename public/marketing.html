@@ -3786,6 +3786,84 @@
     }
     .ctx-item:hover { background: rgba(44,44,44,0.06); }
 
+
+    .prep-lane.drop-target,
+    .prep-lane-cards.drop-target {
+      background: rgba(78,110,108,0.08);
+      box-shadow: inset 0 0 0 2px #4E6E6C;
+    }
+    .cal-triage {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px 10px;
+    }
+    .cal-triage-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 7px 11px;
+      border-radius: 8px;
+      border: 1px solid #E2DDD5;
+      background: #fff;
+      color: #2C2C2C;
+      cursor: pointer;
+    }
+    .cal-triage-chip:hover { border-color: #2C2C2C; }
+    .cal-triage-chip.is-empty { color: #8a8580; font-weight: 500; cursor: default; }
+    .cal-triage-chip strong { font-variant-numeric: tabular-nums; }
+    .cal-triage-meta {
+      margin-left: auto;
+      font-size: 10px;
+      color: #9a958d;
+      letter-spacing: 0.02em;
+    }
+    .cal-assignee-wrap { position: relative; display: inline-flex; }
+    .cal-assignee-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      z-index: 40;
+      min-width: 180px;
+      background: #fff;
+      border: 1px solid #E2DDD5;
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(44,44,44,0.12);
+      padding: 6px;
+      display: none;
+    }
+    .cal-assignee-menu.open { display: block; }
+    .cal-assignee-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      color: #2C2C2C;
+      cursor: pointer;
+    }
+    .cal-assignee-item:hover,
+    .cal-assignee-item.is-active { background: #f7f5f2; }
+    .board-empty-hint {
+      margin: 8px 4px 4px;
+      padding: 14px 12px;
+      border: 1px dashed #E2DDD5;
+      border-radius: 8px;
+      color: #8a8580;
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
     @media (hover: none) {
       .idea-card .card-delete,
       .prep-card .card-delete { opacity: 1; }
@@ -4326,12 +4404,12 @@
 </div>
 
 <script src="/js/ppc-select.js?v=8"></script>
-<script src="/js/ppc-homebase.js?v=9"></script>
+<script src="/js/ppc-homebase.js?v=18"></script>
 <script>
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.52';
+const APP_VERSION = '0.12.53';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5481,7 +5559,10 @@ function buildTypesFilterControl() {
   btn.addEventListener('click', e => {
     e.stopPropagation();
     typesFilterOpen = !typesFilterOpen;
-    if (typesFilterOpen) eventsMenuOpen = false;
+    if (typesFilterOpen) {
+      eventsMenuOpen = false;
+      assigneeFilterOpen = false;
+    }
     renderBoard();
   });
   wrap.appendChild(btn);
@@ -5815,6 +5896,16 @@ let hiddenCalFormats = (() => {
 })();
 let typesFilterOpen = false;
 let eventsMenuOpen = false;
+let assigneeFilterOpen = false;
+let assigneeFilter = (function () {
+  try { return localStorage.getItem('ppc-assignee-filter') || ''; }
+  catch (_) { return ''; }
+})();
+let marketingLastSavedAt = null;
+let dragPrepId = null;
+let _prepTouchGhost = null;
+let _prepTouchTarget = null;
+let _prepTouchJustDragged = false;
 /** Expanded pillar ids in the Types dropdown (Organic open by default). */
 let typesFilterExpanded = new Set(['organic']);
 let unscheduledQueueOpen = true;
@@ -7277,6 +7368,9 @@ async function persistMarketingOnce() {
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch (_) {}
       }
     } catch (_) {}
+    marketingLastSavedAt = new Date();
+    const statusEl = document.getElementById('calSaveStatus');
+    if (statusEl) statusEl.textContent = formatLastSavedLabel();
     if (!marketingSaveWanted) marketingLocalDirty = false;
     return;
   }
@@ -7305,6 +7399,10 @@ async function persistMarketingOnce() {
 
 function normalizeLoaded(data) {
   marketingRev = Number(data && data._rev) || 0;
+  if (data && data._savedAt) {
+    const t = new Date(data._savedAt);
+    if (!Number.isNaN(t.getTime())) marketingLastSavedAt = t;
+  }
   // Customs first so migrate helpers can resolve custom pillars / formats.
   DATA.customPillars = parseCustomPillars(data);
   DATA.customFormats = parseCustomFormats(data);
@@ -7729,11 +7827,12 @@ function addIdea(atX, atY) {
 
 async function removeIdea(id) {
   const idea = DATA.ideas.find(i => i.id === id);
+  const snapshot = idea ? JSON.parse(JSON.stringify(idea)) : null;
   if (idea) {
     try {
       await PPC.archivePush({
         source: 'marketing',
-        item: JSON.parse(JSON.stringify(idea)),
+        item: snapshot,
         restoreMeta: { kind: 'idea' },
         label: stripHtml(idea.body || '') || 'Idea'
       });
@@ -7752,6 +7851,15 @@ async function removeIdea(id) {
   DATA.ideas = DATA.ideas.filter(i => i.id !== id);
   scheduleSave();
   renderBoard();
+  if (snapshot && typeof PPC !== 'undefined' && PPC.showUndoToast) {
+    PPC.showUndoToast('Idea removed', () => {
+      if (DATA.ideas.some(i => i.id === snapshot.id)) return;
+      DATA.ideas.push(snapshot);
+      scheduleSave();
+      renderBoard();
+      if (PPC.showToast) PPC.showToast('Idea restored');
+    });
+  }
 }
 
 function readImageFile(file) {
@@ -7941,6 +8049,8 @@ function renderIdeaCard(idea, cardSize) {
     const img = document.createElement('img');
     img.src = mediaSrc(idea.imageData);
     img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
     img.draggable = false;
     img.addEventListener('dragstart', e => e.preventDefault());
     well.appendChild(img);
@@ -8216,6 +8326,7 @@ function clearScheduledContent(scheduleId) {
     return;
   }
 
+  const snapshot = JSON.parse(JSON.stringify(slot));
   clearPipelineLinkForSchedule(scheduleId);
 
   list[idx] = migrateSchedule({
@@ -8260,7 +8371,16 @@ function clearScheduledContent(scheduleId) {
   clearTimeout(saveTimer);
   saveData();
   renderBoard();
-  if (typeof PPC !== 'undefined' && PPC.showToast) {
+  if (typeof PPC !== 'undefined' && PPC.showUndoToast) {
+    PPC.showUndoToast('Cleared Need content', () => {
+      const i = scheduleCards().findIndex(c => c.id === scheduleId);
+      if (i < 0) return;
+      DATA.sections.schedule[i] = migrateSchedule(snapshot);
+      scheduleSave();
+      renderBoard();
+      if (PPC.showToast) PPC.showToast('Need content restored');
+    });
+  } else if (typeof PPC !== 'undefined' && PPC.showToast) {
     PPC.showToast('Cleared content — Need is empty again');
   }
 }
@@ -8285,6 +8405,13 @@ function renderIdeasBody() {
   addBtn.addEventListener('click', e => { e.stopPropagation(); addIdea(); });
   actions.appendChild(addBtn);
   body.appendChild(actions);
+
+  if (!DATA.ideas.length) {
+    const empty = document.createElement('div');
+    empty.className = 'board-empty-hint';
+    empty.textContent = 'No ideas yet — tap + Add idea, or drop a reference image onto the board.';
+    body.appendChild(empty);
+  }
 
   const cardSize = ideaCardSize(DATA.ideas.length);
 
@@ -8465,11 +8592,12 @@ function applyPrepCardStyle(el, pillarId, formatId) {
 
 async function removePrepCard(id) {
   const card = prepCards().find(c => c.id === id);
+  const snapshot = card ? JSON.parse(JSON.stringify(card)) : null;
   if (card) {
     try {
       await PPC.archivePush({
         source: 'marketing',
-        item: JSON.parse(JSON.stringify(card)),
+        item: snapshot,
         restoreMeta: { kind: 'prep', pillar: card.pillar, format: card.format },
         label: stripHtml(card.body || '') || 'Prep card'
       });
@@ -8479,15 +8607,25 @@ async function removePrepCard(id) {
   clearTimeout(saveTimer);
   saveData();
   renderBoard();
+  if (snapshot && typeof PPC !== 'undefined' && PPC.showUndoToast) {
+    PPC.showUndoToast('Prep card removed', () => {
+      if (prepCards().some(c => c.id === snapshot.id)) return;
+      DATA.sections.preparation.push(snapshot);
+      scheduleSave();
+      renderBoard();
+      if (PPC.showToast) PPC.showToast('Prep card restored');
+    });
+  }
 }
 
 async function removeExecCard(id) {
   const card = execCards().find(c => c.id === id);
+  const snapshot = card ? JSON.parse(JSON.stringify(card)) : null;
   if (card) {
     try {
       await PPC.archivePush({
         source: 'marketing',
-        item: JSON.parse(JSON.stringify(card)),
+        item: snapshot,
         restoreMeta: { kind: 'exec', pillar: card.pillar, format: card.format },
         label: stripHtml(card.body || '') || 'Execution card'
       });
@@ -8497,15 +8635,25 @@ async function removeExecCard(id) {
   clearTimeout(saveTimer);
   saveData();
   renderBoard();
+  if (snapshot && typeof PPC !== 'undefined' && PPC.showUndoToast) {
+    PPC.showUndoToast('Execution card removed', () => {
+      if (execCards().some(c => c.id === snapshot.id)) return;
+      DATA.sections.execution.push(snapshot);
+      scheduleSave();
+      renderBoard();
+      if (PPC.showToast) PPC.showToast('Execution card restored');
+    });
+  }
 }
 
 async function removeReviewCard(id) {
   const card = reviewCards().find(c => c.id === id);
+  const snapshot = card ? JSON.parse(JSON.stringify(card)) : null;
   if (card) {
     try {
       await PPC.archivePush({
         source: 'marketing',
-        item: JSON.parse(JSON.stringify(card)),
+        item: snapshot,
         restoreMeta: { kind: 'review', pillar: card.pillar, format: card.format },
         label: stripHtml(card.body || '') || 'Review card'
       });
@@ -8515,6 +8663,15 @@ async function removeReviewCard(id) {
   clearTimeout(saveTimer);
   saveData();
   renderBoard();
+  if (snapshot && typeof PPC !== 'undefined' && PPC.showUndoToast) {
+    PPC.showUndoToast('Review card removed', () => {
+      if (reviewCards().some(c => c.id === snapshot.id)) return;
+      DATA.sections.review.push(snapshot);
+      scheduleSave();
+      renderBoard();
+      if (PPC.showToast) PPC.showToast('Review card restored');
+    });
+  }
 }
 
 async function removeScheduleCard(id) {
@@ -8922,10 +9079,75 @@ function sizePrepThumb(thumb, card) {
   requestAnimationFrame(apply);
 }
 
+function attachPrepTouchDrag(cardEl, card) {
+  let timer = null, dragging = false, startX = 0, startY = 0;
+
+  const cleanup = () => {
+    clearTimeout(timer); timer = null;
+    if (_prepTouchGhost) { _prepTouchGhost.remove(); _prepTouchGhost = null; }
+    if (_prepTouchTarget) {
+      _prepTouchTarget.classList.remove('drop-target');
+      _prepTouchTarget = null;
+    }
+    cardEl.classList.remove('dragging');
+    dragging = false;
+    dragPrepId = null;
+  };
+
+  cardEl.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.card-delete')) return;
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY;
+    timer = setTimeout(() => {
+      dragging = true;
+      dragPrepId = card.id;
+      cardEl.classList.add('dragging');
+      if (navigator.vibrate) navigator.vibrate(30);
+      _prepTouchGhost = cardEl.cloneNode(true);
+      _prepTouchGhost.classList.remove('dragging');
+      _prepTouchGhost.style.cssText = 'position:fixed;z-index:99999;pointer-events:none;opacity:0.92;box-shadow:0 6px 18px rgba(0,0,0,0.3);width:' + cardEl.offsetWidth + 'px;left:' + (startX - cardEl.offsetWidth / 2) + 'px;top:' + (startY - 24) + 'px;margin:0;';
+      document.body.appendChild(_prepTouchGhost);
+    }, 420);
+  }, { passive: true });
+
+  cardEl.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (!dragging) {
+      if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) {
+        clearTimeout(timer); timer = null;
+      }
+      return;
+    }
+    e.preventDefault();
+    _prepTouchGhost.style.left = (t.clientX - _prepTouchGhost.offsetWidth / 2) + 'px';
+    _prepTouchGhost.style.top = (t.clientY - 24) + 'px';
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const target = el && el.closest('[data-drop-prep-lane]');
+    if (_prepTouchTarget && _prepTouchTarget !== target) _prepTouchTarget.classList.remove('drop-target');
+    _prepTouchTarget = target || null;
+    if (_prepTouchTarget) _prepTouchTarget.classList.add('drop-target');
+  }, { passive: false });
+
+  cardEl.addEventListener('touchend', () => {
+    if (!dragging) { clearTimeout(timer); timer = null; return; }
+    _prepTouchJustDragged = true;
+    setTimeout(() => { _prepTouchJustDragged = false; }, 400);
+    if (_prepTouchTarget) {
+      const laneId = _prepTouchTarget.dataset.dropPrepLane;
+      cleanup();
+      if (laneId) movePrepCard(card.id, laneId);
+      return;
+    }
+    cleanup();
+  });
+
+  cardEl.addEventListener('touchcancel', cleanup);
+}
+
 function renderPrepCard(card) {
   const el = document.createElement('div');
   el.className = 'prep-card';
-  el.draggable = true;
+  el.draggable = !IS_TOUCH;
   el.dataset.prepId = card.id;
   applyPrepCardStyle(el, card.pillar, card.format);
 
@@ -8949,6 +9171,8 @@ function renderPrepCard(card) {
     const img = document.createElement('img');
     img.src = mediaSrc(card.imageData);
     img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
     thumb.appendChild(img);
     el.appendChild(thumb);
     sizePrepThumb(thumb, card);
@@ -8991,9 +9215,16 @@ function renderPrepCard(card) {
   el.addEventListener('dragend', () => {
     dragPrepId = null;
     el.classList.remove('dragging');
-    document.querySelectorAll('.prep-lane.drag-over').forEach(n => n.classList.remove('drag-over'));
+    document.querySelectorAll('.prep-lane.drag-over, .prep-lane.drop-target').forEach(n => {
+      n.classList.remove('drag-over');
+      n.classList.remove('drop-target');
+    });
   });
-  el.addEventListener('click', () => openPrepPanel(card.id));
+  el.addEventListener('click', () => {
+    if (_prepTouchJustDragged) return;
+    openPrepPanel(card.id);
+  });
+  if (IS_TOUCH) attachPrepTouchDrag(el, card);
 
   return el;
 }
@@ -9020,6 +9251,7 @@ function renderPrepLane(lane) {
   const el = document.createElement('div');
   el.className = 'prep-lane' + (cards.length ? '' : ' is-empty');
   el.dataset.prepLane = lane.id;
+  el.dataset.dropPrepLane = lane.id;
   const tone = typeof lane.toneOf === 'function' ? lane.toneOf() : '#564A5E';
 
   const title = document.createElement('div');
@@ -9170,7 +9402,7 @@ function renderExecutionBody() {
   if (!cards.length) {
     const empty = document.createElement('div');
     empty.className = 'exec-empty';
-    empty.textContent = 'No cards in execution yet — send from Preparation when the plan is ready.';
+    empty.textContent = 'Nothing in Execution yet — open a Prep card and send it here when the plan is ready.';
     body.appendChild(empty);
     return body;
   }
@@ -9366,6 +9598,132 @@ function renderReviewCard(card) {
   return el;
 }
 
+function persistAssigneeFilter(value) {
+  assigneeFilter = value || '';
+  try { localStorage.setItem('ppc-assignee-filter', assigneeFilter); } catch (_) {}
+}
+
+function scheduleCardMatchesAssignee(card) {
+  if (!assigneeFilter) return true;
+  const list = assigneesOf(card);
+  if (assigneeFilter === '__unassigned__') return !list.length;
+  return list.includes(assigneeFilter);
+}
+
+function filteredScheduleCards() {
+  return scheduleCards().filter(scheduleCardMatchesAssignee);
+}
+
+function buildAssigneeFilterControl() {
+  const wrap = document.createElement('div');
+  wrap.className = 'cal-assignee-wrap';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'cal-nav-btn' + ((assigneeFilter || assigneeFilterOpen) ? ' is-toggled' : '');
+  btn.setAttribute('aria-haspopup', 'true');
+  btn.setAttribute('aria-expanded', assigneeFilterOpen ? 'true' : 'false');
+  if (!assigneeFilter) btn.textContent = 'People';
+  else if (assigneeFilter === '__unassigned__') btn.textContent = 'People · Unassigned';
+  else btn.textContent = 'People · ' + assigneeFilter;
+  btn.title = 'Filter calendar Needs by assignee';
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    assigneeFilterOpen = !assigneeFilterOpen;
+    if (assigneeFilterOpen) {
+      typesFilterOpen = false;
+      eventsMenuOpen = false;
+    }
+    renderBoard();
+  });
+  wrap.appendChild(btn);
+
+  const menu = document.createElement('div');
+  menu.className = 'cal-assignee-menu' + (assigneeFilterOpen ? ' open' : '');
+  menu.setAttribute('role', 'menu');
+  menu.addEventListener('click', e => e.stopPropagation());
+
+  const mk = (label, value) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'cal-assignee-item' + (assigneeFilter === value ? ' is-active' : '');
+    item.textContent = label;
+    item.addEventListener('click', e => {
+      e.stopPropagation();
+      persistAssigneeFilter(value);
+      assigneeFilterOpen = false;
+      renderBoard();
+    });
+    menu.appendChild(item);
+  };
+  mk('Everyone', '');
+  mk('Unassigned', '__unassigned__');
+  marketingStaff().forEach(name => mk(name, name));
+  wrap.appendChild(menu);
+  return wrap;
+}
+
+function formatLastSavedLabel() {
+  if (!marketingLastSavedAt) return '';
+  const d = marketingLastSavedAt instanceof Date ? marketingLastSavedAt : new Date(marketingLastSavedAt);
+  if (Number.isNaN(d.getTime())) return '';
+  const now = new Date();
+  const mins = Math.round((now - d) / 60000);
+  if (mins <= 0) return 'Saved just now';
+  if (mins < 60) return 'Saved ' + mins + 'm ago';
+  const t = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (isSameCalendarDay(d, now)) return 'Saved ' + t;
+  return 'Saved ' + formatShortDate(d) + ' · ' + t;
+}
+
+function buildCalendarTriageStrip() {
+  const strip = document.createElement('div');
+  strip.className = 'cal-triage';
+  const { makes, posts, needs } = marketingActionCounts();
+
+  const addChip = (label, count, onClick) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'cal-triage-chip' + (count ? '' : ' is-empty');
+    chip.innerHTML = label + ' <strong>' + count + '</strong>';
+    if (count && onClick) chip.addEventListener('click', e => { e.stopPropagation(); onClick(); });
+    else chip.disabled = !count;
+    strip.appendChild(chip);
+  };
+
+  addChip('Make today', makes.length, () => {
+    const first = makes[0];
+    if (first && first.scheduledAt) jumpScheduleToDate(new Date(first.scheduledAt));
+    requestAnimationFrame(() => {
+      const el = document.querySelector('.cal-slot[data-schedule-id="' + first.id + '"]');
+      if (el) {
+        el.classList.add('cal-slot--flash');
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setTimeout(() => el.classList.remove('cal-slot--flash'), 1600);
+      }
+    });
+  });
+  addChip('Post today', posts.length, () => {
+    const first = posts[0];
+    if (first && first.scheduledAt) jumpScheduleToDate(new Date(first.scheduledAt));
+    requestAnimationFrame(() => {
+      const el = document.querySelector('.cal-slot[data-schedule-id="' + first.id + '"]');
+      if (el) {
+        el.classList.add('cal-slot--flash');
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setTimeout(() => el.classList.remove('cal-slot--flash'), 1600);
+      }
+    });
+  });
+  addChip('Needs · 7d', needs.length, () => focusActionableNeeds(needs));
+
+  const meta = document.createElement('div');
+  meta.className = 'cal-triage-meta';
+  meta.id = 'calSaveStatus';
+  meta.textContent = formatLastSavedLabel() || 'Cloud synced';
+  strip.appendChild(meta);
+  return strip;
+}
+
 function renderScheduleBody() {
   const body = document.createElement('div');
   body.className = 'section-body cal-wrap' + (scheduleCalRange === 'week' ? ' cal-wrap--week' : '');
@@ -9432,6 +9790,7 @@ function renderScheduleBody() {
   tools.className = 'cal-nav-tools';
   tools.appendChild(rangeToggle);
   tools.appendChild(buildTypesFilterControl());
+  tools.appendChild(buildAssigneeFilterControl());
   const jump = document.createElement('div');
   jump.className = 'cal-nav-jump';
   jump.appendChild(prev);
@@ -9443,6 +9802,7 @@ function renderScheduleBody() {
   nav.appendChild(btns);
   body.appendChild(nav);
   body.appendChild(buildEventsBar());
+  body.appendChild(buildCalendarTriageStrip());
 
   const dow = document.createElement('div');
   dow.className = 'cal-dow-header';
@@ -9529,6 +9889,7 @@ function renderScheduleBody() {
   const unscheduled = scheduleCards().filter(c => {
     if (c.scheduledAt && String(c.scheduledAt).trim()) return false;
     if (hidePostedWeek && publishStatusOf(c) === 'posted') return false;
+    if (!scheduleCardMatchesAssignee(c)) return false;
     return isCalFormatVisible(c);
   });
   const unschedWrap = document.createElement('div');
@@ -9549,7 +9910,7 @@ function renderScheduleBody() {
   if (!unscheduled.length) {
     const empty = document.createElement('div');
     empty.className = 'exec-empty';
-    empty.textContent = 'Drop calendar cards here · or all content has a publish date.';
+    empty.textContent = 'No unscheduled Needs — every Need has a publish date, or drop a Need here to park it.';
     list.appendChild(empty);
   } else {
     unscheduled.forEach(card => list.appendChild(renderCalSlot(card)));
@@ -9659,7 +10020,10 @@ function buildEventsBar() {
   btn.addEventListener('click', e => {
     e.stopPropagation();
     eventsMenuOpen = !eventsMenuOpen;
-    if (eventsMenuOpen) typesFilterOpen = false;
+    if (eventsMenuOpen) {
+      typesFilterOpen = false;
+      assigneeFilterOpen = false;
+    }
     renderBoard();
   });
   wrap.appendChild(btn);
@@ -15172,6 +15536,20 @@ document.addEventListener('click', e => {
       if (btn) {
         btn.setAttribute('aria-expanded', 'false');
         if (!hiddenCalFormats.size) btn.classList.remove('is-toggled');
+      }
+    } else {
+      renderBoard();
+    }
+  }
+  if (assigneeFilterOpen && !e.target.closest('.cal-assignee-wrap')) {
+    assigneeFilterOpen = false;
+    const openMenu = document.querySelector('.cal-assignee-menu.open');
+    if (openMenu) {
+      openMenu.classList.remove('open');
+      const btn = openMenu.parentElement && openMenu.parentElement.querySelector('.cal-nav-btn');
+      if (btn) {
+        btn.setAttribute('aria-expanded', 'false');
+        if (!assigneeFilter) btn.classList.remove('is-toggled');
       }
     } else {
       renderBoard();

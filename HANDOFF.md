@@ -5,6 +5,25 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Team polish pack (Cursor Cloud)
+
+### Live (after deploy)
+- Marketing **`0.12.53`**, `ppc-homebase.js?v=18`
+
+### What
+1. Prep cards: long-press touch drag between lanes
+2. Undo toast on idea/prep/exec/review delete and Need content clear
+3. Calendar triage strip (Make today / Post today / Needs · 7d) + last saved
+4. People filter on calendar assignees
+5. Ideas empty state; lazy-loaded board thumbnails
+6. Optional Team PIN in Settings (session unlock) on all Homebase pages
+
+### Open / next
+1. Hard-refresh all pages; set Team PIN in Settings if desired
+2. Cloudflare Access still recommended for internet-facing lock
+
+---
+
 ## 2026-09-09 — Calendar header cleanup on mobile (Cursor Cloud)
 
 ### Live

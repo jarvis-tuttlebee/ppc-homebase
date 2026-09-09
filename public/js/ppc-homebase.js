@@ -70,18 +70,189 @@
     return entry;
   }
 
-  function showToast(msg) {
+  function ensureToastEl() {
     let el = document.getElementById('ppcToast');
     if (!el) {
       el = document.createElement('div');
       el.id = 'ppcToast';
-      el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100000;background:#2C2C2C;color:#F7F5F2;font-family:DM Sans,sans-serif;font-size:13px;padding:10px 18px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.2);max-width:90vw;opacity:0;transition:opacity 0.2s;pointer-events:none;';
+      el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100000;background:#2C2C2C;color:#F7F5F2;font-family:DM Sans,sans-serif;font-size:13px;padding:10px 14px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.2);max-width:92vw;opacity:0;transition:opacity 0.2s;pointer-events:none;display:flex;align-items:center;gap:12px;';
       document.body.appendChild(el);
     }
-    el.textContent = msg;
+    return el;
+  }
+
+  function showToast(msg) {
+    const el = ensureToastEl();
+    el.innerHTML = '';
+    const text = document.createElement('span');
+    text.textContent = msg;
+    el.appendChild(text);
+    el.style.pointerEvents = 'none';
     el.style.opacity = '1';
     clearTimeout(showToast._t);
     showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 3400);
+  }
+
+  /** Toast with an Undo action (default ~5.5s). onUndo runs once if tapped. */
+  function showUndoToast(msg, onUndo, ms) {
+    const el = ensureToastEl();
+    el.innerHTML = '';
+    const text = document.createElement('span');
+    text.textContent = msg;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Undo';
+    btn.style.cssText = 'font:inherit;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:11px;border:none;background:transparent;color:#F7F5F2;text-decoration:underline;cursor:pointer;padding:4px 2px;';
+    let used = false;
+    const finish = (run) => {
+      if (used) return;
+      used = true;
+      clearTimeout(showUndoToast._t);
+      el.style.opacity = '0';
+      el.style.pointerEvents = 'none';
+      if (run && typeof onUndo === 'function') {
+        try { onUndo(); } catch (err) { console.warn('Undo failed:', err); }
+      }
+    };
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      finish(true);
+    });
+    el.appendChild(text);
+    el.appendChild(btn);
+    el.style.pointerEvents = 'auto';
+    el.style.opacity = '1';
+    clearTimeout(showToast._t);
+    clearTimeout(showUndoToast._t);
+    showUndoToast._t = setTimeout(() => finish(false), ms != null ? ms : 5500);
+  }
+
+  const PIN_KEY = 'ppc-homebase-pin';
+  const PIN_UNLOCK_KEY = 'ppc-homebase-unlocked';
+
+  function getTeamPin() {
+    try { return localStorage.getItem(PIN_KEY) || ''; }
+    catch (_) { return ''; }
+  }
+
+  function setTeamPin(pin) {
+    const next = String(pin || '').trim();
+    try {
+      if (next) localStorage.setItem(PIN_KEY, next);
+      else localStorage.removeItem(PIN_KEY);
+    } catch (_) {}
+  }
+
+  function isPinUnlocked() {
+    try { return sessionStorage.getItem(PIN_UNLOCK_KEY) === '1'; }
+    catch (_) { return false; }
+  }
+
+  function setPinUnlocked(on) {
+    try {
+      if (on) sessionStorage.setItem(PIN_UNLOCK_KEY, '1');
+      else sessionStorage.removeItem(PIN_UNLOCK_KEY);
+    } catch (_) {}
+  }
+
+  function ensurePinGateStyles() {
+    if (document.getElementById('ppcPinGateStyles')) return;
+    const s = document.createElement('style');
+    s.id = 'ppcPinGateStyles';
+    s.textContent = `
+.ppc-pin-gate{position:fixed;inset:0;z-index:200000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(247,245,242,0.96);font-family:DM Sans,sans-serif}
+.ppc-pin-card{width:min(360px,100%);background:#fff;border:1px solid #E2DDD5;border-radius:12px;padding:28px 24px 22px;box-shadow:0 16px 40px rgba(44,44,44,0.1)}
+.ppc-pin-card h1{margin:0 0 6px;font-family:Forma DJR Display,Poppins,sans-serif;font-size:22px;font-weight:700;color:#2C2C2C;letter-spacing:-0.02em}
+.ppc-pin-card p{margin:0 0 18px;font-size:13px;line-height:1.45;color:#6B7A8D}
+.ppc-pin-card input{width:100%;box-sizing:border-box;font:inherit;font-size:16px;letter-spacing:0.18em;text-align:center;padding:12px 14px;border:1px solid #E2DDD5;border-radius:8px;background:#fff;color:#2C2C2C}
+.ppc-pin-card input:focus{outline:none;border-color:#2C2C2C}
+.ppc-pin-actions{display:flex;gap:8px;margin-top:14px}
+.ppc-pin-actions button{flex:1;font:inherit;font-size:13px;font-weight:600;padding:11px 12px;border-radius:8px;cursor:pointer;border:1px solid #2C2C2C;background:#2C2C2C;color:#fff}
+.ppc-pin-error{min-height:18px;margin-top:10px;font-size:12px;color:#a33d3d;text-align:center}
+body.dark .ppc-pin-gate{background:rgba(15,20,31,0.96)}
+body.dark .ppc-pin-card{background:#1e2538;border-color:#2e3a55}
+body.dark .ppc-pin-card h1{color:#f0ede8}
+body.dark .ppc-pin-card p,.ppc-pin-card .ppc-pin-error{color:#8a8580}
+body.dark .ppc-pin-card input{background:#141d2e;border-color:#2e3a55;color:#f0ede8}
+`;
+    document.head.appendChild(s);
+  }
+
+  function mountPinGate() {
+    const pin = getTeamPin();
+    if (!pin || isPinUnlocked()) return;
+    if (document.getElementById('ppcPinGate')) return;
+    ensurePinGateStyles();
+    applyStoredDark();
+    const gate = document.createElement('div');
+    gate.id = 'ppcPinGate';
+    gate.className = 'ppc-pin-gate';
+    gate.innerHTML = '<div class="ppc-pin-card" role="dialog" aria-modal="true" aria-label="Team PIN">'
+      + '<h1>PPC Homebase</h1>'
+      + '<p>Enter the team PIN to continue. Ask Jarvis if you do not have it.</p>'
+      + '<input id="ppcPinInput" type="password" inputmode="numeric" autocomplete="current-password" maxlength="32" placeholder="••••">'
+      + '<div class="ppc-pin-actions"><button type="button" id="ppcPinUnlock">Unlock</button></div>'
+      + '<div class="ppc-pin-error" id="ppcPinError"></div>'
+      + '</div>';
+    document.body.appendChild(gate);
+    const input = gate.querySelector('#ppcPinInput');
+    const err = gate.querySelector('#ppcPinError');
+    const unlock = () => {
+      if ((input.value || '') === pin) {
+        setPinUnlocked(true);
+        gate.remove();
+      } else {
+        err.textContent = 'Incorrect PIN';
+        input.select();
+      }
+    };
+    gate.querySelector('#ppcPinUnlock').onclick = unlock;
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        unlock();
+      }
+    });
+    setTimeout(() => input.focus(), 50);
+  }
+
+  function renderPinSettings(host) {
+    if (!host) return;
+    let section = host.querySelector('[data-ppc-pin-settings]');
+    if (!section) {
+      section = document.createElement('div');
+      section.dataset.ppcPinSettings = '1';
+      section.className = 'ppc-settings-section';
+      section.innerHTML = '<h3>Team PIN</h3>'
+        + '<p class="ppc-archive-sub" style="margin:0 0 10px">Optional lock for this browser. Leave blank to turn off. Unlock lasts until the tab session ends.</p>'
+        + '<input type="password" id="ppcPinSettingsInput" maxlength="32" placeholder="Set or change PIN" '
+        + 'style="width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:10px 12px;border:1px solid #E2DDD5;border-radius:8px;margin-bottom:8px">'
+        + '<div style="display:flex;gap:8px">'
+        + '<button type="button" class="ppc-settings-btn" id="ppcPinSaveBtn">Save PIN</button>'
+        + '<button type="button" class="ppc-settings-btn" id="ppcPinClearBtn">Clear PIN</button>'
+        + '</div>';
+      const darkSection = host.querySelector('.ppc-settings-section');
+      if (darkSection && darkSection.parentNode) darkSection.parentNode.insertBefore(section, darkSection.nextSibling);
+      else host.appendChild(section);
+      section.querySelector('#ppcPinSaveBtn').onclick = () => {
+        const val = section.querySelector('#ppcPinSettingsInput').value;
+        if (!String(val || '').trim()) {
+          showToast('Enter a PIN first, or use Clear');
+          return;
+        }
+        setTeamPin(val);
+        setPinUnlocked(true);
+        section.querySelector('#ppcPinSettingsInput').value = '';
+        showToast('Team PIN saved on this device');
+      };
+      section.querySelector('#ppcPinClearBtn').onclick = () => {
+        setTeamPin('');
+        setPinUnlocked(false);
+        section.querySelector('#ppcPinSettingsInput').value = '';
+        showToast('Team PIN cleared');
+      };
+    }
   }
 
   function isDark() {
@@ -544,6 +715,7 @@ body.dark .section-row { color: #f0ede8; }
     const darkBtn = document.querySelector('[data-ppc-dark-toggle]');
     if (darkBtn) darkBtn.textContent = isDark() ? 'Dark mode · On' : 'Dark mode · Off';
     renderArchiveList();
+    renderPinSettings(document.getElementById('ppcSettingsPanel'));
     if (typeof _opts.onSettingsOpen === 'function') {
       try { _opts.onSettingsOpen(document.getElementById('ppcSettingsPanel')); }
       catch (err) { console.warn('Settings extra failed:', err); }
@@ -622,6 +794,7 @@ body.dark .section-row { color: #f0ede8; }
     ensureStyles();
     applyStoredDark();
     ensureDom();
+    mountPinGate();
 
     let btn = document.getElementById('settingsBtn');
     if (!btn) {
@@ -933,6 +1106,7 @@ body.dark .section-row { color: #f0ede8; }
     loadArchive,
     restoreEntry,
     showToast,
+    showUndoToast,
     applyStoredDark,
     setDark,
     toggleDark,
@@ -940,6 +1114,9 @@ body.dark .section-row { color: #f0ede8; }
     openSettings,
     closeSettings,
     mountSettings,
+    mountPinGate,
+    getTeamPin,
+    setTeamPin,
     renderProjectTypeSettings,
     closeColourPopovers,
     fgForBg,
@@ -948,4 +1125,12 @@ body.dark .section-row { color: #f0ede8; }
     kanbanWhere,
     marketingWhere
   };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      try { mountPinGate(); } catch (_) {}
+    });
+  } else {
+    try { mountPinGate(); } catch (_) {}
+  }
 })(window);
