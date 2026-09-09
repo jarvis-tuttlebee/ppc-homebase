@@ -7,8 +7,10 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ## 2026-09-09 — Mobile: tap outside to close cards (Cursor Cloud)
 
-### Live (after deploy)
+### Live
+- Version ID: `8d784300-f65b-4a2a-8959-5edc8418f69b`
 - Marketing **`0.12.50`**
+- Hard-refresh Marketing on phone
 
 ### What
 1. Card panel no longer covers the full phone width — left dim strip dismisses the card
