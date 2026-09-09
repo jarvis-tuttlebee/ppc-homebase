@@ -8,21 +8,21 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-09 — Calendar→pipeline sync + Content Complete (Cursor Cloud)
 
 ### Live
-- Version ID: `262b5c60-e70b-4ce4-8ccf-262d9b7205d8`
-- Marketing **`0.12.74`**
+- Version ID: `aab6926f-2e2f-455f-b155-8c2a5200cfa3`
+- Marketing **`0.12.75`**
 - Hard-refresh → Calendar / Pipeline
 
 ### What
-1. Calendar Save (and live Format/Pillar) syncs body/format/notes to linked Prep/Exec/Review/Ideas
-2. New **Content Complete** section — marking a calendar card **Posted** archives it here (and clears Prep/Exec/Review)
-3. Existing Posted calendar cards backfill into Complete on load
+1. Calendar Save / open / live Format+Pillar sync body/format/notes to linked Prep/Exec/Review/Ideas
+2. Heal stale `linkedPipelineId` via `linkedScheduleId` or shared `sourceIdeaId`
+3. **Content Complete** — mark calendar **Posted** to archive (clears Prep/Exec/Review); backfill on load
 
 ### How finished works
-Ideas → Prep → Exec → Review → Calendar. Status on calendar: Need → Prep → Execute → Scheduled → **Posted**. Posted no longer leaves a ghost in Prep; it moves to Content Complete.
+Ideas → Prep → Exec → Review → Calendar (Review→Calendar removes the Review card). Calendar status: Need → Prep → Execute → Scheduled → **Posted**. Posted moves the linked pipeline card into **Content Complete** (history of what shipped).
 
 ### Open / next
-1. Hard-refresh; re-Save the ODS Film calendar card once so Prep picks up IG Story / title
-2. Mark a card Posted → confirm it appears under Content Complete
+1. Hard-refresh; open the ODS Film calendar card once (or Save) — Prep should show IG Story / ODS Film
+2. Mark Posted → appears under Content Complete
 
 ---
 
