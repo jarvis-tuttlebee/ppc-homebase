@@ -8095,6 +8095,7 @@ async function initApp() {
   if (!hadAnchors && anchors().length) scheduleSave();
   // Local Ideas height wins; cloud layoutPrefs only fill gaps (new browser / cleared storage).
   resolveLayoutPrefs(DATA);
+  if (healPipelineLinksFromSchedule()) scheduleSave();
   if (backfillCompleteFromPosted()) scheduleSave();
   renderBoard();
   applyMoodHeight(marketingMoodH);
@@ -10381,6 +10382,17 @@ function syncLinkedPipelineFromSchedule(slot) {
       }
     }
   }
+  // Heal via shared Ideas origin (common after Prepare + early calendar place).
+  if (!target && slot.sourceIdeaId) {
+    const bySource = allPipelineCards().find(e => e.card && e.card.sourceIdeaId === slot.sourceIdeaId);
+    if (bySource) {
+      target = bySource.card;
+      stage = bySource.stage;
+      slot.linkedPipelineId = target.id;
+      slot.linkedPipelineStage = stage;
+      target.linkedScheduleId = slot.id;
+    }
+  }
   if (!target) return updated;
 
   if (slot.body != null) target.body = slot.body;
@@ -10410,6 +10422,28 @@ function syncLinkedPipelineFromSchedule(slot) {
   if (!target.linkedScheduleId) target.linkedScheduleId = slot.id;
   if (slot.sourceIdeaId) target.sourceIdeaId = slot.sourceIdeaId;
   return target;
+}
+
+/** Repair schedule↔pipeline id links without overwriting content. */
+function healPipelineLinksFromSchedule() {
+  let changed = false;
+  scheduleCards().forEach(slot => {
+    if (!slot || isDiscoverCard(slot)) return;
+    if (slot.linkedPipelineId && findPipelineCardById(slot.linkedPipelineId)) return;
+    if (slot.linkedPipelineId && completeCards().some(c => c.id === slot.linkedPipelineId)) return;
+
+    let entry = allPipelineCards().find(e => e.card && e.card.linkedScheduleId === slot.id);
+    if (!entry && slot.sourceIdeaId) {
+      entry = allPipelineCards().find(e => e.card && e.card.sourceIdeaId === slot.sourceIdeaId);
+    }
+    if (!entry) return;
+    slot.linkedPipelineId = entry.card.id;
+    slot.linkedPipelineStage = entry.stage;
+    entry.card.linkedScheduleId = slot.id;
+    if (slot.sourceIdeaId && !entry.card.sourceIdeaId) entry.card.sourceIdeaId = slot.sourceIdeaId;
+    changed = true;
+  });
+  return changed;
 }
 
 /** Move / create a Content Complete card when a calendar slot is Posted. */
@@ -15885,6 +15919,10 @@ function openSchedulePanel(scheduleId) {
   if (tweaksEl) tweaksEl.innerHTML = sanitizeHtml(card.tweaks || '');
   setPlanHintVisible(false);
   updatePanelStrip(card.pillar, card.format);
+  // Keep linked Prep/Exec/Review in lockstep with the calendar view of this card.
+  if (card.linkedPipelineId || card.sourceIdeaId || card.linkedPipelineStage) {
+    if (syncLinkedPipelineFromSchedule(card)) scheduleSave();
+  }
   document.getElementById('panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
 }
