@@ -4800,7 +4800,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.68';
+const APP_VERSION = '0.12.69';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6610,6 +6610,11 @@ function migrateSchedule(card) {
   }
   if (!PUBLISH_STATUS_IDS.has(card.publishStatus)) {
     card.publishStatus = defaultPublishStatus(card);
+  }
+  if (card.executionHowTo == null) {
+    // Calendar Execute box is independent of Prep production plan.
+    // Seed once so existing cards still show their how-to text.
+    card.executionHowTo = card.productionPlan || '';
   }
   if (isDiscoverCard(card)) {
     card.publishStatus = normalizeDiscoverStatus(card.publishStatus, card);
@@ -10487,7 +10492,12 @@ function syncLinkedSchedulePreview(card, stage) {
       : (card.pillar || slot.pillar || 'organic')),
     format: card.format || slot.format,
     sourceIdeaId: (stage === 'ideas' ? card.id : null) || card.sourceIdeaId || slot.sourceIdeaId || null,
-    productionPlan: card.productionPlan || '',
+    productionPlan: (stage === 'prep' || stage === 'ideas')
+      ? (card.productionPlan || '')
+      : (slot.productionPlan || ''),
+    executionHowTo: (stage === 'execution' || stage === 'review')
+      ? (card.productionPlan || '')
+      : (slot.executionHowTo != null ? slot.executionHowTo : ''),
     productsUsed: card.productsUsed || '',
     location: card.location || '',
     requirements: card.requirements || '',
@@ -15130,9 +15140,9 @@ function fillScheduleContext(card) {
     placeholder: 'Idea…'
   });
 
-  // 2. Prep — production plan
+  // 2. Prep — production plan (independent of Execute)
   const prepStage = appendStage('Prep');
-  const prepPlanInput = appendNoteField(prepStage, {
+  appendNoteField(prepStage, {
     key: 'productionPlan',
     label: 'Production plan',
     multiline: true,
@@ -15140,17 +15150,15 @@ function fillScheduleContext(card) {
     placeholder: 'What needs to happen to produce this…'
   });
 
-  // 3. Execute — how to execute + optional pills
+  // 3. Execute — how to execute + optional pills (own field)
   const execStage = appendStage('Execute');
-  const execHowInput = appendNoteField(execStage, {
-    key: 'productionPlan',
+  appendNoteField(execStage, {
+    key: 'executionHowTo',
     label: 'How to execute',
     multiline: true,
-    value: card.productionPlan || '',
+    value: card.executionHowTo != null ? card.executionHowTo : (card.productionPlan || ''),
     placeholder: 'Programs, editing approach, steps…'
   });
-  prepPlanInput.addEventListener('input', () => { execHowInput.innerHTML = prepPlanInput.innerHTML; });
-  execHowInput.addEventListener('input', () => { prepPlanInput.innerHTML = execHowInput.innerHTML; });
 
   const openMap = {};
   SCHEDULE_EXEC_OPTIONAL.forEach(spec => {
@@ -15224,6 +15232,8 @@ function readSchedulePipelineNotes(card) {
   if (body != null) card.body = body;
   const plan = readRich('productionPlan');
   if (plan != null) card.productionPlan = plan;
+  const howTo = readRich('executionHowTo');
+  if (howTo != null) card.executionHowTo = howTo;
 
   ['productsUsed', 'location', 'requirements'].forEach(key => {
     const val = readRich(key);
