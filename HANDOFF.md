@@ -8,7 +8,8 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-09 — Calendar pipeline notes: auto-size + fmt bars (Cursor Cloud)
 
 ### Live
-- Marketing **`0.12.68`** (deploy pending)
+- Version ID: `9ff5ba3e-abd5-42a0-a58c-9b69abfeb402`
+- Marketing **`0.12.68`**
 - Hard-refresh → Calendar → Pipeline notes
 
 ### What
