@@ -5,6 +5,24 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Ideas List/Grid text-first cards (Cursor Cloud)
+
+### Live
+- Version ID: `ff1908fc-d8a2-4179-b4da-313e1c9d5766`
+- Marketing **`0.12.55`**
+- Hard-refresh Marketing → Pipeline → Content Ideas
+
+### What
+1. List/Grid: no empty photo boxes when an idea has no image
+2. Text-only cards use calendar-style left accent + wash
+3. **Add photo** on those cards opens the system picker; panel Photo well is optional (tap / drop / paste)
+4. Empty-state copy frames the TikTok-style flow: jot idea → Prepare when ready
+
+### Open / next
+1. Hard-refresh; check List + Grid on phone with mixed photo / text-only ideas
+
+---
+
 ## 2026-09-09 — Ideas Board / List / Grid views (Cursor Cloud)
 
 ### Live
