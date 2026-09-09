@@ -8,7 +8,8 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-09 — Save places on calendar when dates form open (Cursor Cloud)
 
 ### Live
-- Marketing **`0.12.65`** (deploy pending)
+- Version ID: `279d7d01-cf7b-4253-a866-31a3e20c112b`
+- Marketing **`0.12.65`**
 - Hard-refresh Marketing → Pipeline
 
 ### What
