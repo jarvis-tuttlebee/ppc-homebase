@@ -8,7 +8,8 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-09 — Calendar pipeline notes: Idea / Prep / Execute (Cursor Cloud)
 
 ### Live
-- Marketing **`0.12.66`** (deploy pending)
+- Version ID: `5b1345d8-72a5-450a-b254-1bf839be9d36`
+- Marketing **`0.12.66`**
 - Hard-refresh → Calendar card → Pipeline notes
 
 ### What
