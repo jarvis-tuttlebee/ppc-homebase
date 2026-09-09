@@ -5,6 +5,21 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Calendar pipeline notes: Idea / Prep / Execute (Cursor Cloud)
+
+### Live
+- Marketing **`0.12.66`** (deploy pending)
+- Hard-refresh → Calendar card → Pipeline notes
+
+### What
+1. Pipeline notes are three peer sections: **Idea** → **Prep** → **Execute**
+2. Idea = idea text; Prep = Production plan; Execute = + Products / Location / Requirements pills
+
+### Open / next
+1. Hard-refresh; confirm section order Idea / Prep / Execute
+
+---
+
 ## 2026-09-09 — Save places on calendar when dates form open (Cursor Cloud)
 
 ### Live
