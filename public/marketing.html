@@ -4619,7 +4619,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.57';
+const APP_VERSION = '0.12.58';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -7465,6 +7465,19 @@ function prepCards() {
   return DATA.sections.preparation;
 }
 
+/** Newest into Preparation first (Prepare / return from Exec). */
+function prepRecencyMs(card) {
+  return Date.parse((card && (card.movedAt || card.createdAt)) || '') || 0;
+}
+
+function sortPrepCardsNewestFirst(cards) {
+  return (cards || []).slice().sort((a, b) => {
+    const diff = prepRecencyMs(b) - prepRecencyMs(a);
+    if (diff) return diff;
+    return String(b.id || '').localeCompare(String(a.id || ''));
+  });
+}
+
 function execCards() {
   if (!DATA.sections) DATA.sections = { preparation: [], execution: [], review: [], schedule: [] };
   if (!Array.isArray(DATA.sections.execution)) DATA.sections.execution = [];
@@ -9354,6 +9367,7 @@ function moveExecToPreparation(id) {
   const card = execCards().find(c => c.id === id);
   if (!card) return;
   DATA.sections.execution = execCards().filter(c => c.id !== id);
+  card.movedAt = new Date().toISOString();
   prepCards().push(card);
   syncLinkedSchedulePreview(card, 'prep');
   expandedSections.add('preparation');
@@ -9725,7 +9739,7 @@ function setupLaneDrop(laneEl, laneId) {
 }
 
 function renderPrepLane(lane) {
-  const cards = prepCards().filter(c => lane.match(c));
+  const cards = sortPrepCardsNewestFirst(prepCards().filter(c => lane.match(c)));
   const el = document.createElement('div');
   el.className = 'prep-lane' + (cards.length ? '' : ' is-empty');
   el.dataset.prepLane = lane.id;
@@ -9842,7 +9856,7 @@ function renderPreparationBody() {
   PREP_LANES.forEach(lane => lanes.appendChild(renderPrepLane(lane)));
 
   // Custom / orphan cards that don't fit the six columns.
-  const orphans = prepCards().filter(c => !prepLaneForCard(c));
+  const orphans = sortPrepCardsNewestFirst(prepCards().filter(c => !prepLaneForCard(c)));
   if (orphans.length) {
     const el = document.createElement('div');
     el.className = 'prep-lane';

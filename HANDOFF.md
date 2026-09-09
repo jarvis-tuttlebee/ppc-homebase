@@ -5,10 +5,25 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
-## 2026-09-09 — Calendar weekday labels scroll with days (Cursor Cloud)
+## 2026-09-09 — Prep cards newest-first (Cursor Cloud)
 
 ### Live
 - Version ID: _(pending deploy)_
+- Marketing **`0.12.58`**
+- Hard-refresh Marketing → Preparation
+
+### What
+1. Preparation lane cards sorted by most recently moved into Prep (`movedAt`, then `createdAt`)
+
+### Open / next
+1. Prepare a new idea; confirm it appears at the top of its lane
+
+---
+
+## 2026-09-09 — Calendar weekday labels scroll with days (Cursor Cloud)
+
+### Live
+- Version ID: `be138b90-c245-45b1-ba85-fc1d315f0588`
 - Marketing **`0.12.57`**
 - Hard-refresh Marketing → Calendar (narrow / phone)
 
