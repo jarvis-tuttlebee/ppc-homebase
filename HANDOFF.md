@@ -7,8 +7,10 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ## 2026-09-09 — Ideas Board / List / Grid views (Cursor Cloud)
 
-### Live (after deploy)
+### Live
+- Version ID: `0e6b0cb3-d3f0-4527-82fc-7b888e7c0197`
 - Marketing **`0.12.54`**
+- Hard-refresh Marketing → Pipeline → Content Ideas
 
 ### What
 1. Content Ideas: segmented **Board · List · Grid** toggle (matches Week/Month chrome)
