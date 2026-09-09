@@ -1709,11 +1709,11 @@
     .schedule-ops .panel-section-label:first-child { margin-top: 0; }
     .schedule-ops .panel-field-hint { margin-bottom: 2px; }
     .schedule-source-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
       margin-bottom: 14px;
-      align-items: start;
+      align-items: stretch;
     }
     .schedule-pipeline-pane,
     .schedule-content-pane {
@@ -1812,7 +1812,8 @@
     .schedule-pipeline-notes .review-context-toggle { margin-bottom: 0; }
     .schedule-pipeline-notes .review-context { margin-top: 6px; margin-bottom: 0; }
     #panel.schedule-discover .schedule-source-layout {
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
     }
     #panel.schedule-discover #schedulePipelinePane {
       display: none !important;
@@ -1869,9 +1870,54 @@
     .review-context.open { display: flex; }
     .review-context.schedule-notes-edit {
       color: #2C2C2C;
-      gap: 10px;
+      gap: 12px;
     }
     .review-context.schedule-notes-edit .review-context-row.empty { font-style: normal; color: inherit; }
+    .schedule-note-stage {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .schedule-note-stage + .schedule-note-stage {
+      padding-top: 10px;
+      border-top: 1px solid #EDE9E2;
+    }
+    .schedule-note-stage-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6B7A8D;
+    }
+    .schedule-note-stage .exec-opt-pills {
+      margin: 2px 0 0;
+    }
+    .schedule-note-opt {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .schedule-note-opt[hidden] { display: none !important; }
+    .schedule-note-opt-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .schedule-note-opt-head strong {
+      margin-bottom: 0;
+    }
+    .schedule-note-opt-remove {
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      color: #8a8580;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    .schedule-note-opt-remove:hover { color: #2C2C2C; }
     .schedule-note-input {
       width: 100%;
       box-sizing: border-box;
@@ -4232,7 +4278,7 @@
       .schedule-card { grid-template-columns: 72px 1fr; }
       .schedule-card.no-photo { grid-template-columns: 1fr; }
       .schedule-card-thumb { width: 72px; height: 72px; }
-      .schedule-source-layout { grid-template-columns: 1fr; }
+      .schedule-source-layout { display: flex; flex-direction: column; }
       .schedule-pane-toggle { min-height: 36px; padding: 4px 0; }
       .btn-add, .btn-secondary, .btn-primary { min-height: 40px; }
       .ideas-view-toggle .cal-nav-btn { padding: 7px 11px; min-height: 36px; }
@@ -4738,7 +4784,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.63';
+const APP_VERSION = '0.12.64';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -14911,49 +14957,142 @@ function fillScheduleContext(card) {
   wrap.innerHTML = '';
   wrap.classList.add('schedule-notes-edit');
 
-  const fields = [
-    { key: 'body', label: 'Idea', multiline: true, value: stripHtml(card.body || '') },
-    { key: 'productionPlan', label: 'How to execute', multiline: true, value: stripHtml(card.productionPlan || '') },
-    { key: 'requirements', label: 'Requirements', multiline: true, value: stripHtml(card.requirements || '') },
-    { key: 'productsUsed', label: 'Products', multiline: true, value: stripHtml(card.productsUsed || '') },
-    { key: 'location', label: 'Location', multiline: false, value: stripHtml(card.location || '') },
-    { key: 'contentOutcome', label: 'Outcome', multiline: true, value: stripHtml(card.contentOutcome || '') },
-    { key: 'tweaks', label: 'Tweaks', multiline: true, value: stripHtml(card.tweaks || '') }
+  const SCHEDULE_EXEC_OPTIONAL = [
+    { key: 'productsUsed', id: 'products', label: 'Products', addLabel: '+ Products', multiline: true, placeholder: 'Garments, SKUs, props…' },
+    { key: 'location', id: 'location', label: 'Location', addLabel: '+ Location', multiline: false, placeholder: 'Where this is shot or set…' },
+    { key: 'requirements', id: 'requirements', label: 'Requirements', addLabel: '+ Requirements', multiline: true, placeholder: 'Talent, kit, access, approvals…' }
   ];
 
-  fields.forEach(f => {
+  function appendNoteField(host, spec) {
     const row = document.createElement('div');
     row.className = 'review-context-row';
     const strong = document.createElement('strong');
-    strong.textContent = f.label;
+    strong.textContent = spec.label;
     row.appendChild(strong);
     let input;
-    if (f.type === 'datetime-local') {
-      input = document.createElement('input');
-      input.type = 'datetime-local';
-      input.id = 'scheduleNote_' + f.key;
-      input.value = f.value || '';
-    } else if (f.multiline) {
+    if (spec.multiline) {
       input = document.createElement('textarea');
       input.rows = 2;
-      input.value = f.value || '';
+      input.value = spec.value || '';
     } else {
       input = document.createElement('input');
       input.type = 'text';
-      input.value = f.value || '';
+      input.value = spec.value || '';
     }
     input.className = 'prop-select schedule-note-input';
-    input.dataset.scheduleNote = f.key;
-    input.placeholder = f.label + '…';
+    input.dataset.scheduleNote = spec.key;
+    input.placeholder = spec.placeholder || (spec.label + '…');
     row.appendChild(input);
-    wrap.appendChild(row);
-    if (f.type === 'datetime-local' && typeof replaceNativeDateTimeLocal === 'function') {
-      replaceNativeDateTimeLocal(input, {
-        placeholder: f.label,
-        defaultTime: String(DEFAULT_PUBLISH_HOUR).padStart(2, '0') + ':00'
+    host.appendChild(row);
+    return input;
+  }
+
+  function renderScheduleOptPills(pillsHost, openMap) {
+    pillsHost.innerHTML = '';
+    SCHEDULE_EXEC_OPTIONAL.forEach(spec => {
+      if (openMap[spec.id]) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'exec-opt-pill';
+      btn.textContent = spec.addLabel;
+      btn.title = 'Add ' + spec.label.toLowerCase() + ' details';
+      btn.addEventListener('click', () => {
+        openMap[spec.id] = true;
+        const block = wrap.querySelector('[data-schedule-opt="' + spec.id + '"]');
+        if (block) {
+          block.hidden = false;
+          const field = block.querySelector('[data-schedule-note]');
+          if (field) setTimeout(() => { try { field.focus(); } catch (_) {} }, 30);
+        }
+        renderScheduleOptPills(pillsHost, openMap);
       });
-    }
+      pillsHost.appendChild(btn);
+    });
+    pillsHost.style.display = pillsHost.childNodes.length ? 'flex' : 'none';
+  }
+
+  // —— Prep (idea) ——
+  const prepStage = document.createElement('div');
+  prepStage.className = 'schedule-note-stage';
+  const prepLab = document.createElement('div');
+  prepLab.className = 'schedule-note-stage-label';
+  prepLab.textContent = 'Prep';
+  prepStage.appendChild(prepLab);
+  appendNoteField(prepStage, {
+    key: 'body',
+    label: 'Idea',
+    multiline: true,
+    value: stripHtml(card.body || ''),
+    placeholder: 'Idea…'
   });
+  wrap.appendChild(prepStage);
+
+  // —— Execution (how-to + optional pills) ——
+  const execStage = document.createElement('div');
+  execStage.className = 'schedule-note-stage';
+  const execLab = document.createElement('div');
+  execLab.className = 'schedule-note-stage-label';
+  execLab.textContent = 'Execution';
+  execStage.appendChild(execLab);
+  appendNoteField(execStage, {
+    key: 'productionPlan',
+    label: 'How to execute',
+    multiline: true,
+    value: stripHtml(card.productionPlan || ''),
+    placeholder: 'Programs, editing approach, steps…'
+  });
+
+  const openMap = {};
+  SCHEDULE_EXEC_OPTIONAL.forEach(spec => {
+    openMap[spec.id] = !!stripHtml(card[spec.key] || '').trim();
+  });
+
+  const pillsHost = document.createElement('div');
+  pillsHost.className = 'exec-opt-pills';
+  pillsHost.setAttribute('aria-label', 'Add optional execution details');
+  execStage.appendChild(pillsHost);
+
+  SCHEDULE_EXEC_OPTIONAL.forEach(spec => {
+    const block = document.createElement('div');
+    block.className = 'schedule-note-opt';
+    block.dataset.scheduleOpt = spec.id;
+    block.hidden = !openMap[spec.id];
+    const head = document.createElement('div');
+    head.className = 'schedule-note-opt-head';
+    const strong = document.createElement('strong');
+    strong.textContent = spec.label;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'schedule-note-opt-remove';
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', () => {
+      openMap[spec.id] = false;
+      block.hidden = true;
+      const field = block.querySelector('[data-schedule-note]');
+      if (field) field.value = '';
+      renderScheduleOptPills(pillsHost, openMap);
+    });
+    head.appendChild(strong);
+    head.appendChild(remove);
+    block.appendChild(head);
+    let input;
+    if (spec.multiline) {
+      input = document.createElement('textarea');
+      input.rows = 2;
+    } else {
+      input = document.createElement('input');
+      input.type = 'text';
+    }
+    input.className = 'prop-select schedule-note-input';
+    input.dataset.scheduleNote = spec.key;
+    input.placeholder = spec.placeholder;
+    input.value = stripHtml(card[spec.key] || '');
+    block.appendChild(input);
+    execStage.appendChild(block);
+  });
+
+  renderScheduleOptPills(pillsHost, openMap);
+  wrap.appendChild(execStage);
 
   wrap.classList.toggle('open', !!scheduleContextOpen);
   const chev = document.getElementById('scheduleContextChev');
@@ -14964,15 +15103,18 @@ function fillScheduleContext(card) {
 function readSchedulePipelineNotes(card) {
   if (!card || isDiscoverCard(card)) return;
   const wrap = document.getElementById('scheduleContext');
-  if (!wrap) return;
-  wrap.querySelectorAll('[data-schedule-note]').forEach(el => {
-    const key = el.dataset.scheduleNote;
-    const raw = (el.value || '').trim();
-    if (key === 'dateTime') {
-      card.dateTime = raw ? new Date(raw).toISOString() : '';
-      return;
-    }
-    card[key] = raw;
+  if (!wrap || !wrap.classList.contains('schedule-notes-edit')) return;
+
+  const bodyEl = wrap.querySelector('[data-schedule-note="body"]');
+  if (bodyEl) card.body = (bodyEl.value || '').trim();
+  const planEl = wrap.querySelector('[data-schedule-note="productionPlan"]');
+  if (planEl) card.productionPlan = (planEl.value || '').trim();
+
+  ['productsUsed', 'location', 'requirements'].forEach(key => {
+    const el = wrap.querySelector('[data-schedule-note="' + key + '"]');
+    if (!el) return;
+    if (el.closest('[hidden]')) card[key] = '';
+    else card[key] = (el.value || '').trim();
   });
 }
 
