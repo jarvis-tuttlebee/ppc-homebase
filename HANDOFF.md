@@ -5,6 +5,23 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Add to calendar from pipeline (Cursor Cloud)
+
+### Live
+- Version ID: `0f122120-f2bf-4209-9b52-9ca4fcd81a61`
+- Marketing **`0.12.60`**
+- Hard-refresh Marketing → Pipeline
+
+### What
+1. Ideas / Prep / Exec / Review panels: **Add to calendar** → pick a date → live link on that day
+2. Card stays in the pipeline; calendar slot mirrors progress (same link as Need-fill)
+3. If already linked, button shows the date badge and jumps to the calendar card
+
+### Open / next
+1. Hard-refresh; open a Prep card → Add to calendar → Place → confirm both sides stay linked
+
+---
+
 ## 2026-09-09 — Sticky pipeline section titles (Cursor Cloud)
 
 ### Live
