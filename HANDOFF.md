@@ -5,6 +5,24 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Calendar card: full-width panes + Prep/Exec notes (Cursor Cloud)
+
+### Live
+- Version ID: `3b94c697-56a7-461b-8850-ccd8a2623d53`
+- Marketing **`0.12.64`**
+- Hard-refresh Marketing → Calendar card
+
+### What
+1. **From pipeline** / **Shot / edited content** stack full-width (no 50/50 split)
+2. Pipeline notes: **Prep** (Idea) + **Execution** (How to execute) with **+ Products / + Location / + Requirements** pills
+3. Outcome / Tweaks stay under Shot content Review (removed from pipeline notes dump)
+
+### Open / next
+1. Hard-refresh; expand panes — full card width; pipeline notes match Exec pills
+2. Queued: Save Changes vs Place on calendar bug report
+
+---
+
 ## 2026-09-09 — Add-to-calendar branded ppc-date + Save closes (Cursor Cloud)
 
 ### Live
