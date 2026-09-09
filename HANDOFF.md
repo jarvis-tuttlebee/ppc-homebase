@@ -8,13 +8,14 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-09 — Calendar slot label + Duplicate (Cursor Cloud)
 
 ### Live
-- Version ID: `003c8b8b-f931-47c9-b7fd-7e109ad75dfc`
-- Marketing **`0.12.72`**
+- Version ID: `0224611f-7dab-4c9c-a530-f73e641c2156`
+- Marketing **`0.12.73`**
 - Hard-refresh → Calendar
 
 ### What
 1. **Slot label** stays on filled calendar cards; short label preferred over long idea body on the calendar
 2. Right-click calendar card → **Duplicate** (same day; independent copy, no shared pipeline link)
+3. Empty Need duplicates preserve `slotMoved` so event quota pruning stays correct
 
 ### Open / next
 1. Hard-refresh; set Slot label on a filled card; right-click → Duplicate
