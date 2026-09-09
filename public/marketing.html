@@ -3934,6 +3934,25 @@
       gap: 8px;
       margin-top: 16px;
     }
+    .panel-cal-place {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .panel-cal-place-date {
+      font: inherit;
+      font-size: 12px;
+      color: #2C2C2C;
+      border: 1.5px solid #E2DDD5;
+      border-radius: 8px;
+      background: #fff;
+      padding: 7px 10px;
+      min-height: 36px;
+      min-width: 0;
+      flex: 1 1 140px;
+    }
     .btn-secondary {
       font-family: 'DM Sans', sans-serif;
       font-size: 11px;
@@ -4628,7 +4647,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.59';
+const APP_VERSION = '0.12.60';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -8552,6 +8571,7 @@ function jumpToLinkedSchedule(scheduleId) {
       scheduleViewWeekStart = weekStartSunday(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
     }
   }
+  setMarketingViewMode('calendar');
   expandedSections.add('schedule');
   renderBoard();
   openSchedulePanel(scheduleId);
@@ -8561,6 +8581,149 @@ function jumpToLinkedSchedule(scheduleId) {
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     }
   });
+}
+
+/** Resolve calendar slot linked to a Prep / Exec / Review card. */
+function linkedScheduleForPipelineCard(card) {
+  if (!card) return null;
+  if (card.linkedScheduleId) {
+    const byId = scheduleCards().find(c => c.id === card.linkedScheduleId);
+    if (byId) return byId;
+  }
+  const byPipeline = scheduleCards().find(c => c && c.linkedPipelineId === card.id);
+  if (byPipeline) {
+    card.linkedScheduleId = byPipeline.id;
+    return byPipeline;
+  }
+  return null;
+}
+
+function dateInputToLocalIso(dateStr) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr || '').trim());
+  if (!m) return '';
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString();
+}
+
+function todayDateInputValue() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+/**
+ * Place (or jump to) a live calendar link for an Ideas / Prep / Exec / Review card.
+ * Keeps the card in the pipeline so you can keep working from both places.
+ */
+function placeCardOnCalendar(card, stage, dateInputValue) {
+  if (!card) return;
+  const existing = stage === 'ideas'
+    ? linkedScheduleForIdea(card)
+    : linkedScheduleForPipelineCard(card);
+  if (existing) {
+    jumpToLinkedSchedule(existing.id);
+    return;
+  }
+
+  const iso = dateInputToLocalIso(dateInputValue);
+  if (!iso) {
+    if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Pick a publish date');
+    return;
+  }
+
+  if (typeof savePanelEdits === 'function') {
+    try { savePanelEdits(true); } catch (_) {}
+  }
+
+  const pillar = stage === 'ideas'
+    ? ((card.cat && pillarById(card.cat)) ? card.cat : 'organic')
+    : (card.pillar || 'organic');
+  const format = card.format || 'ig-post';
+  const probe = { scheduledAt: iso, scheduleAt: iso, pillar, format };
+  let slot = findEmptyNeedToFill(probe);
+  if (!slot) {
+    slot = migrateSchedule({
+      id: newScheduleId(),
+      body: '',
+      pillar,
+      format,
+      needContent: true,
+      needLabel: '',
+      publishStatus: 'need',
+      assignees: [],
+      scheduledAt: iso,
+      scheduleAt: iso,
+      contentLayer: '',
+      anchorId: '',
+      createdAt: new Date().toISOString()
+    });
+    scheduleCards().push(slot);
+  }
+
+  if (stage === 'ideas') linkNeedToIdea(slot.id, card.id);
+  else linkNeedToPipelineCard(slot.id, card.id);
+
+  setMarketingViewMode('calendar');
+  if (typeof PPC !== 'undefined' && PPC.showToast) {
+    PPC.showToast('On calendar — keep working from Pipeline or Calendar');
+  }
+}
+
+/** Panel control: Add to calendar (date + place) or jump if already linked. */
+function appendAddToCalendarAction(host, card, stage) {
+  if (!host || !card) return;
+  const linked = stage === 'ideas'
+    ? linkedScheduleForIdea(card)
+    : linkedScheduleForPipelineCard(card);
+
+  if (linked) {
+    const jump = document.createElement('button');
+    jump.type = 'button';
+    jump.className = 'btn-secondary';
+    jump.textContent = scheduleBadgeLabel(linked);
+    jump.title = 'Open linked calendar card';
+    jump.addEventListener('click', () => jumpToLinkedSchedule(linked.id));
+    host.appendChild(jump);
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'panel-cal-place';
+  const openBtn = document.createElement('button');
+  openBtn.type = 'button';
+  openBtn.className = 'btn-secondary';
+  openBtn.textContent = 'Add to calendar';
+  openBtn.title = 'Pin this card to a calendar date — keep working from Pipeline and Calendar';
+  openBtn.addEventListener('click', () => {
+    wrap.innerHTML = '';
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.className = 'panel-cal-place-date';
+    dateInput.value = todayDateInputValue();
+    dateInput.setAttribute('aria-label', 'Publish date');
+    const placeBtn = document.createElement('button');
+    placeBtn.type = 'button';
+    placeBtn.className = 'btn-secondary active';
+    placeBtn.textContent = 'Place on calendar';
+    placeBtn.addEventListener('click', () => {
+      placeCardOnCalendar(card, stage, dateInput.value);
+    });
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn-secondary';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => {
+      wrap.innerHTML = '';
+      wrap.appendChild(openBtn);
+    });
+    wrap.appendChild(dateInput);
+    wrap.appendChild(placeBtn);
+    wrap.appendChild(cancelBtn);
+    try { dateInput.focus(); } catch (_) {}
+  });
+  wrap.appendChild(openBtn);
+  host.appendChild(wrap);
 }
 
 /**
@@ -14257,16 +14420,7 @@ function buildIdeaActions(idea) {
   });
   actions.appendChild(prepBtn);
 
-  const linked = linkedScheduleForIdea(idea);
-  if (linked) {
-    const jump = document.createElement('button');
-    jump.type = 'button';
-    jump.className = 'btn-secondary';
-    jump.textContent = scheduleBadgeLabel(linked);
-    jump.title = 'Open linked calendar card';
-    jump.addEventListener('click', () => jumpToLinkedSchedule(linked.id));
-    actions.appendChild(jump);
-  }
+  appendAddToCalendarAction(actions, idea, 'ideas');
 
   updateIdeaSaveBtn();
 }
@@ -14291,6 +14445,8 @@ function buildPrepActions(card) {
     updateIdeaSaveBtn();
   });
   actions.appendChild(execBtn);
+
+  appendAddToCalendarAction(actions, card, 'prep');
 
   const del = document.createElement('button');
   del.type = 'button';
@@ -14325,6 +14481,8 @@ function buildExecActions(card) {
     updateIdeaSaveBtn();
   });
   actions.appendChild(reviewBtn);
+
+  appendAddToCalendarAction(actions, card, 'execution');
 
   const backBtn = document.createElement('button');
   backBtn.type = 'button';
@@ -14363,12 +14521,15 @@ function buildReviewActions(card) {
   scheduleBtn.className = 'btn-secondary';
   scheduleBtn.id = 'scheduleToggle';
   scheduleBtn.textContent = 'Schedule';
+  scheduleBtn.title = 'Send out of Review onto the calendar (final step)';
   scheduleBtn.addEventListener('click', () => {
     scheduleArmed = !scheduleArmed;
     scheduleBtn.classList.toggle('active', scheduleArmed);
     updateIdeaSaveBtn();
   });
   actions.appendChild(scheduleBtn);
+
+  appendAddToCalendarAction(actions, card, 'review');
 
   const backBtn = document.createElement('button');
   backBtn.type = 'button';
