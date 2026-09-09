@@ -5,6 +5,21 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Ideas Board / List / Grid views (Cursor Cloud)
+
+### Live (after deploy)
+- Marketing **`0.12.54`**
+
+### What
+1. Content Ideas: segmented **Board · List · Grid** toggle (matches Week/Month chrome)
+2. List = scrollable rows; Grid = tidy image cards; Board = existing mood board
+3. Preference saved in localStorage
+
+### Open / next
+1. Hard-refresh Marketing → Pipeline → Content Ideas; flick views on phone + desktop
+
+---
+
 ## 2026-09-09 — Team polish pack (Cursor Cloud)
 
 ### Live

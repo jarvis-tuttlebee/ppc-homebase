@@ -229,7 +229,10 @@
 
     .section-actions {
       display: flex;
-      justify-content: flex-end;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
       margin-bottom: 12px;
     }
     .btn-add {
@@ -246,6 +249,188 @@
       transition: all 0.15s;
     }
     .btn-add:hover { background: #2C2C2C; color: #fff; }
+    .ideas-view-toggle {
+      display: inline-flex;
+      gap: 2px;
+      padding: 2px;
+      border: 1px solid #E2DDD5;
+      border-radius: 20px;
+      background: #f7f5f1;
+    }
+    .ideas-view-toggle .cal-nav-btn {
+      border: none;
+      border-radius: 18px;
+      padding: 5px 12px;
+      background: transparent;
+      min-height: 32px;
+    }
+    .ideas-view-toggle .cal-nav-btn.is-active {
+      background: #fff;
+      color: #2C2C2C;
+      box-shadow: 0 1px 2px rgba(44,44,44,0.08);
+    }
+    .ideas-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ideas-list-row {
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      width: 100%;
+      text-align: left;
+      border: 1px solid #E2DDD5;
+      border-radius: 10px;
+      background: #fff;
+      padding: 8px 10px;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ideas-list-row:hover { border-color: #cfc9bf; background: #faf9f7; }
+    .ideas-list-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f0ede8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .ideas-list-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .ideas-list-thumb.empty {
+      font-size: 10px;
+      color: #9a958d;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .ideas-list-main { min-width: 0; }
+    .ideas-list-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #2C2C2C;
+      line-height: 1.35;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ideas-list-title.empty { color: #b5b0a8; font-weight: 500; font-style: italic; }
+    .ideas-list-meta {
+      margin-top: 3px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      font-size: 11px;
+      color: #6B7A8D;
+    }
+    .ideas-list-meta .is-scheduled { color: #4E6E6C; font-weight: 600; }
+    .ideas-list-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .ideas-list-del {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #9a958d;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .ideas-list-del:hover { background: #f3f1ee; color: #2C2C2C; }
+    .ideas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+      gap: 10px;
+    }
+    .ideas-grid-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #E2DDD5;
+      border-radius: 10px;
+      background: #fff;
+      overflow: hidden;
+      cursor: pointer;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ideas-grid-card:hover { border-color: #cfc9bf; }
+    .ideas-grid-thumb {
+      aspect-ratio: 1;
+      background: #f0ede8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .ideas-grid-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .ideas-grid-thumb.empty {
+      font-size: 10px;
+      color: #9a958d;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .ideas-grid-body { padding: 8px 10px 10px; min-width: 0; }
+    .ideas-grid-cat {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6B7A8D;
+      margin-bottom: 3px;
+    }
+    .ideas-grid-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #2C2C2C;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .ideas-grid-title.empty { color: #b5b0a8; font-weight: 500; font-style: italic; }
+    .ideas-grid-del {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.92);
+      color: #6B7A8D;
+      font-size: 16px;
+      cursor: pointer;
+      line-height: 1;
+      box-shadow: 0 1px 3px rgba(44,44,44,0.08);
+    }
+    @media (hover: none) {
+      .ideas-list-del { color: #6B7A8D; }
+    }
 
     /* Full-width Ideas board — matches Prep / Exec / Review section width. */
     .mood-board-wrap {
@@ -3924,6 +4109,9 @@
       .schedule-source-layout { grid-template-columns: 1fr; }
       .schedule-pane-toggle { min-height: 36px; padding: 4px 0; }
       .btn-add, .btn-secondary, .btn-primary { min-height: 40px; }
+      .ideas-view-toggle .cal-nav-btn { padding: 7px 11px; min-height: 36px; }
+      .ideas-list-row { grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; min-height: 68px; }
+      .ideas-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
 
       /* Calendar header: date on its own row; tools + jump stay compact. */
       .cal-nav {
@@ -4409,7 +4597,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.53';
+const APP_VERSION = '0.12.54';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -4426,6 +4614,7 @@ let marketingCatchupToastAt = 0;
 const DEFAULT_PUBLISH_HOUR = 17;
 
 const VIEW_MODE_KEY = 'ppc-marketing-view-mode';
+const IDEAS_VIEW_KEY = 'ppc-ideas-view-mode';
 const MOOD_H_KEY = 'ppc-marketing-mood-h';
 const EARLIER_WEEKS_KEY = 'ppc-marketing-earlier-weeks';
 const CAL_RANGE_KEY = 'ppc-marketing-cal-range';
@@ -4478,8 +4667,27 @@ function syncLayoutPrefsToData() {
   };
 }
 let marketingViewMode = loadViewMode();
+let ideasViewMode = (function () {
+  try {
+    const v = localStorage.getItem(IDEAS_VIEW_KEY);
+    if (v === 'board' || v === 'list' || v === 'grid') return v;
+  } catch (_) {}
+  return 'board';
+})();
 let marketingMoodH = readLocalMoodHeight();
 if (marketingMoodH == null) marketingMoodH = MOOD_H_DEFAULT;
+
+function setIdeasViewMode(mode) {
+  if (mode !== 'board' && mode !== 'list' && mode !== 'grid') mode = 'board';
+  ideasViewMode = mode;
+  try { localStorage.setItem(IDEAS_VIEW_KEY, mode); } catch (_) {}
+  if (mode !== 'board') {
+    try { cleanupMoodPan(); } catch (_) {}
+    moodViewportEl = null;
+    moodCanvasEl = null;
+  }
+  renderBoard();
+}
 
 function setMarketingViewMode(mode) {
   if (mode !== 'calendar' && mode !== 'pipeline') mode = 'calendar';
@@ -8385,34 +8593,193 @@ function clearScheduledContent(scheduleId) {
   }
 }
 
-function renderIdeasBody() {
-  const body = document.createElement('div');
-  body.className = 'section-body';
+function sortedIdeasForBrowse() {
+  return DATA.ideas.slice().sort((a, b) => {
+    const at = Date.parse(a.createdAt || '') || 0;
+    const bt = Date.parse(b.createdAt || '') || 0;
+    if (bt !== at) return bt - at;
+    return String(a.id).localeCompare(String(b.id));
+  });
+}
 
-  restoreIdeaRefsFromSchedule();
-  ensureIdeaPositions();
-  if (!moodViewRestored) {
-    moodViewRestored = true;
-    restoreMoodView();
-  }
+function ideaBrowseTitle(idea) {
+  const plain = stripHtml(idea.body || '');
+  return plain || 'No idea yet';
+}
 
-  const actions = document.createElement('div');
-  actions.className = 'section-actions';
-  const addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.className = 'btn-add';
-  addBtn.textContent = '+ Add idea';
-  addBtn.addEventListener('click', e => { e.stopPropagation(); addIdea(); });
-  actions.appendChild(addBtn);
-  body.appendChild(actions);
+function ideaBrowseMeta(idea) {
+  const cat = idea.cat ? catById(idea.cat) : null;
+  const pillarId = (idea.cat && pillarById(idea.cat)) ? idea.cat : 'organic';
+  const fmtLabel = idea.format ? formatLabel(pillarId, idea.format) : '';
+  const linkedSlot = linkedScheduleForIdea(idea);
+  return {
+    label: fmtLabel || (cat && cat.label) || '',
+    linkedSlot,
+    tone: ideaFormatTone(idea) || (cat && cat.bg) || '#564A5E'
+  };
+}
 
-  if (!DATA.ideas.length) {
-    const empty = document.createElement('div');
-    empty.className = 'board-empty-hint';
-    empty.textContent = 'No ideas yet — tap + Add idea, or drop a reference image onto the board.';
-    body.appendChild(empty);
-  }
+function buildIdeasViewToggle() {
+  const toggle = document.createElement('div');
+  toggle.className = 'ideas-view-toggle';
+  toggle.setAttribute('role', 'tablist');
+  toggle.setAttribute('aria-label', 'Ideas layout');
+  [
+    { id: 'board', label: 'Board' },
+    { id: 'list', label: 'List' },
+    { id: 'grid', label: 'Grid' }
+  ].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cal-nav-btn' + (ideasViewMode === opt.id ? ' is-active' : '');
+    btn.textContent = opt.label;
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', ideasViewMode === opt.id ? 'true' : 'false');
+    btn.title = opt.id === 'board'
+      ? 'Freeform mood board'
+      : (opt.id === 'list' ? 'Scrollable list' : 'Neat image grid');
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (ideasViewMode === opt.id) return;
+      setIdeasViewMode(opt.id);
+    });
+    toggle.appendChild(btn);
+  });
+  return toggle;
+}
 
+function renderIdeasListView(body) {
+  const list = document.createElement('div');
+  list.className = 'ideas-list';
+  sortedIdeasForBrowse().forEach(idea => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'ideas-list-row';
+    row.dataset.ideaId = idea.id;
+
+    const thumb = document.createElement('div');
+    thumb.className = 'ideas-list-thumb' + (idea.imageData ? '' : ' empty');
+    if (idea.imageData) {
+      const img = document.createElement('img');
+      img.src = mediaSrc(idea.imageData);
+      img.alt = '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      thumb.appendChild(img);
+    } else {
+      thumb.textContent = 'No img';
+    }
+    row.appendChild(thumb);
+
+    const main = document.createElement('div');
+    main.className = 'ideas-list-main';
+    const title = document.createElement('div');
+    const plain = stripHtml(idea.body || '');
+    title.className = 'ideas-list-title' + (plain ? '' : ' empty');
+    title.textContent = ideaBrowseTitle(idea);
+    main.appendChild(title);
+    const meta = document.createElement('div');
+    meta.className = 'ideas-list-meta';
+    const info = ideaBrowseMeta(idea);
+    if (info.label) {
+      const lab = document.createElement('span');
+      lab.textContent = info.label;
+      lab.style.color = accentTextColor(info.tone);
+      meta.appendChild(lab);
+    }
+    if (info.linkedSlot) {
+      const badge = document.createElement('span');
+      badge.className = 'is-scheduled';
+      badge.textContent = scheduleBadgeLabel(info.linkedSlot);
+      meta.appendChild(badge);
+    }
+    main.appendChild(meta);
+    row.appendChild(main);
+
+    const actions = document.createElement('div');
+    actions.className = 'ideas-list-actions';
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'ideas-list-del';
+    del.textContent = '×';
+    del.title = 'Remove idea';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (!confirm('Delete this idea?')) return;
+      if (activeIdeaId === idea.id) closePanel();
+      removeIdea(idea.id);
+    });
+    actions.appendChild(del);
+    row.appendChild(actions);
+
+    row.addEventListener('click', () => openPanel(idea.id));
+    list.appendChild(row);
+  });
+  body.appendChild(list);
+}
+
+function renderIdeasGridView(body) {
+  const grid = document.createElement('div');
+  grid.className = 'ideas-grid';
+  sortedIdeasForBrowse().forEach(idea => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'ideas-grid-card';
+    card.dataset.ideaId = idea.id;
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'ideas-grid-del';
+    del.textContent = '×';
+    del.title = 'Remove idea';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (!confirm('Delete this idea?')) return;
+      if (activeIdeaId === idea.id) closePanel();
+      removeIdea(idea.id);
+    });
+    card.appendChild(del);
+
+    const thumb = document.createElement('div');
+    thumb.className = 'ideas-grid-thumb' + (idea.imageData ? '' : ' empty');
+    if (idea.imageData) {
+      const img = document.createElement('img');
+      img.src = mediaSrc(idea.imageData);
+      img.alt = '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      thumb.appendChild(img);
+    } else {
+      thumb.textContent = 'No image';
+    }
+    card.appendChild(thumb);
+
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'ideas-grid-body';
+    const info = ideaBrowseMeta(idea);
+    if (info.label) {
+      const cat = document.createElement('div');
+      cat.className = 'ideas-grid-cat';
+      cat.textContent = info.label;
+      cat.style.color = accentTextColor(info.tone);
+      bodyEl.appendChild(cat);
+    }
+    const title = document.createElement('div');
+    const plain = stripHtml(idea.body || '');
+    title.className = 'ideas-grid-title' + (plain ? '' : ' empty');
+    title.textContent = ideaBrowseTitle(idea);
+    bodyEl.appendChild(title);
+    card.appendChild(bodyEl);
+
+    card.addEventListener('click', () => openPanel(idea.id));
+    grid.appendChild(card);
+  });
+  body.appendChild(grid);
+}
+
+function renderIdeasBoardView(body) {
   const cardSize = ideaCardSize(DATA.ideas.length);
 
   const viewport = document.createElement('div');
@@ -8511,7 +8878,6 @@ function renderIdeasBody() {
 
   viewport.addEventListener('contextmenu', e => {
     if (e.target.closest('.idea-card')) return;
-    // Right-drag pan uses button 2 — skip menu if Space-pan is active.
     if (moodSpaceHeld) {
       e.preventDefault();
       return;
@@ -8564,6 +8930,43 @@ function renderIdeasBody() {
     pendingFitIdeas = false;
     requestAnimationFrame(() => resetIdeasViewAfterReshuffle());
   }
+}
+
+function renderIdeasBody() {
+  const body = document.createElement('div');
+  body.className = 'section-body';
+
+  restoreIdeaRefsFromSchedule();
+  ensureIdeaPositions();
+  if (!moodViewRestored) {
+    moodViewRestored = true;
+    restoreMoodView();
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'section-actions';
+  actions.appendChild(buildIdeasViewToggle());
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'btn-add';
+  addBtn.textContent = '+ Add idea';
+  addBtn.addEventListener('click', e => { e.stopPropagation(); addIdea(); });
+  actions.appendChild(addBtn);
+  body.appendChild(actions);
+
+  if (!DATA.ideas.length) {
+    const empty = document.createElement('div');
+    empty.className = 'board-empty-hint';
+    empty.textContent = ideasViewMode === 'board'
+      ? 'No ideas yet — tap + Add idea, or drop a reference image onto the board.'
+      : 'No ideas yet — tap + Add idea to start the list.';
+    body.appendChild(empty);
+    return body;
+  }
+
+  if (ideasViewMode === 'list') renderIdeasListView(body);
+  else if (ideasViewMode === 'grid') renderIdeasGridView(body);
+  else renderIdeasBoardView(body);
   return body;
 }
 
