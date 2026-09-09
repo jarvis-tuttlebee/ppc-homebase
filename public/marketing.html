@@ -4800,7 +4800,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.69';
+const APP_VERSION = '0.12.70';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -7122,11 +7122,19 @@ function ensureIdeaPositions() {
 /**
  * Restore Ideas-board reference cards for calendar slots that still point at a
  * sourceIdeaId after an older Prepare removed the idea from the board.
+ * Skips slots that have already moved into Prep / Exec / Review so Prepare
+ * stays permanent and pipeline/calendar progress is not duplicated back into Ideas.
  */
 function restoreIdeaRefsFromSchedule() {
   let changed = false;
   scheduleCards().forEach(slot => {
     if (!slot || !slot.sourceIdeaId) return;
+    const stage = String(slot.linkedPipelineStage || '');
+    if (stage && stage !== 'ideas') return;
+    if (slot.linkedPipelineId && findPipelineCardById(slot.linkedPipelineId)) return;
+    // Also skip if a prep/exec/review card already owns this source idea.
+    if (findPipelineCardBySourceIdea(slot.sourceIdeaId)) return;
+
     const existing = (DATA.ideas || []).find(i => i.id === slot.sourceIdeaId);
     if (existing) {
       if (existing.linkedScheduleId !== slot.id) {
@@ -7156,6 +7164,30 @@ function restoreIdeaRefsFromSchedule() {
     changed = true;
   });
   return changed;
+}
+
+/** Prep / Exec / Review card that originated from this Ideas id, if any. */
+function findPipelineCardBySourceIdea(ideaId) {
+  if (!ideaId) return null;
+  return allPipelineCards().find(entry => entry.card && entry.card.sourceIdeaId === ideaId) || null;
+}
+
+/** Drop Ideas that already moved into Prep/Exec/Review (or calendar past Ideas). */
+function pruneIdeasAlreadyInPipeline() {
+  if (!Array.isArray(DATA.ideas) || !DATA.ideas.length) return false;
+  const before = DATA.ideas.length;
+  DATA.ideas = DATA.ideas.filter(idea => {
+    if (!idea || !idea.id) return false;
+    if (findPipelineCardBySourceIdea(idea.id)) return false;
+    const slot = linkedScheduleForIdea(idea);
+    if (slot) {
+      const stage = String(slot.linkedPipelineStage || '');
+      if (stage && stage !== 'ideas') return false;
+      if (slot.linkedPipelineId && findPipelineCardById(slot.linkedPipelineId)) return false;
+    }
+    return true;
+  });
+  return DATA.ideas.length !== before;
 }
 
 /** Pack ideas into a viewport-filling grid with adaptive gaps and column count. */
@@ -9515,6 +9547,8 @@ function renderIdeasBody() {
   body.className = 'section-body';
 
   restoreIdeaRefsFromSchedule();
+  // Ideas that already live in Prep/Exec/Review (or calendar past Ideas) leave Ideas.
+  pruneIdeasAlreadyInPipeline();
   ensureIdeaPositions();
   if (!moodViewRestored) {
     moodViewRestored = true;
@@ -10481,26 +10515,35 @@ function syncLinkedSchedulePreview(card, stage) {
   if (!slot || isDiscoverCard(slot)) return null;
   const previewStatus = stage === 'ideas' ? 'need'
     : (stage === 'prep' ? 'prep' : 'execute');
+  // Prefer pipeline card fields when set; otherwise keep existing calendar progress.
+  const keep = (next, prev) => {
+    const n = next == null ? '' : next;
+    const p = prev == null ? '' : prev;
+    if (typeof n === 'string' && typeof p === 'string') {
+      return (stripHtml(n).trim() ? n : p) || '';
+    }
+    return n || p || '';
+  };
   return fillEmptyNeedSlot(slot, {
     ...slot,
-    body: card.body || '',
-    imageData: card.imageData || null,
-    imageW: card.imageW,
-    imageH: card.imageH,
+    body: keep(card.body, slot.body),
+    imageData: card.imageData || slot.imageData || null,
+    imageW: card.imageW != null ? card.imageW : slot.imageW,
+    imageH: card.imageH != null ? card.imageH : slot.imageH,
     pillar: (stage === 'ideas'
       ? ((card.cat && pillarById(card.cat)) ? card.cat : (slot.pillar || 'organic'))
       : (card.pillar || slot.pillar || 'organic')),
     format: card.format || slot.format,
     sourceIdeaId: (stage === 'ideas' ? card.id : null) || card.sourceIdeaId || slot.sourceIdeaId || null,
     productionPlan: (stage === 'prep' || stage === 'ideas')
-      ? (card.productionPlan || '')
+      ? keep(card.productionPlan, slot.productionPlan)
       : (slot.productionPlan || ''),
     executionHowTo: (stage === 'execution' || stage === 'review')
-      ? (card.productionPlan || '')
-      : (slot.executionHowTo != null ? slot.executionHowTo : ''),
-    productsUsed: card.productsUsed || '',
-    location: card.location || '',
-    requirements: card.requirements || '',
+      ? keep(card.executionHowTo || card.productionPlan, slot.executionHowTo)
+      : (slot.executionHowTo || ''),
+    productsUsed: keep(card.productsUsed, slot.productsUsed),
+    location: keep(card.location, slot.location),
+    requirements: keep(card.requirements, slot.requirements),
     reviewMedia: stage === 'review' ? (card.reviewMedia || null) : (slot.reviewMedia || null),
     reviewMediaW: stage === 'review' ? (card.reviewMediaW || null) : (slot.reviewMediaW || null),
     reviewMediaH: stage === 'review' ? (card.reviewMediaH || null) : (slot.reviewMediaH || null),
@@ -10513,7 +10556,10 @@ function syncLinkedSchedulePreview(card, stage) {
     linkedPipelineId: stage === 'ideas' ? '' : card.id,
     linkedPipelineStage: stage === 'ideas' ? 'ideas' : stage,
     linkedScheduleId: card.linkedScheduleId,
-    publishStatus: previewStatus
+    // Keep an explicit calendar status when already past Need; otherwise mirror stage.
+    publishStatus: (slot.publishStatus && slot.publishStatus !== 'need' && stage !== 'ideas')
+      ? slot.publishStatus
+      : previewStatus
   });
 }
 
@@ -16659,6 +16705,31 @@ function moveIdeaToPrep(idea, pillar, format) {
   if (!format) format = defaultFormatForPillar(pillar);
 
   const linkedScheduleId = idea.linkedScheduleId || '';
+
+  // Already prepared — don't duplicate; leave Ideas and open the existing Prep card.
+  const existingPrep = prepCards().find(c => c && c.sourceIdeaId === idea.id);
+  if (existingPrep) {
+    DATA.ideas = DATA.ideas.filter(i => i.id !== idea.id);
+    if (linkedScheduleId) {
+      existingPrep.linkedScheduleId = linkedScheduleId;
+      syncLinkedSchedulePreview(existingPrep, 'prep');
+      const liveSlot = scheduleCards().find(c => c.id === linkedScheduleId);
+      if (liveSlot) {
+        liveSlot.linkedPipelineId = existingPrep.id;
+        liveSlot.linkedPipelineStage = 'prep';
+        liveSlot.sourceIdeaId = idea.id;
+      }
+    }
+    expandedSections.add('preparation');
+    expandedPillars.add(existingPrep.pillar || pillar);
+    closePanel();
+    clearTimeout(saveTimer);
+    saveData();
+    renderBoard();
+    openPrepPanel(existingPrep.id);
+    return;
+  }
+
   const prepCard = {
     id: newPrepId(),
     sourceIdeaId: idea.id,
@@ -16687,13 +16758,9 @@ function moveIdeaToPrep(idea, pillar, format) {
     }
   }
 
-  // Keep linked ideas on the Ideas board as a live schedule reference (badge
-  // updates via linkedPipelineStage). Unlinked ideas still move off the board.
-  if (!linkedScheduleId) {
-    DATA.ideas = DATA.ideas.filter(i => i.id !== idea.id);
-  } else {
-    idea.linkedScheduleId = linkedScheduleId;
-  }
+  // Always leave Ideas when preparing (list/grid/board). Calendar link continues
+  // via prep.linkedScheduleId + schedule.sourceIdeaId — do not resurrect in Ideas.
+  DATA.ideas = DATA.ideas.filter(i => i.id !== idea.id);
   prepCards().push(prepCard);
   if (linkedScheduleId) {
     syncLinkedSchedulePreview(prepCard, 'prep');
