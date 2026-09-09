@@ -276,21 +276,30 @@
     }
     .ideas-list-row {
       display: grid;
-      grid-template-columns: 56px minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 12px;
       align-items: center;
       width: 100%;
       text-align: left;
       border: 1px solid #E2DDD5;
-      border-radius: 10px;
-      background: #fff;
-      padding: 8px 10px;
+      border-left: 4px solid #564A5E;
+      border-radius: 8px;
+      background: #F0EDE8;
+      padding: 10px 10px 10px 12px;
       cursor: pointer;
       font: inherit;
       color: inherit;
       -webkit-tap-highlight-color: transparent;
     }
-    .ideas-list-row:hover { border-color: #cfc9bf; background: #faf9f7; }
+    .ideas-list-row.has-photo {
+      grid-template-columns: 56px minmax(0, 1fr) auto;
+      background: #fff;
+      border-left-width: 1px;
+      border-left-color: #E2DDD5;
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+    .ideas-list-row:hover { filter: brightness(0.98); }
     .ideas-list-thumb {
       width: 56px;
       height: 56px;
@@ -308,12 +317,6 @@
       object-fit: cover;
       display: block;
     }
-    .ideas-list-thumb.empty {
-      font-size: 10px;
-      color: #9a958d;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
     .ideas-list-main { min-width: 0; }
     .ideas-list-title {
       font-size: 13px;
@@ -324,16 +327,30 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .ideas-list-title.empty { color: #b5b0a8; font-weight: 500; font-style: italic; }
+    .ideas-list-title.empty { color: #8a8580; font-weight: 500; font-style: italic; }
     .ideas-list-meta {
       margin-top: 3px;
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 6px 10px;
       font-size: 11px;
       color: #6B7A8D;
     }
     .ideas-list-meta .is-scheduled { color: #4E6E6C; font-weight: 600; }
+    .ideas-add-photo {
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6B7A8D;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .ideas-add-photo:hover { color: #2C2C2C; }
     .ideas-list-actions {
       display: flex;
       align-items: center;
@@ -362,17 +379,26 @@
       display: flex;
       flex-direction: column;
       border: 1px solid #E2DDD5;
-      border-radius: 10px;
-      background: #fff;
+      border-left: 4px solid #564A5E;
+      border-radius: 8px;
+      background: #F0EDE8;
       overflow: hidden;
       cursor: pointer;
       text-align: left;
       font: inherit;
       color: inherit;
       padding: 0;
+      min-height: 108px;
       -webkit-tap-highlight-color: transparent;
     }
-    .ideas-grid-card:hover { border-color: #cfc9bf; }
+    .ideas-grid-card.has-photo {
+      border-left-width: 1px;
+      border-left-color: #E2DDD5;
+      border-radius: 10px;
+      background: #fff;
+      min-height: 0;
+    }
+    .ideas-grid-card:hover { filter: brightness(0.98); }
     .ideas-grid-thumb {
       aspect-ratio: 1;
       background: #f0ede8;
@@ -387,20 +413,14 @@
       object-fit: cover;
       display: block;
     }
-    .ideas-grid-thumb.empty {
-      font-size: 10px;
-      color: #9a958d;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    .ideas-grid-body { padding: 8px 10px 10px; min-width: 0; }
+    .ideas-grid-body { padding: 10px 12px 12px; min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .ideas-grid-card.has-photo .ideas-grid-body { padding: 8px 10px 10px; }
     .ideas-grid-cat {
       font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: #6B7A8D;
-      margin-bottom: 3px;
     }
     .ideas-grid-title {
       font-size: 12px;
@@ -408,11 +428,12 @@
       color: #2C2C2C;
       line-height: 1.35;
       display: -webkit-box;
-      -webkit-line-clamp: 3;
+      -webkit-line-clamp: 4;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    .ideas-grid-title.empty { color: #b5b0a8; font-weight: 500; font-style: italic; }
+    .ideas-grid-title.empty { color: #8a8580; font-weight: 500; font-style: italic; }
+    .ideas-grid-card:not(.has-photo) .ideas-grid-title { -webkit-line-clamp: 5; }
     .ideas-grid-del {
       position: absolute;
       top: 6px;
@@ -4110,7 +4131,8 @@
       .schedule-pane-toggle { min-height: 36px; padding: 4px 0; }
       .btn-add, .btn-secondary, .btn-primary { min-height: 40px; }
       .ideas-view-toggle .cal-nav-btn { padding: 7px 11px; min-height: 36px; }
-      .ideas-list-row { grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; min-height: 68px; }
+      .ideas-list-row { gap: 10px; min-height: 56px; }
+      .ideas-list-row.has-photo { grid-template-columns: 52px minmax(0, 1fr) auto; }
       .ideas-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
 
       /* Calendar header: date on its own row; tools + jump stay compact. */
@@ -4203,9 +4225,9 @@
   <div class="panel-body-wrap">
     <div class="panel-exec-layout" id="panelExecLayout">
       <div class="panel-image-wrap" id="pImageWrap">
-        <div class="panel-section-label">Image</div>
+        <div class="panel-section-label" id="pImageSectionLabel">Photo</div>
         <img id="pImage" alt="">
-        <div class="panel-image-empty" id="pImageEmpty">Drop or paste an image</div>
+        <div class="panel-image-empty" id="pImageEmpty">Photo optional — tap, drop, or paste</div>
       </div>
       <div class="panel-fields">
         <div class="panel-props" id="panelProps"></div>
@@ -4597,7 +4619,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.54';
+const APP_VERSION = '0.12.55';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -8265,11 +8287,13 @@ function renderIdeaCard(idea, cardSize) {
   } else {
     const ph = document.createElement('div');
     ph.className = 'placeholder';
-    ph.innerHTML = 'Click to open<br>or drop image';
+    const ph = document.createElement('div');
+    ph.className = 'placeholder';
+    ph.innerHTML = 'Add photo<br><span style="font-weight:500;opacity:.85">(optional)</span>';
     well.appendChild(ph);
   }
 
-  well.title = 'Click to open · drag to move · drop image to replace';
+  well.title = 'Open idea · drop or tap Add photo · drag to move';
   card.appendChild(well);
   // Whole card accepts drops (not only the image well) so drops on the
   // preview text still land on this idea instead of spawning a new card.
@@ -8637,7 +8661,7 @@ function buildIdeasViewToggle() {
     btn.setAttribute('aria-selected', ideasViewMode === opt.id ? 'true' : 'false');
     btn.title = opt.id === 'board'
       ? 'Freeform mood board'
-      : (opt.id === 'list' ? 'Scrollable list' : 'Neat image grid');
+      : (opt.id === 'list' ? 'Scrollable text list' : 'Compact card grid');
     btn.addEventListener('click', e => {
       e.stopPropagation();
       if (ideasViewMode === opt.id) return;
@@ -8648,28 +8672,75 @@ function buildIdeasViewToggle() {
   return toggle;
 }
 
+function pickImageFile() {
+  return new Promise(resolve => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.setAttribute('aria-hidden', 'true');
+    input.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;opacity:0';
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0] ? input.files[0] : null;
+      if (input.parentNode) input.parentNode.removeChild(input);
+      resolve(file);
+    });
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+
+async function pickAndApplyIdeaImage(ideaId) {
+  const file = await pickImageFile();
+  if (!file) return;
+  await applyImageToIdea(ideaId, file);
+}
+
+function appendIdeasAddPhotoControl(host, ideaId) {
+  const btn = document.createElement('span');
+  btn.className = 'ideas-add-photo';
+  btn.setAttribute('role', 'button');
+  btn.tabIndex = 0;
+  btn.textContent = 'Add photo';
+  btn.title = 'Attach a reference photo';
+  const activate = e => {
+    e.stopPropagation();
+    e.preventDefault();
+    // Mobile-friendly: open the system picker directly. Panel still has drop/paste.
+    pickAndApplyIdeaImage(ideaId);
+  };
+  btn.addEventListener('click', activate);
+  btn.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') activate(e);
+  });
+  host.appendChild(btn);
+}
+
 function renderIdeasListView(body) {
   const list = document.createElement('div');
   list.className = 'ideas-list';
   sortedIdeasForBrowse().forEach(idea => {
+    const hasPhoto = Boolean(idea.imageData);
+    const info = ideaBrowseMeta(idea);
     const row = document.createElement('button');
     row.type = 'button';
-    row.className = 'ideas-list-row';
+    row.className = 'ideas-list-row' + (hasPhoto ? ' has-photo' : '');
     row.dataset.ideaId = idea.id;
+    if (!hasPhoto) {
+      row.style.borderLeftColor = info.tone;
+      row.style.background = hexWash(info.tone, 0.12);
+    }
 
-    const thumb = document.createElement('div');
-    thumb.className = 'ideas-list-thumb' + (idea.imageData ? '' : ' empty');
-    if (idea.imageData) {
+    if (hasPhoto) {
+      const thumb = document.createElement('div');
+      thumb.className = 'ideas-list-thumb';
       const img = document.createElement('img');
       img.src = mediaSrc(idea.imageData);
       img.alt = '';
       img.loading = 'lazy';
       img.decoding = 'async';
       thumb.appendChild(img);
-    } else {
-      thumb.textContent = 'No img';
+      row.appendChild(thumb);
     }
-    row.appendChild(thumb);
 
     const main = document.createElement('div');
     main.className = 'ideas-list-main';
@@ -8680,7 +8751,6 @@ function renderIdeasListView(body) {
     main.appendChild(title);
     const meta = document.createElement('div');
     meta.className = 'ideas-list-meta';
-    const info = ideaBrowseMeta(idea);
     if (info.label) {
       const lab = document.createElement('span');
       lab.textContent = info.label;
@@ -8693,6 +8763,7 @@ function renderIdeasListView(body) {
       badge.textContent = scheduleBadgeLabel(info.linkedSlot);
       meta.appendChild(badge);
     }
+    if (!hasPhoto) appendIdeasAddPhotoControl(meta, idea.id);
     main.appendChild(meta);
     row.appendChild(main);
 
@@ -8723,10 +8794,16 @@ function renderIdeasGridView(body) {
   const grid = document.createElement('div');
   grid.className = 'ideas-grid';
   sortedIdeasForBrowse().forEach(idea => {
+    const hasPhoto = Boolean(idea.imageData);
+    const info = ideaBrowseMeta(idea);
     const card = document.createElement('button');
     card.type = 'button';
-    card.className = 'ideas-grid-card';
+    card.className = 'ideas-grid-card' + (hasPhoto ? ' has-photo' : '');
     card.dataset.ideaId = idea.id;
+    if (!hasPhoto) {
+      card.style.borderLeftColor = info.tone;
+      card.style.background = hexWash(info.tone, 0.12);
+    }
 
     const del = document.createElement('button');
     del.type = 'button';
@@ -8742,23 +8819,20 @@ function renderIdeasGridView(body) {
     });
     card.appendChild(del);
 
-    const thumb = document.createElement('div');
-    thumb.className = 'ideas-grid-thumb' + (idea.imageData ? '' : ' empty');
-    if (idea.imageData) {
+    if (hasPhoto) {
+      const thumb = document.createElement('div');
+      thumb.className = 'ideas-grid-thumb';
       const img = document.createElement('img');
       img.src = mediaSrc(idea.imageData);
       img.alt = '';
       img.loading = 'lazy';
       img.decoding = 'async';
       thumb.appendChild(img);
-    } else {
-      thumb.textContent = 'No image';
+      card.appendChild(thumb);
     }
-    card.appendChild(thumb);
 
     const bodyEl = document.createElement('div');
     bodyEl.className = 'ideas-grid-body';
-    const info = ideaBrowseMeta(idea);
     if (info.label) {
       const cat = document.createElement('div');
       cat.className = 'ideas-grid-cat';
@@ -8771,6 +8845,12 @@ function renderIdeasGridView(body) {
     title.className = 'ideas-grid-title' + (plain ? '' : ' empty');
     title.textContent = ideaBrowseTitle(idea);
     bodyEl.appendChild(title);
+    if (!hasPhoto) {
+      const meta = document.createElement('div');
+      meta.className = 'ideas-list-meta';
+      appendIdeasAddPhotoControl(meta, idea.id);
+      bodyEl.appendChild(meta);
+    }
     card.appendChild(bodyEl);
 
     card.addEventListener('click', () => openPanel(idea.id));
@@ -8958,8 +9038,8 @@ function renderIdeasBody() {
     const empty = document.createElement('div');
     empty.className = 'board-empty-hint';
     empty.textContent = ideasViewMode === 'board'
-      ? 'No ideas yet — tap + Add idea, or drop a reference image onto the board.'
-      : 'No ideas yet — tap + Add idea to start the list.';
+      ? 'No ideas yet — tap + Add idea, jot the thought, then send to Prep when ready. Photos are optional.'
+      : 'No ideas yet — tap + Add idea, write it down, then move to Prep when you’re ready. Photos are optional.';
     body.appendChild(empty);
     return body;
   }
@@ -14378,10 +14458,20 @@ function setDescSectionMode(mode) {
   const label = document.getElementById('descSectionLabel');
   const desc = document.getElementById('pDesc');
   const fmt = document.getElementById('descFmtBar');
+  const imageLabel = document.getElementById('pImageSectionLabel');
+  const imageEmpty = document.getElementById('pImageEmpty');
   if (label) label.textContent = 'Idea';
   if (desc) {
     desc.classList.add('short');
     desc.setAttribute('placeholder', mode === 'exec' ? 'Idea from Preparation…' : 'Add an idea…');
+  }
+  if (imageLabel) {
+    imageLabel.textContent = mode === 'idea' ? 'Photo' : 'Image';
+  }
+  if (imageEmpty) {
+    imageEmpty.textContent = mode === 'idea'
+      ? 'Photo optional — tap, drop, or paste'
+      : 'Drop, paste, or tap to add an image';
   }
   // Short Idea field matches across Ideas / Prep / Exec (no fmt bar).
   if (fmt) fmt.style.display = 'none';
@@ -15676,13 +15766,23 @@ function setSchedulePostDetailsOpen(open) {
   const wrap = document.getElementById('pImageWrap');
   if (!wrap) return;
   wrap.tabIndex = 0;
-  wrap.title = 'Drop or paste an image onto this card';
-  wrap.addEventListener('click', () => {
+  wrap.title = 'Tap to choose a photo, or drop / paste an image';
+  wrap.addEventListener('click', async () => {
     if (panelMode === 'idea' && activeIdeaId) {
       focusedWellId = activeIdeaId;
       wrap.classList.add('drop-target');
       setTimeout(() => wrap.classList.remove('drop-target'), 180);
       wrap.focus();
+      if (wrap.classList.contains('empty')) {
+        await pickAndApplyIdeaImage(activeIdeaId);
+      }
+      return;
+    }
+    if (wrap.classList.contains('empty')) {
+      const file = await pickImageFile();
+      if (!file) return;
+      if (panelMode === 'prep' && activePrepId) await applyImageToPipelineCard('preparation', activePrepId, file);
+      else if (panelMode === 'exec' && activeExecId) await applyImageToPipelineCard('execution', activeExecId, file);
     }
   });
   setupDropZone(wrap, async file => {
