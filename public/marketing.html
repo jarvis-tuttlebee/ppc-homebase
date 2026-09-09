@@ -594,7 +594,15 @@
     }
     .idea-card:hover .card-details-link { color: #2C2C2C; text-decoration: underline; }
 
-    .overlay { display: none; position: fixed; inset: 0; z-index: 100; }
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: transparent;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
     .overlay.open { display: block; }
     .panel {
       position: fixed;
@@ -3708,14 +3716,32 @@
       .mood-tool-btn { padding: 8px 12px; min-height: 36px; }
       .mood-viewport-nav .mood-tool-btn { min-width: 36px; }
       .mood-viewport-hint { right: 12px; bottom: 52px; }
+      /* Leave a left strip of the overlay so cards can be dismissed by tapping outside. */
+      .overlay.open { background: rgba(44, 44, 44, 0.34); }
       .panel,
       .panel.exec-mode,
-      .panel.review-mode { width: 100%; }
+      .panel.review-mode {
+        width: calc(100% - 52px);
+        max-width: none;
+      }
+      .panel-close {
+        top: 10px;
+        right: 10px;
+        width: 44px;
+        height: 44px;
+        font-size: 22px;
+        color: #2C2C2C;
+        background: #f7f5f2;
+        border: 1px solid #E2DDD5;
+        border-radius: 8px;
+        z-index: 5;
+      }
       .panel-body-wrap {
         padding: 18px 16px 16px;
         -webkit-overflow-scrolling: touch;
       }
       .panel-footer { padding: 10px 16px 14px; }
+      .panel-footer .btn-cancel { min-height: 44px; min-width: 72px; }
       .panel.exec-mode .panel-exec-layout { grid-template-columns: 1fr; }
       .panel.exec-mode .panel-image-wrap {
         position: static;
@@ -3762,7 +3788,7 @@
 </div>
 <div class="board" id="board"></div>
 
-<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="overlay" id="overlay" role="button" tabindex="-1" aria-label="Close card"></div>
 <div class="media-lightbox" id="mediaLightbox" role="dialog" aria-modal="true" aria-label="Photo">
   <button type="button" class="media-lightbox-close" id="mediaLightboxClose" aria-label="Close photo">&#x2715;</button>
   <img id="mediaLightboxImg" alt="">
@@ -4167,7 +4193,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.49';
+const APP_VERSION = '0.12.50';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -13125,21 +13151,32 @@ function updateIdeaSaveBtn() {
   const btn = document.getElementById('panelSaveBtn');
   const hint = document.getElementById('panelApplyHint');
   if (!btn) return;
+  const closeHint = IS_TOUCH ? 'tap outside or ✕ to close' : 'click outside to close';
   if (panelMode === 'idea' && prepareExpanded) {
     btn.textContent = 'Prepare';
-    if (hint) hint.textContent = 'Uses Category + Format above · Enter or Ctrl+Enter to prepare · click outside to close';
+    if (hint) hint.textContent = IS_TOUCH
+      ? 'Uses Category + Format above · ' + closeHint
+      : 'Uses Category + Format above · Enter or Ctrl+Enter to prepare · ' + closeHint;
   } else if (panelMode === 'prep' && executeArmed) {
     btn.textContent = 'Execute';
-    if (hint) hint.textContent = 'Enter or Ctrl+Enter to send to Execution · click outside to close';
+    if (hint) hint.textContent = IS_TOUCH
+      ? closeHint
+      : 'Enter or Ctrl+Enter to send to Execution · ' + closeHint;
   } else if (panelMode === 'exec' && reviewArmed) {
     btn.textContent = 'Review';
-    if (hint) hint.textContent = 'Enter or Ctrl+Enter to send to Review · click outside to close';
+    if (hint) hint.textContent = IS_TOUCH
+      ? closeHint
+      : 'Enter or Ctrl+Enter to send to Review · ' + closeHint;
   } else if (panelMode === 'review' && scheduleArmed) {
     btn.textContent = 'Schedule';
-    if (hint) hint.textContent = 'Enter or Ctrl+Enter to send to Calendar · click outside to close';
+    if (hint) hint.textContent = IS_TOUCH
+      ? closeHint
+      : 'Enter or Ctrl+Enter to send to Calendar · ' + closeHint;
   } else {
     btn.textContent = 'Save changes';
-    if (hint) hint.textContent = 'Ctrl+Enter to save · click outside to close';
+    if (hint) hint.textContent = IS_TOUCH
+      ? 'Tap Save · ' + closeHint
+      : 'Ctrl+Enter to save · ' + closeHint;
   }
 }
 
@@ -14599,6 +14636,26 @@ function setScheduleContentPaneOpen(open) {
 
 loadSchedulePanePrefs();
 applySchedulePaneState();
+
+(function wirePanelOverlayDismiss() {
+  const overlay = document.getElementById('overlay');
+  if (!overlay || overlay._ppcDismissBound) return;
+  overlay._ppcDismissBound = true;
+  let touched = false;
+  overlay.addEventListener('touchend', e => {
+    // Only dismiss when the gesture ends on the overlay itself (not a scroll leftover).
+    if (e.target !== overlay) return;
+    touched = true;
+    e.preventDefault();
+    closePanel();
+  }, { passive: false });
+  overlay.addEventListener('click', e => {
+    if (e.target !== overlay) return;
+    if (touched) { touched = false; return; }
+    closePanel();
+  });
+})();
+
 
 document.getElementById('schedulePipelineToggle').addEventListener('click', () => {
   setSchedulePipelinePaneOpen(!schedulePipelinePaneOpen);

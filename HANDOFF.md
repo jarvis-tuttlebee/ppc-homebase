@@ -5,6 +5,20 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Mobile: tap outside to close cards (Cursor Cloud)
+
+### Live (after deploy)
+- Marketing **`0.12.50`**
+
+### What
+1. Card panel no longer covers the full phone width — left dim strip dismisses the card
+2. Larger ✕ close control; overlay listens for touchend; mobile hint says tap outside
+
+### Open / next
+1. Hard-refresh Marketing on phone and confirm tap-outside closes calendar/idea cards
+
+---
+
 ## 2026-09-09 — Marketing mobile Ideas + schedule panes (Cursor Cloud)
 
 ### Note
