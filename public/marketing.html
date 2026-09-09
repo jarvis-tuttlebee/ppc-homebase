@@ -3937,9 +3937,29 @@
     .panel-cal-place {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
+      align-items: flex-end;
       gap: 8px;
       width: 100%;
+    }
+    .panel-cal-place-fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 10px;
+      width: 100%;
+    }
+    .panel-cal-place-field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1 1 140px;
+      min-width: 0;
+    }
+    .panel-cal-place-field span {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #6B7A8D;
     }
     .panel-cal-place-date {
       font: inherit;
@@ -3950,8 +3970,13 @@
       background: #fff;
       padding: 7px 10px;
       min-height: 36px;
-      min-width: 0;
-      flex: 1 1 140px;
+      width: 100%;
+    }
+    .panel-cal-place-hint {
+      width: 100%;
+      font-size: 11px;
+      color: #8a8580;
+      line-height: 1.35;
     }
     .btn-secondary {
       font-family: 'DM Sans', sans-serif;
@@ -4647,7 +4672,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.60';
+const APP_VERSION = '0.12.61';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -8556,6 +8581,12 @@ function scheduleBadgeLabel(slot) {
   const stageLabel = stage === 'prep' ? 'Prep'
     : (stage === 'execution' ? 'Exec'
       : (stage === 'review' ? 'Review' : 'Scheduled'));
+  const make = prepByOf(slot);
+  if (make) {
+    const md = new Date(make + 'T12:00:00');
+    const makePart = Number.isNaN(md.getTime()) ? make : formatShortDate(md);
+    return stageLabel + ' · ' + datePart + ' · Make ' + makePart;
+  }
   return stageLabel + ' · ' + datePart;
 }
 
@@ -8612,21 +8643,28 @@ function todayDateInputValue() {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
 
+function isoToDateInputValue(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(iso));
+    return m ? m[1] : '';
+  }
+  const pad = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
 /**
- * Place (or jump to) a live calendar link for an Ideas / Prep / Exec / Review card.
- * Keeps the card in the pipeline so you can keep working from both places.
+ * Place or update a live calendar link for Ideas / Prep / Exec / Review.
+ * Sets publish date + optional make-by date. Card stays in the pipeline.
  */
-function placeCardOnCalendar(card, stage, dateInputValue) {
+function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue) {
   if (!card) return;
   const existing = stage === 'ideas'
     ? linkedScheduleForIdea(card)
     : linkedScheduleForPipelineCard(card);
-  if (existing) {
-    jumpToLinkedSchedule(existing.id);
-    return;
-  }
 
-  const iso = dateInputToLocalIso(dateInputValue);
+  const iso = dateInputToLocalIso(publishDateValue);
   if (!iso) {
     if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Pick a publish date');
     return;
@@ -8634,6 +8672,19 @@ function placeCardOnCalendar(card, stage, dateInputValue) {
 
   if (typeof savePanelEdits === 'function') {
     try { savePanelEdits(true); } catch (_) {}
+  }
+
+  if (existing) {
+    existing.scheduledAt = iso;
+    existing.scheduleAt = iso;
+    applyPrepByFromUi(existing, prepDateValue || '');
+    clearTimeout(saveTimer);
+    saveData();
+    jumpToLinkedSchedule(existing.id);
+    if (typeof PPC !== 'undefined' && PPC.showToast) {
+      PPC.showToast('Calendar dates updated');
+    }
+    return;
   }
 
   const pillar = stage === 'ideas'
@@ -8659,7 +8710,11 @@ function placeCardOnCalendar(card, stage, dateInputValue) {
       createdAt: new Date().toISOString()
     });
     scheduleCards().push(slot);
+  } else {
+    slot.scheduledAt = iso;
+    slot.scheduleAt = iso;
   }
+  applyPrepByFromUi(slot, prepDateValue || '');
 
   if (stage === 'ideas') linkNeedToIdea(slot.id, card.id);
   else linkNeedToPipelineCard(slot.id, card.id);
@@ -8670,59 +8725,111 @@ function placeCardOnCalendar(card, stage, dateInputValue) {
   }
 }
 
-/** Panel control: Add to calendar (date + place) or jump if already linked. */
+function buildAddToCalendarDateFields(slot) {
+  const fields = document.createElement('div');
+  fields.className = 'panel-cal-place-fields';
+
+  const pubField = document.createElement('label');
+  pubField.className = 'panel-cal-place-field';
+  const pubLab = document.createElement('span');
+  pubLab.textContent = 'Publish date';
+  const pubInput = document.createElement('input');
+  pubInput.type = 'date';
+  pubInput.className = 'panel-cal-place-date';
+  pubInput.value = slot
+    ? (isoToDateInputValue(slot.scheduledAt || slot.scheduleAt) || todayDateInputValue())
+    : todayDateInputValue();
+  pubInput.setAttribute('aria-label', 'Publish date');
+  pubField.appendChild(pubLab);
+  pubField.appendChild(pubInput);
+
+  const makeField = document.createElement('label');
+  makeField.className = 'panel-cal-place-field';
+  const makeLab = document.createElement('span');
+  makeLab.textContent = 'Make by (optional)';
+  const makeInput = document.createElement('input');
+  makeInput.type = 'date';
+  makeInput.className = 'panel-cal-place-date';
+  makeInput.value = slot ? (prepByOf(slot) || '') : '';
+  makeInput.setAttribute('aria-label', 'Make by date');
+  makeField.appendChild(makeLab);
+  makeField.appendChild(makeInput);
+
+  fields.appendChild(pubField);
+  fields.appendChild(makeField);
+  return { fields, pubInput, makeInput };
+}
+
+/** Panel control: Add to calendar (publish + make-by) or jump / edit if linked. */
 function appendAddToCalendarAction(host, card, stage) {
   if (!host || !card) return;
   const linked = stage === 'ideas'
     ? linkedScheduleForIdea(card)
     : linkedScheduleForPipelineCard(card);
 
-  if (linked) {
-    const jump = document.createElement('button');
-    jump.type = 'button';
-    jump.className = 'btn-secondary';
-    jump.textContent = scheduleBadgeLabel(linked);
-    jump.title = 'Open linked calendar card';
-    jump.addEventListener('click', () => jumpToLinkedSchedule(linked.id));
-    host.appendChild(jump);
-    return;
-  }
-
   const wrap = document.createElement('div');
   wrap.className = 'panel-cal-place';
-  const openBtn = document.createElement('button');
-  openBtn.type = 'button';
-  openBtn.className = 'btn-secondary';
-  openBtn.textContent = 'Add to calendar';
-  openBtn.title = 'Pin this card to a calendar date — keep working from Pipeline and Calendar';
-  openBtn.addEventListener('click', () => {
+
+  const renderCollapsed = () => {
     wrap.innerHTML = '';
-    const dateInput = document.createElement('input');
-    dateInput.type = 'date';
-    dateInput.className = 'panel-cal-place-date';
-    dateInput.value = todayDateInputValue();
-    dateInput.setAttribute('aria-label', 'Publish date');
+    if (linked) {
+      const jump = document.createElement('button');
+      jump.type = 'button';
+      jump.className = 'btn-secondary';
+      jump.textContent = scheduleBadgeLabel(linked);
+      jump.title = 'Open linked calendar card';
+      jump.addEventListener('click', () => jumpToLinkedSchedule(linked.id));
+      wrap.appendChild(jump);
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn-secondary';
+      editBtn.textContent = 'Edit dates';
+      editBtn.title = 'Change publish or make-by date';
+      editBtn.addEventListener('click', () => renderExpanded(true));
+      wrap.appendChild(editBtn);
+      return;
+    }
+
+    const openBtn = document.createElement('button');
+    openBtn.type = 'button';
+    openBtn.className = 'btn-secondary';
+    openBtn.textContent = 'Add to calendar';
+    openBtn.title = 'Set publish + make-by dates from any phase — no need to reach Review first';
+    openBtn.addEventListener('click', () => renderExpanded(false));
+    wrap.appendChild(openBtn);
+  };
+
+  const renderExpanded = (editing) => {
+    wrap.innerHTML = '';
+    const hint = document.createElement('div');
+    hint.className = 'panel-cal-place-hint';
+    hint.textContent = editing
+      ? 'Update the publish day and optional make-by reminder.'
+      : 'Pin to a publish day (and optional make-by). Stays in this pipeline stage.';
+    wrap.appendChild(hint);
+
+    const { fields, pubInput, makeInput } = buildAddToCalendarDateFields(editing ? linked : null);
+    wrap.appendChild(fields);
+
     const placeBtn = document.createElement('button');
     placeBtn.type = 'button';
     placeBtn.className = 'btn-secondary active';
-    placeBtn.textContent = 'Place on calendar';
+    placeBtn.textContent = editing ? 'Save dates' : 'Place on calendar';
     placeBtn.addEventListener('click', () => {
-      placeCardOnCalendar(card, stage, dateInput.value);
+      placeCardOnCalendar(card, stage, pubInput.value, makeInput.value);
     });
     const cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
     cancelBtn.className = 'btn-secondary';
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.addEventListener('click', () => {
-      wrap.innerHTML = '';
-      wrap.appendChild(openBtn);
-    });
-    wrap.appendChild(dateInput);
+    cancelBtn.addEventListener('click', renderCollapsed);
     wrap.appendChild(placeBtn);
     wrap.appendChild(cancelBtn);
-    try { dateInput.focus(); } catch (_) {}
-  });
-  wrap.appendChild(openBtn);
+    try { pubInput.focus(); } catch (_) {}
+  };
+
+  renderCollapsed();
   host.appendChild(wrap);
 }
 
@@ -14521,7 +14628,7 @@ function buildReviewActions(card) {
   scheduleBtn.className = 'btn-secondary';
   scheduleBtn.id = 'scheduleToggle';
   scheduleBtn.textContent = 'Schedule';
-  scheduleBtn.title = 'Send out of Review onto the calendar (final step)';
+  scheduleBtn.title = 'Final step: move out of Review onto the calendar. Prefer Add to calendar earlier if you only need dates.';
   scheduleBtn.addEventListener('click', () => {
     scheduleArmed = !scheduleArmed;
     scheduleBtn.classList.toggle('active', scheduleArmed);

@@ -5,6 +5,23 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Add to calendar: publish + make-by (Cursor Cloud)
+
+### Live
+- Version ID: _(pending deploy)_
+- Marketing **`0.12.61`**
+- Hard-refresh Marketing → Pipeline
+
+### What
+1. Add to calendar (Ideas / Prep / Exec / Review): **Publish date** + optional **Make by**
+2. Works from any phase — no need to reach Review first; card stays in pipeline
+3. Linked cards: **Edit dates** to change publish / make-by; badge shows Make date when set
+
+### Open / next
+1. Hard-refresh; Add to calendar with both dates; confirm Make strip on calendar day
+
+---
+
 ## 2026-09-09 — Add to calendar from pipeline (Cursor Cloud)
 
 ### Live
