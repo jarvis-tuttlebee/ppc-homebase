@@ -8,7 +8,7 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-09 — Sticky pipeline section titles (Cursor Cloud)
 
 ### Live
-- Version ID: _(pending deploy)_
+- Version ID: `fb5a2990-7e38-4364-a711-75773eb5efce`
 - Marketing **`0.12.59`**
 - Hard-refresh Marketing → Pipeline
 

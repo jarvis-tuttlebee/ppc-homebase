@@ -192,9 +192,18 @@
       padding: 15px 6px;
       cursor: pointer;
       user-select: none;
-      transition: background 0.12s;
+      transition: background 0.12s, box-shadow 0.12s;
+      position: -webkit-sticky;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: #F7F5F2;
     }
-    .section-row:hover { background: rgba(44,44,44,0.035); }
+    .board-section.open > .section-row {
+      border-bottom: 1px solid #E2DDD5;
+      box-shadow: 0 6px 12px -10px rgba(44,44,44,0.35);
+    }
+    .section-row:hover { background: #F0EDE8; }
     .section-leading {
       display: flex;
       align-items: center;
@@ -4619,7 +4628,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.58';
+const APP_VERSION = '0.12.59';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
