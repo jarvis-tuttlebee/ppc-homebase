@@ -5,6 +5,23 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Execution: how-to + optional sections (Cursor Cloud)
+
+### Live
+- Version ID: _(pending deploy)_
+- Marketing **`0.12.62`**
+- Hard-refresh Marketing → Execution
+
+### What
+1. Exec panel core = **How to execute** (programs, editing, steps)
+2. Products / Location / Requirements are optional **+ pills** — add only when needed
+3. Removed Exec date/time (use calendar publish + make-by instead)
+
+### Open / next
+1. Hard-refresh; open Exec card; confirm pills + how-to field
+
+---
+
 ## 2026-09-09 — Add to calendar: publish + make-by (Cursor Cloud)
 
 ### Live

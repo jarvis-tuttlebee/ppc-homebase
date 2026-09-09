@@ -3978,6 +3978,54 @@
       color: #8a8580;
       line-height: 1.35;
     }
+    .exec-opt-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0 4px;
+    }
+    .exec-opt-pill {
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #6B7A8D;
+      background: #f3f1ee;
+      border: 1.5px dashed #d5d0c8;
+      border-radius: 999px;
+      padding: 6px 11px;
+      cursor: pointer;
+      line-height: 1.2;
+    }
+    .exec-opt-pill:hover {
+      color: #2C2C2C;
+      border-color: #6B7A8D;
+      background: #ebe7e1;
+    }
+    .exec-opt-block {
+      margin-top: 4px;
+    }
+    .exec-opt-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .exec-opt-head .panel-section-label { margin: 0; }
+    .exec-opt-remove {
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      color: #8a8580;
+      background: transparent;
+      border: none;
+      padding: 4px 2px;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .exec-opt-remove:hover { color: #2C2C2C; }
     .btn-secondary {
       font-family: 'DM Sans', sans-serif;
       font-size: 11px;
@@ -4308,33 +4356,47 @@
         </div>
         <div id="execExtraFields" style="display:none">
           <hr class="panel-divider">
-          <div class="panel-section-label">Production plan</div>
+          <div class="panel-section-label">How to execute</div>
+          <div class="panel-field-hint">Programs, editing approach, what goes into the edit, and the steps to make it happen.</div>
           <div class="fmt-bar">
             <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pExecPlan','bold')"><b>B</b></button>
             <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pExecPlan','italic')"><i>I</i></button>
             <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pExecPlan','insertUnorderedList')">&#8226;</button>
             <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pExecPlan','removeFormat')">Clear</button>
           </div>
-          <div class="panel-desc" id="pExecPlan" contenteditable="true" placeholder="What needs to happen to produce this…"></div>
-          <hr class="panel-divider">
-          <div class="panel-section-label">Products used</div>
-          <div class="panel-desc short" id="pProducts" contenteditable="true" placeholder="Garments, SKUs, props…"></div>
-          <hr class="panel-divider">
-          <div class="panel-section-label">Location</div>
-          <div class="panel-desc short" id="pLocation" contenteditable="true" placeholder="Where this is shot or set…"></div>
-          <hr class="panel-divider">
-          <div class="panel-section-label">Requirements</div>
-          <div class="fmt-bar">
-            <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pRequirements','bold')"><b>B</b></button>
-            <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pRequirements','italic')"><i>I</i></button>
-            <button type="button" class="fmt-btn" title="Underline" onclick="fmtField('pRequirements','underline')"><u>U</u></button>
-            <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pRequirements','insertUnorderedList')">&#8226;</button>
-            <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pRequirements','removeFormat')">Clear</button>
+          <div class="panel-desc" id="pExecPlan" contenteditable="true" placeholder="e.g. CapCut → cut A-roll → overlay text → export…"></div>
+          <div class="exec-opt-pills" id="execOptPills" aria-label="Add optional execution details"></div>
+          <div class="exec-opt-block" id="execOptProducts" hidden>
+            <hr class="panel-divider">
+            <div class="exec-opt-head">
+              <div class="panel-section-label">Products used</div>
+              <button type="button" class="exec-opt-remove" data-exec-opt-remove="products">Remove</button>
+            </div>
+            <div class="panel-desc short" id="pProducts" contenteditable="true" placeholder="Garments, SKUs, props…"></div>
           </div>
-          <div class="panel-desc" id="pRequirements" contenteditable="true" placeholder="Talent, kit, access, approvals…"></div>
-          <hr class="panel-divider">
-          <div class="panel-section-label">Date / time</div>
-          <input class="prop-select" id="pDateTime" type="datetime-local" style="margin-top:2px">
+          <div class="exec-opt-block" id="execOptLocation" hidden>
+            <hr class="panel-divider">
+            <div class="exec-opt-head">
+              <div class="panel-section-label">Location</div>
+              <button type="button" class="exec-opt-remove" data-exec-opt-remove="location">Remove</button>
+            </div>
+            <div class="panel-desc short" id="pLocation" contenteditable="true" placeholder="Where this is shot or set…"></div>
+          </div>
+          <div class="exec-opt-block" id="execOptRequirements" hidden>
+            <hr class="panel-divider">
+            <div class="exec-opt-head">
+              <div class="panel-section-label">Requirements</div>
+              <button type="button" class="exec-opt-remove" data-exec-opt-remove="requirements">Remove</button>
+            </div>
+            <div class="fmt-bar">
+              <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pRequirements','bold')"><b>B</b></button>
+              <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pRequirements','italic')"><i>I</i></button>
+              <button type="button" class="fmt-btn" title="Underline" onclick="fmtField('pRequirements','underline')"><u>U</u></button>
+              <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pRequirements','insertUnorderedList')">&#8226;</button>
+              <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pRequirements','removeFormat')">Clear</button>
+            </div>
+            <div class="panel-desc" id="pRequirements" contenteditable="true" placeholder="Talent, kit, access, approvals…"></div>
+          </div>
         </div>
         <div id="reviewExtraFields" style="display:none">
           <div class="review-inspo" id="pReviewInspo">
@@ -4672,7 +4734,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.61';
+const APP_VERSION = '0.12.62';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -13970,7 +14032,7 @@ function renderExecCard(card) {
   const plan = document.createElement('div');
   const planPlain = stripHtml(card.productionPlan || '');
   plan.className = 'exec-card-plan' + (planPlain ? '' : ' empty');
-  plan.textContent = planPlain || 'No production plan';
+  plan.textContent = planPlain || 'No execution steps yet';
   body.appendChild(plan);
 
   const chips = document.createElement('div');
@@ -13978,7 +14040,7 @@ function renderExecCard(card) {
   const chipBits = [
     stripHtml(card.productsUsed || '') && ('Products: ' + stripHtml(card.productsUsed)),
     stripHtml(card.location || '') && ('Location: ' + stripHtml(card.location)),
-    card.dateTime && ('When: ' + formatDateTimeLabel(card.dateTime))
+    stripHtml(card.requirements || '') && ('Requirements: ' + stripHtml(card.requirements))
   ].filter(Boolean);
   chipBits.forEach(text => {
     const chip = document.createElement('span');
@@ -14803,11 +14865,10 @@ function fillReviewContext(card) {
   fillContextRows(document.getElementById('reviewContext'), [
     ['Idea', stripHtml(card.body || '')],
     ['Format', formatLabel(card.pillar, card.format)],
-    ['Production plan', stripHtml(card.productionPlan || '')],
+    ['How to execute', stripHtml(card.productionPlan || '')],
     ['Products', stripHtml(card.productsUsed || '')],
     ['Location', stripHtml(card.location || '')],
-    ['Requirements', stripHtml(card.requirements || '')],
-    ['Shoot date', card.dateTime ? formatDateTimeLabel(card.dateTime) : '']
+    ['Requirements', stripHtml(card.requirements || '')]
   ], reviewContextOpen, 'reviewContextChev');
 }
 
@@ -14819,11 +14880,10 @@ function fillScheduleContext(card) {
 
   const fields = [
     { key: 'body', label: 'Idea', multiline: true, value: stripHtml(card.body || '') },
-    { key: 'productionPlan', label: 'Production plan', multiline: true, value: stripHtml(card.productionPlan || '') },
+    { key: 'productionPlan', label: 'How to execute', multiline: true, value: stripHtml(card.productionPlan || '') },
     { key: 'requirements', label: 'Requirements', multiline: true, value: stripHtml(card.requirements || '') },
     { key: 'productsUsed', label: 'Products', multiline: true, value: stripHtml(card.productsUsed || '') },
     { key: 'location', label: 'Location', multiline: false, value: stripHtml(card.location || '') },
-    { key: 'dateTime', label: 'Shoot date', type: 'datetime-local', value: toDateTimeLocalValue(card.dateTime) },
     { key: 'contentOutcome', label: 'Outcome', multiline: true, value: stripHtml(card.contentOutcome || '') },
     { key: 'tweaks', label: 'Tweaks', multiline: true, value: stripHtml(card.tweaks || '') }
   ];
@@ -14975,6 +15035,103 @@ function openPrepPanel(prepId) {
   setTimeout(() => document.getElementById('pPlan').focus(), 50);
 }
 
+const EXEC_OPTIONAL_SECTIONS = [
+  {
+    id: 'products',
+    blockId: 'execOptProducts',
+    fieldId: 'pProducts',
+    cardKey: 'productsUsed',
+    label: 'Products',
+    addLabel: '+ Products'
+  },
+  {
+    id: 'location',
+    blockId: 'execOptLocation',
+    fieldId: 'pLocation',
+    cardKey: 'location',
+    label: 'Location',
+    addLabel: '+ Location'
+  },
+  {
+    id: 'requirements',
+    blockId: 'execOptRequirements',
+    fieldId: 'pRequirements',
+    cardKey: 'requirements',
+    label: 'Requirements',
+    addLabel: '+ Requirements'
+  }
+];
+
+function execOptionalHasContent(cardOrFieldId, cardKey) {
+  if (cardOrFieldId && typeof cardOrFieldId === 'object') {
+    return !!stripHtml(cardOrFieldId[cardKey] || '').trim();
+  }
+  const el = document.getElementById(cardOrFieldId);
+  return !!(el && stripHtml(el.innerHTML || '').trim());
+}
+
+function setExecOptionalSectionOpen(spec, open, focusField) {
+  const block = document.getElementById(spec.blockId);
+  if (!block) return;
+  block.hidden = !open;
+  if (open && focusField) {
+    const field = document.getElementById(spec.fieldId);
+    if (field) setTimeout(() => { try { field.focus(); } catch (_) {} }, 30);
+  }
+}
+
+function renderExecOptionalPills() {
+  const host = document.getElementById('execOptPills');
+  if (!host) return;
+  host.innerHTML = '';
+  EXEC_OPTIONAL_SECTIONS.forEach(spec => {
+    const block = document.getElementById(spec.blockId);
+    if (block && !block.hidden) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'exec-opt-pill';
+    btn.textContent = spec.addLabel;
+    btn.title = 'Add ' + spec.label.toLowerCase() + ' details for this card';
+    btn.addEventListener('click', () => {
+      setExecOptionalSectionOpen(spec, true, true);
+      renderExecOptionalPills();
+    });
+    host.appendChild(btn);
+  });
+  host.style.display = host.childNodes.length ? 'flex' : 'none';
+}
+
+function syncExecOptionalSections(card) {
+  EXEC_OPTIONAL_SECTIONS.forEach(spec => {
+    const has = execOptionalHasContent(card, spec.cardKey);
+    setExecOptionalSectionOpen(spec, has, false);
+    const field = document.getElementById(spec.fieldId);
+    if (field) field.innerHTML = sanitizeHtml(card[spec.cardKey] || '');
+  });
+  renderExecOptionalPills();
+}
+
+function clearExecOptionalSection(id) {
+  const spec = EXEC_OPTIONAL_SECTIONS.find(s => s.id === id);
+  if (!spec) return;
+  const field = document.getElementById(spec.fieldId);
+  if (field) field.innerHTML = '';
+  setExecOptionalSectionOpen(spec, false, false);
+  renderExecOptionalPills();
+}
+
+(function bindExecOptionalSectionControls() {
+  const host = document.getElementById('execExtraFields');
+  if (!host || host._execOptBound) return;
+  host._execOptBound = true;
+  host.addEventListener('click', e => {
+    const btn = e.target.closest('[data-exec-opt-remove]');
+    if (!btn) return;
+    e.preventDefault();
+    clearExecOptionalSection(btn.getAttribute('data-exec-opt-remove'));
+  });
+})();
+
 function openExecPanel(execId) {
   const card = execCards().find(c => c.id === execId);
   if (!card) return;
@@ -14997,10 +15154,7 @@ function openExecPanel(execId) {
   document.getElementById('execExtraFields').style.display = 'block';
   document.getElementById('pDesc').innerHTML = sanitizeHtml(card.body || '');
   document.getElementById('pExecPlan').innerHTML = sanitizeHtml(card.productionPlan || '');
-  document.getElementById('pProducts').innerHTML = sanitizeHtml(card.productsUsed || '');
-  document.getElementById('pLocation').innerHTML = sanitizeHtml(card.location || '');
-  document.getElementById('pRequirements').innerHTML = sanitizeHtml(card.requirements || '');
-  setMarketingDateTime('pDateTime', card.dateTime);
+  syncExecOptionalSections(card);
   setPlanHintVisible(false);
   setPanelImage(card.imageData);
   updatePanelStrip(card.pillar, card.format);
@@ -15548,7 +15702,6 @@ function initMarketingDateTimePickers() {
   if (typeof replaceNativeDateTimeLocal !== 'function') return;
   const defaultTime = String(DEFAULT_PUBLISH_HOUR).padStart(2, '0') + ':00';
   [
-    { id: 'pDateTime', placeholder: 'Shoot date' },
     { id: 'pScheduleAt', placeholder: 'Publish date' },
     { id: 'pScheduleEditAt', placeholder: 'Publish date' }
   ].forEach(spec => {
@@ -15714,8 +15867,7 @@ function savePanel(silent) {
     card.location = sanitizeHtml(document.getElementById('pLocation').innerHTML).trim();
     card.requirements = sanitizeHtml(document.getElementById('pRequirements').innerHTML).trim();
     delete card.executionNotes;
-    const dt = document.getElementById('pDateTime').value;
-    card.dateTime = dt ? new Date(dt).toISOString() : '';
+    // Shoot/make timing lives on the calendar (publish + make-by), not on Exec.
 
     if (reviewArmed && !silent) {
       sendExecToReview(card.id);
