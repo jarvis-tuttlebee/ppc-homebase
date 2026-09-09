@@ -8,7 +8,8 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-09 — Add-to-calendar branded ppc-date + Save closes (Cursor Cloud)
 
 ### Live
-- Marketing **`0.12.63`** (deploy pending / see Version ID after wrangler)
+- Version ID: `a4e3b584-3eda-45fe-a6cf-460a656b9830`
+- Marketing **`0.12.63`**
 - Hard-refresh Marketing → Pipeline → Add to calendar
 
 ### What
