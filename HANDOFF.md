@@ -5,6 +5,18 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Calendar pipeline notes: auto-size + fmt bars (Cursor Cloud)
+
+### Live
+- Marketing **`0.12.68`** (deploy pending)
+- Hard-refresh → Calendar → Pipeline notes
+
+### What
+1. Pipeline note fields are rich contenteditables that **grow to fit** existing text
+2. Bold / italic / underline / bullets / clear — same fmt bar as Prep/Exec cards
+
+---
+
 ## 2026-09-09 — Restore How to execute in calendar notes (Cursor Cloud)
 
 ### Live
