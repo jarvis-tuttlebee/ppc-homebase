@@ -5,6 +5,22 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-09 — Marketing mobile Ideas + schedule panes (Cursor Cloud)
+
+### Live (after deploy)
+- Marketing **`0.12.48`**
+- Also synced workspace to live baselines before this change: Marketing was **0.12.47**, Task Board **1.10.17**, Planner **2.10.16**, `ppc-homebase.js?v=17`
+
+### What
+1. Content Ideas board: real finger pan, card drag, and pinch-zoom (was mouse-only)
+2. Calendar card panel: minimise/expand on **From pipeline** and **Shot / edited content** (prefs saved; phones default collapsed)
+3. Mobile UX: full-width side panel, larger nav/tool tap targets, always-show delete on touch, Home menu tap targets
+
+### Open / next
+1. Hard-refresh Marketing on phone — confirm Ideas pan/drag and pane toggles
+2. Prep/Exec HTML5 drag on touch still limited (separate pass if needed)
+
+---
 ## 2026-09-07 — Deploy: Marketing Calendar fix + project-type safety (Cursor)
 
 ### Live

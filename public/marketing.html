@@ -503,14 +503,17 @@
       cursor: pointer;
       transition: border-color 0.12s, background 0.12s, outline 0.12s;
       outline: none;
+      --format-tone: #564A5E;
     }
-    .image-well:hover { border-color: #564A5E; background: rgba(86,74,94,0.03); }
+    .image-well:hover { border-color: var(--format-tone); }
     .image-well.focused {
-      border-color: #564A5E;
+      border-color: var(--format-tone);
       border-style: solid;
-      background: rgba(86,74,94,0.05);
       outline: 2px solid rgba(86,74,94,0.25);
       outline-offset: 1px;
+    }
+    .image-well.has-format {
+      border-color: var(--format-tone);
     }
     .image-well.has-image {
       border-style: solid;
@@ -518,7 +521,30 @@
       align-items: center;
       justify-content: center;
     }
-    .image-well.drop-target { border-color: #564A5E; background: rgba(86,74,94,0.08); }
+    .image-well.drop-target { border-color: var(--format-tone); }
+    .idea-format-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      width: 100%;
+    }
+    .idea-format-chip {
+      appearance: none;
+      border: 1.5px solid #d5d0c8;
+      border-left-width: 3px;
+      border-radius: 6px;
+      background: #f3f1ee;
+      color: #6B7A8D;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 5px 9px;
+      cursor: pointer;
+      line-height: 1.2;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+    .idea-format-chip:hover { filter: brightness(0.98); }
     .image-well img {
       width: 100%;
       height: 100%;
@@ -1477,6 +1503,47 @@
       background: #faf9f7;
       border: 1px solid #E2DDD5;
       border-radius: 8px;
+    }
+    .schedule-pane-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .schedule-pane-toggle:focus-visible {
+      outline: 2px solid #564A5E;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    .schedule-pane-toggle .schedule-pane-chev {
+      flex-shrink: 0;
+      font-size: 12px;
+      color: #9a958d;
+      line-height: 1;
+    }
+    .schedule-pane-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+    .schedule-pipeline-pane.is-collapsed,
+    .schedule-content-pane.is-collapsed {
+      gap: 0;
+    }
+    .schedule-pipeline-pane.is-collapsed .schedule-pane-body,
+    .schedule-content-pane.is-collapsed .schedule-pane-body {
+      display: none;
     }
     .schedule-pane-label {
       display: block;
@@ -3623,10 +3690,32 @@
     }
     .ctx-item:hover { background: rgba(44,44,44,0.06); }
 
+    @media (hover: none) {
+      .idea-card .card-delete,
+      .prep-card .card-delete { opacity: 1; }
+      .mood-viewport-hint { right: 12px; bottom: 52px; font-size: 10px; line-height: 1.35; }
+    }
+
     @media (max-width: 700px) {
-      .header, .nav-row { padding-left: 16px; padding-right: 16px; }
+      .header, .nav-row { padding-left: 16px; padding-right: 48px; }
+      .nav-row { gap: 14px; }
+      .nav-settings-btn { right: 12px; width: 40px; height: 40px; }
+      .view-modes { gap: 8px; padding: 10px 16px; }
+      .view-mode-btn { padding: 8px 14px; min-height: 36px; }
       .board { padding: 20px 16px 40px; }
+      .section-head { padding: 12px 4px; min-height: 44px; }
       .mood-viewport { height: var(--mood-h, 300px); }
+      .mood-tool-btn { padding: 8px 12px; min-height: 36px; }
+      .mood-viewport-nav .mood-tool-btn { min-width: 36px; }
+      .mood-viewport-hint { right: 12px; bottom: 52px; }
+      .panel,
+      .panel.exec-mode,
+      .panel.review-mode { width: 100%; }
+      .panel-body-wrap {
+        padding: 18px 16px 16px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .panel-footer { padding: 10px 16px 14px; }
       .panel.exec-mode .panel-exec-layout { grid-template-columns: 1fr; }
       .panel.exec-mode .panel-image-wrap {
         position: static;
@@ -3640,6 +3729,8 @@
       .schedule-card { grid-template-columns: 72px 1fr; }
       .schedule-card-thumb { width: 72px; height: 72px; }
       .schedule-source-layout { grid-template-columns: 1fr; }
+      .schedule-pane-toggle { min-height: 36px; padding: 4px 0; }
+      .btn-add, .btn-secondary, .btn-primary { min-height: 40px; }
     }
   </style>
 </head>
@@ -3802,7 +3893,11 @@
         <div id="scheduleExtraFields" style="display:none">
           <div class="schedule-source-layout" id="scheduleSourceLayout">
             <div class="schedule-pipeline-pane" id="schedulePipelinePane">
-              <strong class="schedule-pane-label" id="pScheduleInspoTitle">From pipeline</strong>
+              <button type="button" class="schedule-pane-toggle" id="schedulePipelineToggle" aria-expanded="true">
+                <strong class="schedule-pane-label" id="pScheduleInspoTitle">From pipeline</strong>
+                <span class="schedule-pane-chev" id="schedulePipelineChev">▾</span>
+              </button>
+              <div class="schedule-pane-body" id="schedulePipelineBody">
               <div class="review-inspo schedule-pipeline-inspo" id="pScheduleInspo">
                 <div class="review-inspo-thumb" id="pSchedulePipelineThumb"></div>
                 <div class="review-inspo-meta">
@@ -3832,9 +3927,14 @@
                 </button>
                 <div class="review-context" id="scheduleContext"></div>
               </div>
+              </div>
             </div>
             <div class="schedule-content-pane" id="scheduleContentPane">
-              <strong class="schedule-pane-label" id="pScheduleContentTitle">Shot / edited content</strong>
+              <button type="button" class="schedule-pane-toggle" id="scheduleContentToggle" aria-expanded="true">
+                <strong class="schedule-pane-label" id="pScheduleContentTitle">Shot / edited content</strong>
+                <span class="schedule-pane-chev" id="scheduleContentChev">▾</span>
+              </button>
+              <div class="schedule-pane-body" id="scheduleContentBody">
               <div class="panel-field-hint" id="pScheduleMediaHint">Drop or paste media you've already shot or edited.</div>
               <div class="review-media-well" id="pScheduleMediaWell" tabindex="0">
                 <div class="placeholder" id="pScheduleMediaEmpty">Drop or paste shot / edited content…</div>
@@ -3893,6 +3993,7 @@
                   </div>
                   <div class="panel-desc" id="pScheduleTweaks" contenteditable="true" placeholder="Edits, crop, colour grade…"></div>
                 </div>
+              </div>
               </div>
             </div>
           </div>
@@ -4066,7 +4167,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.44';
+const APP_VERSION = '0.12.48';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -4399,6 +4500,85 @@ const FORMAT_MIGRATE = {
   ads: { 'meta-ad': 'campaign' },
   website: { website: 'design' }
 };
+
+/** Flat Prep board columns (replaces Organic→format / Email→format nesting). */
+const IG_FORMAT_IDS = ['ig-post', 'ig-reel', 'ig-story'];
+const PREP_LANES = [
+  {
+    id: 'instagram',
+    label: 'Instagram',
+    toneOf: () => formatColor('ig-post', 'organic'),
+    match: c => c && c.pillar === 'organic' && IG_FORMAT_IDS.includes(c.format),
+    apply: c => {
+      c.pillar = 'organic';
+      if (!IG_FORMAT_IDS.includes(c.format)) c.format = 'ig-post';
+    }
+  },
+  {
+    id: 'tiktok',
+    label: 'TikTok',
+    toneOf: () => formatColor('tiktok', 'organic'),
+    match: c => c && c.pillar === 'organic' && c.format === 'tiktok',
+    apply: c => {
+      c.pillar = 'organic';
+      c.format = 'tiktok';
+    }
+  },
+  {
+    id: 'pinterest',
+    label: 'Pinterest',
+    toneOf: () => formatColor('pinterest', 'organic'),
+    match: c => c && c.pillar === 'organic' && c.format === 'pinterest',
+    apply: c => {
+      c.pillar = 'organic';
+      c.format = 'pinterest';
+    }
+  },
+  {
+    id: 'email',
+    label: 'Email',
+    toneOf: () => pillarColor('email'),
+    match: c => c && c.pillar === 'email',
+    apply: c => {
+      c.pillar = 'email';
+      if (!formatsForPillar('email').some(f => f.id === c.format)) {
+        c.format = defaultFormatForPillar('email');
+      }
+    }
+  },
+  {
+    id: 'ads',
+    label: 'Ads',
+    toneOf: () => pillarColor('ads'),
+    match: c => c && c.pillar === 'ads',
+    apply: c => {
+      c.pillar = 'ads';
+      if (!formatsForPillar('ads').some(f => f.id === c.format)) {
+        c.format = defaultFormatForPillar('ads');
+      }
+    }
+  },
+  {
+    id: 'website',
+    label: 'Website',
+    toneOf: () => pillarColor('website'),
+    match: c => c && c.pillar === 'website',
+    apply: c => {
+      c.pillar = 'website';
+      if (!formatsForPillar('website').some(f => f.id === c.format)) {
+        c.format = defaultFormatForPillar('website');
+      }
+    }
+  }
+];
+
+function prepLaneById(id) {
+  return PREP_LANES.find(l => l.id === id) || null;
+}
+
+function prepLaneForCard(card) {
+  return PREP_LANES.find(l => l.match(card)) || null;
+}
 
 function accentTextColor(bg) {
   const b = bg.toLowerCase();
@@ -5497,6 +5677,8 @@ let reviewArmed = false;
 let scheduleArmed = false;
 let reviewContextOpen = false;
 let scheduleContextOpen = false;
+let schedulePipelinePaneOpen = true;
+let scheduleContentPaneOpen = true;
 let schedulePostDetailsOpen = false;
 let scheduleReviewOpen = false;
 let scheduleOutcomeOpen = false;
@@ -5675,6 +5857,19 @@ function migrateIdea(idea) {
   // Shoot days / BTS lived under removed built-in Other — fold into Organic.
   if (idea.cat === 'other') idea.cat = 'organic';
   if (idea.cat && !catById(idea.cat)) idea.cat = 'organic';
+  // Optional format tag (IG Post / TikTok / …) — same ids as calendar / Prep.
+  if (idea.format) {
+    const pillar = (idea.cat && pillarById(idea.cat)) ? idea.cat : 'organic';
+    const map = FORMAT_MIGRATE[pillar] || {};
+    if (map[idea.format]) idea.format = map[idea.format];
+    if (idea.format === 'bts' || idea.format === 'shoot-day' || idea.format === 'misc') {
+      idea.format = null;
+    }
+    const formats = formatsForPillar(pillar);
+    if (!formats.some(f => f.id === idea.format)) idea.format = null;
+  } else {
+    idea.format = null;
+  }
   return idea;
 }
 
@@ -6273,6 +6468,7 @@ function restoreIdeaRefsFromSchedule() {
       id: slot.sourceIdeaId,
       body: src.body || slot.body || '',
       cat: (src.pillar || slot.pillar || 'organic'),
+      format: src.format || slot.format || null,
       imageData: src.imageData || slot.imageData || null,
       imageW: src.imageW || slot.imageW || null,
       imageH: src.imageH || slot.imageH || null,
@@ -6483,9 +6679,20 @@ function cleanupMoodPan() {
   if (moodViewportEl && moodContextHandler) {
     moodViewportEl.removeEventListener('contextmenu', moodContextHandler);
   }
+  if (moodViewportEl && moodTouchStartHandler) {
+    moodViewportEl.removeEventListener('touchstart', moodTouchStartHandler);
+  }
+  if (moodViewportEl && moodTouchMoveHandler) {
+    moodViewportEl.removeEventListener('touchmove', moodTouchMoveHandler);
+  }
+  if (moodViewportEl && moodTouchEndHandler) {
+    moodViewportEl.removeEventListener('touchend', moodTouchEndHandler);
+    moodViewportEl.removeEventListener('touchcancel', moodTouchEndHandler);
+  }
   panMoveHandler = panUpHandler = null;
   moodKeyDownHandler = moodKeyUpHandler = moodBlurHandler = null;
   moodWheelHandler = moodMouseDownHandler = moodContextHandler = null;
+  moodTouchStartHandler = moodTouchMoveHandler = moodTouchEndHandler = null;
 }
 
 function setupMoodCanvas(viewport, canvas) {
@@ -6499,16 +6706,62 @@ function setupMoodCanvas(viewport, canvas) {
   let panning = false;
   let panStartX = 0, panStartY = 0, panOriginX = 0, panOriginY = 0;
   let panFromRight = false;
+  let touchPanId = null;
+  let pinchActive = false;
+  let pinchStartDist = 0;
+  let pinchStartZoom = 1;
 
-  function beginPan(e) {
+  function beginPan(clientX, clientY, opts) {
+    opts = opts || {};
     panning = true;
-    panFromRight = e.button === 2;
+    panFromRight = !!opts.fromRight;
+    touchPanId = opts.touchId != null ? opts.touchId : null;
     viewport.classList.add('panning');
-    panStartX = e.clientX;
-    panStartY = e.clientY;
+    panStartX = clientX;
+    panStartY = clientY;
     panOriginX = canvasPanX;
     panOriginY = canvasPanY;
-    e.preventDefault();
+  }
+
+  function endPan() {
+    if (!panning) return;
+    panning = false;
+    panFromRight = false;
+    touchPanId = null;
+    viewport.classList.remove('panning');
+  }
+
+  function touchById(touchList, id) {
+    for (let i = 0; i < touchList.length; i++) {
+      if (touchList[i].identifier === id) return touchList[i];
+    }
+    return null;
+  }
+
+  function pinchDistance(touches) {
+    const a = touches[0];
+    const b = touches[1];
+    return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+  }
+
+  function beginPinch(touches) {
+    endPan();
+    pinchActive = true;
+    pinchStartDist = Math.max(1, pinchDistance(touches));
+    pinchStartZoom = canvasZoom;
+  }
+
+  function updatePinch(touches) {
+    if (!pinchActive || touches.length < 2) return;
+    const dist = Math.max(1, pinchDistance(touches));
+    const midX = (touches[0].clientX + touches[1].clientX) / 2;
+    const midY = (touches[0].clientY + touches[1].clientY) / 2;
+    setMoodZoomAbsolute(pinchStartZoom * (dist / pinchStartDist), midX, midY);
+  }
+
+  function endPinch() {
+    pinchActive = false;
+    pinchStartDist = 0;
   }
 
   moodWheelHandler = e => {
@@ -6531,7 +6784,8 @@ function setupMoodCanvas(viewport, canvas) {
 
     // Right-drag / middle-drag pans.
     if (e.button === 2 || e.button === 1) {
-      beginPan(e);
+      beginPan(e.clientX, e.clientY, { fromRight: e.button === 2 });
+      e.preventDefault();
       return;
     }
     if (e.button !== 0) return;
@@ -6540,7 +6794,8 @@ function setupMoodCanvas(viewport, canvas) {
     if (e.target.closest('.idea-card') && !moodSpaceHeld) return;
 
     // Empty-space drag (or Space over a card) pans the view.
-    beginPan(e);
+    beginPan(e.clientX, e.clientY);
+    e.preventDefault();
   };
   viewport.addEventListener('mousedown', moodMouseDownHandler);
 
@@ -6554,19 +6809,68 @@ function setupMoodCanvas(viewport, canvas) {
   viewport.addEventListener('contextmenu', moodContextHandler);
 
   panMoveHandler = e => {
-    if (!panning) return;
+    if (!panning || touchPanId != null) return;
     canvasPanX = panOriginX + (e.clientX - panStartX);
     canvasPanY = panOriginY + (e.clientY - panStartY);
     applyCanvasTransform();
   };
   panUpHandler = () => {
-    if (!panning) return;
-    panning = false;
-    panFromRight = false;
-    viewport.classList.remove('panning');
+    if (touchPanId != null) return;
+    endPan();
   };
   window.addEventListener('mousemove', panMoveHandler);
   window.addEventListener('mouseup', panUpHandler);
+
+  moodTouchStartHandler = e => {
+    const onChrome = e.target.closest('.mood-tool-btn, .mood-viewport-nav, .mood-nav-menu');
+    if (onChrome) return;
+
+    if (e.touches.length >= 2) {
+      beginPinch(e.touches);
+      e.preventDefault();
+      return;
+    }
+    if (e.touches.length !== 1) return;
+    // Card drag is handled on the card itself.
+    if (e.target.closest('.idea-card') && !moodSpaceHeld) return;
+
+    const t = e.touches[0];
+    beginPan(t.clientX, t.clientY, { touchId: t.identifier });
+    e.preventDefault();
+  };
+
+  moodTouchMoveHandler = e => {
+    if (e.touches.length >= 2) {
+      if (!pinchActive) beginPinch(e.touches);
+      updatePinch(e.touches);
+      e.preventDefault();
+      return;
+    }
+    if (pinchActive) endPinch();
+    if (!panning || touchPanId == null) return;
+    const t = touchById(e.touches, touchPanId);
+    if (!t) return;
+    canvasPanX = panOriginX + (t.clientX - panStartX);
+    canvasPanY = panOriginY + (t.clientY - panStartY);
+    applyCanvasTransform();
+    e.preventDefault();
+  };
+
+  moodTouchEndHandler = e => {
+    if (e.touches.length >= 2) {
+      beginPinch(e.touches);
+      return;
+    }
+    if (pinchActive && e.touches.length < 2) endPinch();
+    if (panning && touchPanId != null) {
+      if (!touchById(e.touches, touchPanId)) endPan();
+    }
+  };
+
+  viewport.addEventListener('touchstart', moodTouchStartHandler, { passive: false });
+  viewport.addEventListener('touchmove', moodTouchMoveHandler, { passive: false });
+  viewport.addEventListener('touchend', moodTouchEndHandler);
+  viewport.addEventListener('touchcancel', moodTouchEndHandler);
 
   moodKeyDownHandler = e => {
     if (!moodViewportEl || !document.body.contains(moodViewportEl)) return;
@@ -7240,6 +7544,7 @@ function addIdea(atX, atY) {
     id,
     body: '',
     cat: 'organic',
+    format: null,
     imageData: null,
     x: pos.x,
     y: pos.y,
@@ -7378,9 +7683,36 @@ function setupDropZone(el, onDrop) {
   });
 }
 
+function ideaFormatTone(idea) {
+  if (!idea || !idea.format) return null;
+  const pillar = (idea.cat && pillarById(idea.cat)) ? idea.cat : 'organic';
+  return formatColor(idea.format, pillar);
+}
+
+function applyIdeaImageWellStyle(well, idea) {
+  if (!well) return;
+  const tone = ideaFormatTone(idea);
+  if (tone) {
+    well.classList.add('has-format');
+    well.style.setProperty('--format-tone', tone);
+    well.style.borderColor = tone;
+    well.style.background = idea.imageData ? hexWash(tone, 0.06) : hexWash(tone, 0.1);
+  } else {
+    well.classList.remove('has-format');
+    well.style.removeProperty('--format-tone');
+    well.style.borderColor = '';
+    well.style.background = '';
+  }
+}
+
 function applyCardCategoryStyle(card, idea) {
+  const tone = ideaFormatTone(idea);
   const cat = idea.cat ? catById(idea.cat) : null;
-  if (cat) {
+  if (tone) {
+    card.classList.add('has-cat');
+    card.style.background = hexWash(tone, 0.1);
+    card.style.borderLeft = '3px solid ' + tone;
+  } else if (cat) {
     card.classList.add('has-cat');
     card.style.background = PILL_BG;
     card.style.borderLeft = '3px solid ' + cat.bg;
@@ -7402,6 +7734,9 @@ function renderIdeaCard(idea, cardSize) {
   applyCardCategoryStyle(card, idea);
 
   const cat = idea.cat ? catById(idea.cat) : null;
+  const pillarId = (idea.cat && pillarById(idea.cat)) ? idea.cat : 'organic';
+  const fmtLabel = idea.format ? formatLabel(pillarId, idea.format) : '';
+  const tone = ideaFormatTone(idea);
 
   const del = document.createElement('button');
   del.type = 'button';
@@ -7419,6 +7754,7 @@ function renderIdeaCard(idea, cardSize) {
   well.className = 'image-well' + (idea.imageData ? ' has-image' : '');
   well.dataset.ideaId = idea.id;
   well.tabIndex = 0;
+  applyIdeaImageWellStyle(well, idea);
 
   if (idea.imageData) {
     // Resize the thumbnail container to the image's aspect ratio so we don't
@@ -7452,11 +7788,11 @@ function renderIdeaCard(idea, cardSize) {
   const preview = document.createElement('div');
   preview.className = 'card-preview';
 
-  if (cat) {
+  if (fmtLabel || cat) {
     const catLabel = document.createElement('div');
     catLabel.className = 'card-cat-label';
-    catLabel.textContent = cat.label;
-    catLabel.style.color = accentTextColor(cat.bg);
+    catLabel.textContent = fmtLabel || cat.label;
+    catLabel.style.color = accentTextColor(tone || (cat && cat.bg) || '#564A5E');
     preview.appendChild(catLabel);
   }
 
@@ -7491,32 +7827,29 @@ function renderIdeaCard(idea, cardSize) {
   let dragStartX = 0, dragStartY = 0;
   let fromWell = false;
 
-  card.addEventListener('mousedown', e => {
-    if (e.button !== 0) return;
-    if (e.target.closest('.card-delete, .card-schedule-badge')) return;
-    // Hold Space to pan the view over cards instead of moving them.
-    if (moodSpaceHeld) return;
-    e.stopPropagation();
+  function beginIdeaPointerDrag(clientX, clientY, opts) {
+    opts = opts || {};
     raiseIdeaCard(card);
     didDrag = false;
-    fromWell = !!e.target.closest('.image-well');
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-    const origin = clientToCanvas(e.clientX, e.clientY);
+    fromWell = !!opts.fromWell;
+    dragStartX = clientX;
+    dragStartY = clientY;
+    const origin = clientToCanvas(clientX, clientY);
     let grabOffX = origin.x - (idea.x || 0);
     let grabOffY = origin.y - (idea.y || 0);
-    let lastClientX = e.clientX;
-    let lastClientY = e.clientY;
+    let lastClientX = clientX;
+    let lastClientY = clientY;
     let edgeRaf = 0;
+    const touchId = opts.touchId;
     card.classList.add('dragging');
     card.style.zIndex = String(ideaTopZ + 50);
 
-    const applyPosFromPointer = (clientX, clientY) => {
-      const screenDx = clientX - dragStartX;
-      const screenDy = clientY - dragStartY;
+    const applyPosFromPointer = (x, y) => {
+      const screenDx = x - dragStartX;
+      const screenDy = y - dragStartY;
       if (!didDrag && Math.abs(screenDx) <= 5 && Math.abs(screenDy) <= 5) return;
       didDrag = true;
-      const pt = clientToCanvas(clientX, clientY);
+      const pt = clientToCanvas(x, y);
       let nx = Math.round(pt.x - grabOffX);
       let ny = Math.round(pt.y - grabOffY);
       if (nx < 0 || ny < 0) {
@@ -7553,6 +7886,51 @@ function renderIdeaCard(idea, cardSize) {
       edgeRaf = requestAnimationFrame(edgeTick);
     };
 
+    const finish = () => {
+      if (edgeRaf) cancelAnimationFrame(edgeRaf);
+      card.classList.remove('dragging');
+      card.style.zIndex = String(ideaTopZ);
+      if (didDrag) {
+        growIdeasCanvasForIdea(idea, cardSize);
+        syncIdeasCanvasFromCards();
+        scheduleSave();
+        return;
+      }
+      // Tap/click (no drag): open panel. Image tap also arms paste focus.
+      if (fromWell) focusWell(idea.id);
+      openPanel(idea.id);
+    };
+
+    if (touchId != null) {
+      const onTouchMove = ev => {
+        let t = null;
+        for (let i = 0; i < ev.touches.length; i++) {
+          if (ev.touches[i].identifier === touchId) { t = ev.touches[i]; break; }
+        }
+        if (!t) return;
+        lastClientX = t.clientX;
+        lastClientY = t.clientY;
+        applyPosFromPointer(t.clientX, t.clientY);
+        if (didDrag && !edgeRaf) edgeRaf = requestAnimationFrame(edgeTick);
+        ev.preventDefault();
+      };
+      const onTouchEnd = ev => {
+        let still = false;
+        for (let i = 0; i < ev.touches.length; i++) {
+          if (ev.touches[i].identifier === touchId) { still = true; break; }
+        }
+        if (still) return;
+        window.removeEventListener('touchmove', onTouchMove);
+        window.removeEventListener('touchend', onTouchEnd);
+        window.removeEventListener('touchcancel', onTouchEnd);
+        finish();
+      };
+      window.addEventListener('touchmove', onTouchMove, { passive: false });
+      window.addEventListener('touchend', onTouchEnd);
+      window.addEventListener('touchcancel', onTouchEnd);
+      return;
+    }
+
     const onMove = ev => {
       lastClientX = ev.clientX;
       lastClientY = ev.clientY;
@@ -7560,25 +7938,38 @@ function renderIdeaCard(idea, cardSize) {
       if (didDrag && !edgeRaf) edgeRaf = requestAnimationFrame(edgeTick);
     };
     const onUp = () => {
-      if (edgeRaf) cancelAnimationFrame(edgeRaf);
-      card.classList.remove('dragging');
-      card.style.zIndex = String(ideaTopZ);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
-      if (didDrag) {
-        growIdeasCanvasForIdea(idea, cardSize);
-        syncIdeasCanvasFromCards();
-        scheduleSave();
-        return;
-      }
-      // Click (no drag): open panel. Image click also arms paste focus.
-      if (fromWell) focusWell(idea.id);
-      openPanel(idea.id);
+      finish();
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+  }
+
+  card.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    if (e.target.closest('.card-delete, .card-schedule-badge')) return;
+    // Hold Space to pan the view over cards instead of moving them.
+    if (moodSpaceHeld) return;
+    e.stopPropagation();
+    beginIdeaPointerDrag(e.clientX, e.clientY, {
+      fromWell: !!e.target.closest('.image-well')
+    });
     e.preventDefault();
   });
+
+  card.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    if (e.target.closest('.card-delete, .card-schedule-badge')) return;
+    if (moodSpaceHeld) return;
+    const t = e.touches[0];
+    e.stopPropagation();
+    beginIdeaPointerDrag(t.clientX, t.clientY, {
+      fromWell: !!e.target.closest('.image-well'),
+      touchId: t.identifier
+    });
+    e.preventDefault();
+  }, { passive: false });
 
   return card;
 }
@@ -7810,7 +8201,9 @@ function renderIdeasBody() {
 
   const hint = document.createElement('div');
   hint.className = 'mood-viewport-hint';
-  hint.textContent = 'Drag a card to move it · drag empty space to pan · hold Space to pan over cards · Ctrl+scroll zooms';
+  hint.textContent = IS_TOUCH
+    ? 'Drag empty space to pan · drag a card to move it · pinch to zoom · use +/− / Fit'
+    : 'Drag a card to move it · drag empty space to pan · hold Space to pan over cards · Ctrl+scroll zooms';
   viewport.appendChild(hint);
 
   const canvas = document.createElement('div');
@@ -7842,6 +8235,7 @@ function renderIdeasBody() {
       id,
       body: '',
       cat: 'organic',
+      format: null,
       imageData: null,
       x: Math.round(Math.max(0, pt.x - size / 2)),
       y: Math.round(Math.max(0, pt.y - size / 2)),
@@ -8080,11 +8474,12 @@ async function clearLeadUpNeedSlots(anchor) {
   return archiveAndRemoveScheduleCards(doomed);
 }
 
-function movePrepCard(id, pillar, format) {
+function movePrepCard(id, laneId) {
   const card = prepCards().find(c => c.id === id);
   if (!card) return;
-  card.pillar = pillar;
-  card.format = format || defaultFormatForPillar(pillar);
+  const lane = prepLaneById(laneId);
+  if (!lane) return;
+  lane.apply(card);
   scheduleSave();
   renderBoard();
 }
@@ -8431,7 +8826,7 @@ function renderPrepCard(card) {
   return el;
 }
 
-function setupLaneDrop(laneEl, pillarId, formatId) {
+function setupLaneDrop(laneEl, laneId) {
   laneEl.addEventListener('dragover', e => {
     e.preventDefault();
     laneEl.classList.add('drag-over');
@@ -8444,29 +8839,31 @@ function setupLaneDrop(laneEl, pillarId, formatId) {
     e.preventDefault();
     laneEl.classList.remove('drag-over');
     const id = e.dataTransfer.getData('text/plain') || dragPrepId;
-    if (id) movePrepCard(id, pillarId, formatId);
+    if (id) movePrepCard(id, laneId);
   });
 }
 
-function renderPrepLane(pillarId, format) {
-  const cards = prepCards().filter(c => c.pillar === pillarId && c.format === format.id);
-  const lane = document.createElement('div');
-  lane.className = 'prep-lane' + (cards.length ? '' : ' is-empty');
-  lane.dataset.pillar = pillarId;
-  lane.dataset.format = format.id;
+function renderPrepLane(lane) {
+  const cards = prepCards().filter(c => lane.match(c));
+  const el = document.createElement('div');
+  el.className = 'prep-lane' + (cards.length ? '' : ' is-empty');
+  el.dataset.prepLane = lane.id;
+  const tone = typeof lane.toneOf === 'function' ? lane.toneOf() : '#564A5E';
 
   const title = document.createElement('div');
   title.className = 'prep-lane-title';
-  title.textContent = format.label;
-  lane.appendChild(title);
+  title.textContent = lane.label;
+  title.style.borderBottomColor = hexWash(tone, 0.35);
+  title.style.color = accentTextColor(tone);
+  el.appendChild(title);
 
   const cardsWrap = document.createElement('div');
   cardsWrap.className = 'prep-lane-cards';
   cards.forEach(c => cardsWrap.appendChild(renderPrepCard(c)));
-  lane.appendChild(cardsWrap);
+  el.appendChild(cardsWrap);
 
-  setupLaneDrop(lane, pillarId, format.id);
-  return lane;
+  setupLaneDrop(el, lane.id);
+  return el;
 }
 
 function startPillarTitleRename(titleEl, pillarId) {
@@ -8558,147 +8955,29 @@ function renderPreparationBody() {
   const board = document.createElement('div');
   board.className = 'prep-board';
 
-  allPillars().forEach(pillar => {
-    const count = prepCards().filter(c => c.pillar === pillar.id).length;
-    const open = expandedPillars.has(pillar.id);
-    const empty = count === 0;
+  const lanes = document.createElement('div');
+  lanes.className = 'prep-lanes';
+  PREP_LANES.forEach(lane => lanes.appendChild(renderPrepLane(lane)));
 
-    const wrap = document.createElement('div');
-    wrap.className = 'pillar' + (open ? ' open' : '') + (empty ? ' is-empty' : '');
+  // Custom / orphan cards that don't fit the six columns.
+  const orphans = prepCards().filter(c => !prepLaneForCard(c));
+  if (orphans.length) {
+    const el = document.createElement('div');
+    el.className = 'prep-lane';
+    el.dataset.prepLane = 'other';
+    const title = document.createElement('div');
+    title.className = 'prep-lane-title';
+    title.textContent = 'Other';
+    el.appendChild(title);
+    const cardsWrap = document.createElement('div');
+    cardsWrap.className = 'prep-lane-cards';
+    orphans.forEach(c => cardsWrap.appendChild(renderPrepCard(c)));
+    el.appendChild(cardsWrap);
+    lanes.appendChild(el);
+  }
 
-    const header = document.createElement('div');
-    header.className = 'pillar-header';
-    header.addEventListener('click', e => {
-      if (e.target.closest('.pillar-title[contenteditable="true"]')) return;
-      togglePillar(pillar.id);
-    });
-
-    const title = document.createElement('span');
-    title.className = 'pillar-title';
-    title.textContent = pillar.label;
-    title.title = 'Double-click to rename';
-    title.addEventListener('dblclick', e => {
-      e.stopPropagation();
-      e.preventDefault();
-      startPillarTitleRename(title, pillar.id);
-    });
-
-    const trailing = document.createElement('span');
-    trailing.className = 'pillar-trailing';
-
-    const countEl = document.createElement('span');
-    countEl.className = 'pillar-count';
-    countEl.textContent = count ? count + ' cards' : 'empty';
-
-    const chev = document.createElement('span');
-    chev.className = 'pillar-chev';
-    chev.textContent = open ? '▾' : '▸';
-
-    trailing.appendChild(countEl);
-    trailing.appendChild(chev);
-    header.appendChild(title);
-    header.appendChild(trailing);
-    wrap.appendChild(header);
-
-    if (open) {
-      const pBody = document.createElement('div');
-      pBody.className = 'pillar-body';
-      const lanes = document.createElement('div');
-      lanes.className = 'prep-lanes';
-      formatsForPillar(pillar.id).forEach(fmt => {
-        lanes.appendChild(renderPrepLane(pillar.id, fmt));
-      });
-      pBody.appendChild(lanes);
-
-      const addFmtBtn = document.createElement('button');
-      addFmtBtn.type = 'button';
-      addFmtBtn.className = 'prep-add-format';
-      addFmtBtn.textContent = '+ Add format';
-      addFmtBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        addFmtBtn.hidden = true;
-        appendPrepInlineForm(pBody, 'e.g. Carousel, Lookbook…', (val) => {
-          const entry = createCustomFormat(pillar.id, val);
-          if (entry) {
-            expandedPillars.add(pillar.id);
-            renderBoard();
-            return;
-          }
-          addFmtBtn.hidden = false;
-          const form = pBody.querySelector('.prep-inline-form');
-          if (form) form.remove();
-        }, () => {
-          addFmtBtn.hidden = false;
-          const form = pBody.querySelector('.prep-inline-form');
-          if (form) form.remove();
-        });
-      });
-      pBody.appendChild(addFmtBtn);
-      wrap.appendChild(pBody);
-    }
-
-    board.appendChild(wrap);
-  });
-
+  board.appendChild(lanes);
   body.appendChild(board);
-
-  const addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.className = 'prep-add-pillar';
-  addBtn.textContent = '+ Add pillar';
-  addBtn.addEventListener('click', () => {
-    addBtn.hidden = true;
-    form.hidden = false;
-    input.focus();
-  });
-
-  const form = document.createElement('div');
-  form.className = 'prep-add-pillar-form';
-  form.hidden = true;
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.maxLength = 40;
-  input.placeholder = 'e.g. Partnerships, Wholesale…';
-  input.setAttribute('aria-label', 'New pillar name');
-  const confirm = document.createElement('button');
-  confirm.type = 'button';
-  confirm.className = 'btn-secondary';
-  confirm.textContent = 'Add';
-  const cancel = document.createElement('button');
-  cancel.type = 'button';
-  cancel.className = 'btn-cancel';
-  cancel.textContent = 'Cancel';
-  const finish = (save) => {
-    if (save) {
-      const entry = addCustomPillar(input.value);
-      if (entry) {
-        renderBoard();
-        return;
-      }
-      input.focus();
-      return;
-    }
-    form.hidden = true;
-    addBtn.hidden = false;
-    input.value = '';
-  };
-  confirm.addEventListener('click', () => finish(true));
-  cancel.addEventListener('click', () => finish(false));
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      finish(true);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      finish(false);
-    }
-  });
-  form.appendChild(input);
-  form.appendChild(confirm);
-  form.appendChild(cancel);
-  body.appendChild(addBtn);
-  body.appendChild(form);
-
   return body;
 }
 
@@ -12502,7 +12781,7 @@ function catSelectOptions() {
 }
 
 function handlePillarSelectChange(pillar, formatSelectId, prevPillar) {
-  const pillarSelectId = formatSelectId === 'prepareFormat' ? 'preparePillar' : 'pPillar';
+  const pillarSelectId = 'pPillar';
   if (pillar === ADD_PILLAR_ID) {
     const name = window.prompt('New pillar name');
     const entry = addCustomPillar(name || '');
@@ -12566,14 +12845,146 @@ function setPanelImage(imageData) {
   }
 }
 
-function updatePanelStrip(colorId) {
-  const cat = catById(colorId);
-  document.getElementById('panelStrip').style.background = cat ? cat.bg : '#e0ddd8';
+function updatePanelStrip(colorId, formatId) {
+  const pillar = colorId || '';
+  let tone = null;
+  if (formatId && pillarById(pillar)) {
+    tone = formatColor(formatId, pillar);
+  }
+  if (!tone) {
+    const cat = catById(colorId);
+    tone = cat ? cat.bg : '#e0ddd8';
+  }
+  document.getElementById('panelStrip').style.background = tone;
+  const imgWrap = document.getElementById('pImageWrap');
+  if (imgWrap) {
+    const empty = imgWrap.querySelector('.panel-image-empty');
+    const img = imgWrap.querySelector('img');
+    if (formatId && tone && tone !== '#e0ddd8') {
+      if (empty) {
+        empty.style.borderColor = tone;
+        empty.style.background = hexWash(tone, 0.08);
+        empty.style.color = accentTextColor(tone);
+      }
+      if (img) img.style.borderColor = tone;
+    } else {
+      if (empty) {
+        empty.style.borderColor = '';
+        empty.style.background = '';
+        empty.style.color = '';
+      }
+      if (img) img.style.borderColor = '';
+    }
+  }
+}
+
+function ideaFormatChipOptions(pillarId) {
+  return formatsForPillar(pillarId).map(f => ({
+    id: f.id,
+    label: f.label || f.id,
+    tone: formatColor(f.id, pillarId)
+  }));
+}
+
+function renderIdeaFormatChips(wrap, pillarId, selectedId, onPick) {
+  wrap.innerHTML = '';
+  wrap.className = 'idea-format-chips';
+  wrap.id = 'pIdeaFormatChips';
+  const formats = ideaFormatChipOptions(pillarId);
+  if (!formats.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  formats.forEach(f => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'idea-format-chip';
+    btn.dataset.formatId = f.id;
+    btn.textContent = f.label;
+    btn.title = f.label;
+    styleTypesChip(btn, f.tone, selectedId === f.id ? 'on' : 'off');
+    btn.addEventListener('click', () => {
+      onPick(selectedId === f.id ? '' : f.id);
+    });
+    wrap.appendChild(btn);
+  });
 }
 
 function buildIdeaPanelProps(idea) {
   const wrap = document.getElementById('panelProps');
   wrap.innerHTML = '';
+
+  let selectedFormat = idea.format || '';
+  const startPillar = (idea.cat && pillarById(idea.cat)) ? idea.cat : '';
+  if (selectedFormat && startPillar && !formatsForPillar(startPillar).some(f => f.id === selectedFormat)) {
+    selectedFormat = '';
+  }
+
+  const formatRow = document.createElement('div');
+  formatRow.className = 'prop-row';
+  formatRow.id = 'pIdeaFormatRow';
+  formatRow.style.alignItems = 'flex-start';
+  formatRow.innerHTML = '<span class="prop-label" style="padding-top:6px">Format</span><span class="prop-value"></span>';
+  const formatValue = formatRow.querySelector('.prop-value');
+  const hidden = document.createElement('input');
+  hidden.type = 'hidden';
+  hidden.id = 'pIdeaFormat';
+  hidden.value = selectedFormat || '';
+  formatValue.appendChild(hidden);
+  const chips = document.createElement('div');
+  formatValue.appendChild(chips);
+
+  function liveApplyIdeaFormat(pick) {
+    const live = DATA.ideas.find(i => i.id === activeIdeaId);
+    if (!live) return;
+    const catVal = (document.getElementById('pCat') || {}).value || '';
+    live.cat = catVal || null;
+    const pillar = (live.cat && pillarById(live.cat)) ? live.cat : 'organic';
+    live.format = (pick && formatsForPillar(pillar).some(f => f.id === pick)) ? pick : null;
+    const cardEl = document.querySelector('.idea-card[data-idea-id="' + live.id + '"]');
+    if (cardEl) {
+      applyCardCategoryStyle(cardEl, live);
+      applyIdeaImageWellStyle(cardEl.querySelector('.image-well'), live);
+      const labelEl = cardEl.querySelector('.card-cat-label');
+      const tone = ideaFormatTone(live);
+      const cat = live.cat ? catById(live.cat) : null;
+      const fmtLabel = live.format ? formatLabel(pillar, live.format) : '';
+      if (fmtLabel || cat) {
+        if (labelEl) {
+          labelEl.textContent = fmtLabel || cat.label;
+          labelEl.style.color = accentTextColor(tone || (cat && cat.bg) || '#564A5E');
+        } else {
+          const preview = cardEl.querySelector('.card-preview');
+          if (preview) {
+            const neu = document.createElement('div');
+            neu.className = 'card-cat-label';
+            neu.textContent = fmtLabel || cat.label;
+            neu.style.color = accentTextColor(tone || (cat && cat.bg) || '#564A5E');
+            preview.insertBefore(neu, preview.firstChild);
+          }
+        }
+      } else if (labelEl) {
+        labelEl.remove();
+      }
+    }
+    scheduleSave();
+  }
+
+  function refreshIdeaFormatChips() {
+    const catVal = (document.getElementById('pCat') || {}).value || '';
+    const p = (catVal && pillarById(catVal)) ? catVal : 'organic';
+    if (hidden.value && !formatsForPillar(p).some(f => f.id === hidden.value)) {
+      hidden.value = '';
+    }
+    renderIdeaFormatChips(chips, p, hidden.value, pick => {
+      hidden.value = pick;
+      liveApplyIdeaFormat(pick);
+      updatePanelStrip(catVal, pick);
+      refreshIdeaFormatChips();
+    });
+  }
+
   const row = document.createElement('div');
   row.className = 'prop-row';
   row.innerHTML = '<span class="prop-label">Category</span><span class="prop-value"></span>';
@@ -12583,9 +12994,20 @@ function buildIdeaPanelProps(idea) {
     value: idea.cat || '',
     includeNone: true,
     colored: false,
-    onChange: v => updatePanelStrip(v)
+    onChange: v => {
+      // Clear format when pillar no longer owns it, then refresh chips.
+      const p = (v && pillarById(v)) ? v : 'organic';
+      if (hidden.value && !formatsForPillar(p).some(f => f.id === hidden.value)) {
+        hidden.value = '';
+      }
+      liveApplyIdeaFormat(hidden.value);
+      refreshIdeaFormatChips();
+      updatePanelStrip(v, hidden.value);
+    }
   }));
   wrap.appendChild(row);
+  wrap.appendChild(formatRow);
+  refreshIdeaFormatChips();
 }
 
 function buildPrepPanelProps(card) {
@@ -12699,7 +13121,7 @@ function updateIdeaSaveBtn() {
   if (!btn) return;
   if (panelMode === 'idea' && prepareExpanded) {
     btn.textContent = 'Prepare';
-    if (hint) hint.textContent = 'Enter or Ctrl+Enter to prepare · click outside to close';
+    if (hint) hint.textContent = 'Uses Category + Format above · Enter or Ctrl+Enter to prepare · click outside to close';
   } else if (panelMode === 'prep' && executeArmed) {
     btn.textContent = 'Execute';
     if (hint) hint.textContent = 'Enter or Ctrl+Enter to send to Execution · click outside to close';
@@ -12728,55 +13150,13 @@ function buildIdeaActions(idea) {
   prepBtn.className = 'btn-secondary';
   prepBtn.id = 'prepareToggle';
   prepBtn.textContent = 'Prepare';
-
-  const dest = document.createElement('div');
-  dest.className = 'prepare-dest';
-  dest.id = 'prepareDest';
-
-  const pillarRow = document.createElement('div');
-  pillarRow.className = 'prop-row';
-  pillarRow.innerHTML = '<span class="prop-label">Pillar</span><span class="prop-value"></span>';
-  const preferred = (idea && idea.cat && pillarById(idea.cat)) ? idea.cat : 'organic';
-  pillarRow.querySelector('.prop-value').appendChild(createPpcSelect({
-    id: 'preparePillar',
-    options: pillarSelectOptions(),
-    value: preferred,
-    colored: false,
-    onRename: (id, lab) => {
-      if (id === ADD_PILLAR_ID) return false;
-      return renamePillar(id, lab);
-    },
-    onChange: pillar => {
-      handlePillarSelectChange(pillar, 'prepareFormat', preferred);
-    }
-  }));
-  dest.appendChild(pillarRow);
-
-  const formatRow = document.createElement('div');
-  formatRow.className = 'prop-row';
-  formatRow.innerHTML = '<span class="prop-label">Format</span><span class="prop-value"></span>';
-  formatRow.querySelector('.prop-value').appendChild(createPpcSelect({
-    id: 'prepareFormat',
-    options: formatSelectOptions(preferred),
-    value: defaultFormatForPillar(preferred),
-    colored: false,
-    onChange: format => {
-      const pillarEl = document.getElementById('preparePillar');
-      const pillar = (pillarEl && pillarEl.value) || preferred;
-      handleFormatSelectChange(format, pillar, 'prepareFormat', defaultFormatForPillar(preferred));
-    }
-  }));
-  dest.appendChild(formatRow);
-
+  prepBtn.title = 'Uses Category + Format on this card';
   prepBtn.addEventListener('click', () => {
     prepareExpanded = !prepareExpanded;
     prepBtn.classList.toggle('active', prepareExpanded);
-    dest.style.display = prepareExpanded ? 'flex' : 'none';
     updateIdeaSaveBtn();
   });
-
   actions.appendChild(prepBtn);
-  actions.appendChild(dest);
 
   const linked = linkedScheduleForIdea(idea);
   if (linked) {
@@ -13182,7 +13562,7 @@ function openPanel(ideaId) {
   setPlanHintVisible(false);
   document.getElementById('pDesc').innerHTML = sanitizeHtml(idea.body || '');
   setPanelImage(idea.imageData);
-  updatePanelStrip(idea.cat);
+  updatePanelStrip(idea.cat, idea.format);
   document.getElementById('panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('pDesc').focus(), 50);
@@ -13212,7 +13592,7 @@ function openPrepPanel(prepId) {
   document.getElementById('pPlan').innerHTML = sanitizeHtml(card.productionPlan || '');
   setPlanHintVisible(!stripHtml(card.productionPlan || ''));
   setPanelImage(card.imageData);
-  updatePanelStrip(card.pillar);
+  updatePanelStrip(card.pillar, card.format);
   document.getElementById('panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('pPlan').focus(), 50);
@@ -13246,7 +13626,7 @@ function openExecPanel(execId) {
   setMarketingDateTime('pDateTime', card.dateTime);
   setPlanHintVisible(false);
   setPanelImage(card.imageData);
-  updatePanelStrip(card.pillar);
+  updatePanelStrip(card.pillar, card.format);
   document.getElementById('panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('pExecPlan').focus(), 50);
@@ -13290,7 +13670,7 @@ function openReviewPanel(reviewId) {
   setMarketingDateTime('pScheduleAt', card.scheduleAt);
   setPlanHintVisible(false);
   setPanelImage(card.imageData);
-  updatePanelStrip(card.pillar);
+  updatePanelStrip(card.pillar, card.format);
   document.getElementById('panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('pOutcome').focus(), 50);
@@ -13581,7 +13961,7 @@ function openSchedulePanel(scheduleId) {
   const tweaksEl = document.getElementById('pScheduleTweaks');
   if (tweaksEl) tweaksEl.innerHTML = sanitizeHtml(card.tweaks || '');
   setPlanHintVisible(false);
-  updatePanelStrip(card.pillar);
+  updatePanelStrip(card.pillar, card.format);
   document.getElementById('panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
 }
@@ -13884,16 +14264,20 @@ function savePanel(silent) {
     const idea = DATA.ideas.find(i => i.id === activeIdeaId);
     if (!idea) return;
     const catVal = document.getElementById('pCat').value;
+    const formatVal = (document.getElementById('pIdeaFormat') || {}).value || '';
     idea.cat = catVal || null;
+    if (formatVal && formatsForPillar(idea.cat || 'organic').some(f => f.id === formatVal)) {
+      idea.format = formatVal;
+    } else {
+      idea.format = null;
+    }
     idea.body = sanitizeHtml(document.getElementById('pDesc').innerHTML).trim();
 
     if (prepareExpanded && !silent) {
-      const pillarEl = document.getElementById('preparePillar');
-      const formatEl = document.getElementById('prepareFormat');
-      const pillarRaw = (pillarEl && pillarEl.value) || idea.cat || 'organic';
+      const pillarRaw = idea.cat || 'organic';
       const pillar = pillarById(pillarRaw) ? pillarRaw : 'organic';
-      let format = formatEl && formatEl.value;
-      if (format === ADD_FORMAT_ID || !format || !formatsForPillar(pillar).some(f => f.id === format)) {
+      let format = idea.format;
+      if (!format || !formatsForPillar(pillar).some(f => f.id === format)) {
         format = defaultFormatForPillar(pillar);
       }
       moveIdeaToPrep(idea, pillar, format);
@@ -14154,6 +14538,67 @@ document.getElementById('reviewContextToggle').addEventListener('click', () => {
   wrap.classList.toggle('open', reviewContextOpen);
   const chev = document.getElementById('reviewContextChev');
   if (chev) chev.textContent = reviewContextOpen ? '▾' : '▸';
+});
+
+function readSchedulePanePref(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === '0') return false;
+    if (raw === '1') return true;
+  } catch (_) {}
+  return fallback;
+}
+
+function defaultSchedulePaneOpen() {
+  // On phones, start collapsed so the calendar card panel is shorter to scroll.
+  return !(window.matchMedia && window.matchMedia('(max-width: 700px)').matches);
+}
+
+function loadSchedulePanePrefs() {
+  const fallback = defaultSchedulePaneOpen();
+  schedulePipelinePaneOpen = readSchedulePanePref(SCHEDULE_PANE_PIPELINE_KEY, fallback);
+  scheduleContentPaneOpen = readSchedulePanePref(SCHEDULE_PANE_CONTENT_KEY, fallback);
+}
+
+function persistSchedulePanePref(key, open) {
+  try { localStorage.setItem(key, open ? '1' : '0'); } catch (_) {}
+}
+
+function applySchedulePaneState() {
+  const pipe = document.getElementById('schedulePipelinePane');
+  const content = document.getElementById('scheduleContentPane');
+  const pipeBtn = document.getElementById('schedulePipelineToggle');
+  const contentBtn = document.getElementById('scheduleContentToggle');
+  const pipeChev = document.getElementById('schedulePipelineChev');
+  const contentChev = document.getElementById('scheduleContentChev');
+  if (pipe) pipe.classList.toggle('is-collapsed', !schedulePipelinePaneOpen);
+  if (content) content.classList.toggle('is-collapsed', !scheduleContentPaneOpen);
+  if (pipeBtn) pipeBtn.setAttribute('aria-expanded', schedulePipelinePaneOpen ? 'true' : 'false');
+  if (contentBtn) contentBtn.setAttribute('aria-expanded', scheduleContentPaneOpen ? 'true' : 'false');
+  if (pipeChev) pipeChev.textContent = schedulePipelinePaneOpen ? '▾' : '▸';
+  if (contentChev) contentChev.textContent = scheduleContentPaneOpen ? '▾' : '▸';
+}
+
+function setSchedulePipelinePaneOpen(open) {
+  schedulePipelinePaneOpen = !!open;
+  persistSchedulePanePref(SCHEDULE_PANE_PIPELINE_KEY, schedulePipelinePaneOpen);
+  applySchedulePaneState();
+}
+
+function setScheduleContentPaneOpen(open) {
+  scheduleContentPaneOpen = !!open;
+  persistSchedulePanePref(SCHEDULE_PANE_CONTENT_KEY, scheduleContentPaneOpen);
+  applySchedulePaneState();
+}
+
+loadSchedulePanePrefs();
+applySchedulePaneState();
+
+document.getElementById('schedulePipelineToggle').addEventListener('click', () => {
+  setSchedulePipelinePaneOpen(!schedulePipelinePaneOpen);
+});
+document.getElementById('scheduleContentToggle').addEventListener('click', () => {
+  setScheduleContentPaneOpen(!scheduleContentPaneOpen);
 });
 
 document.getElementById('scheduleContextToggle').addEventListener('click', () => {

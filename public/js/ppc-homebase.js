@@ -6,10 +6,10 @@
   const ARCHIVE_OPEN_KEY = 'ppc-archive-open';
 
   const COLUMN_LABELS = {
-    backlog: 'Backlog',
-    waiting: 'Waiting',
+    backlog: 'To Do',
     active: 'Active',
-    done: 'Done'
+    done: 'Done',
+    waiting: 'To Do' // legacy Waiting → To Do
   };
   const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 

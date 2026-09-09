@@ -300,14 +300,15 @@
       align-items: flex-start;
       overflow-x: auto;
       padding: 4px 2px 22px;
+      width: 100%;
     }
     .board-col {
       background: #fff;
       border-radius: 10px;
       border: 1px solid #e8e5e0;
-      flex: 1 1 260px;
-      min-width: 260px;
-      max-width: 320px;
+      flex: 1 1 0;
+      min-width: 200px;
+      max-width: none;
       display: flex;
       flex-direction: column;
     }
@@ -1023,9 +1024,8 @@
         <span class="prop-value">
           <div class="prop-status-wrap">
             <select class="prop-status-select" id="pColumn">
-              <option value="backlog">Backlog</option>
+              <option value="backlog">To Do</option>
               <option value="active">Active</option>
-              <option value="waiting">Waiting</option>
               <option value="done">Done</option>
             </select>
           </div>
@@ -1111,7 +1111,7 @@
 </div>
 
 <script src="/js/ppc-select.js?v=8"></script>
-<script src="/js/ppc-homebase.js?v=14"></script>
+<script src="/js/ppc-homebase.js?v=17"></script>
 <script>
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -1139,17 +1139,16 @@ function accentTextColor(bg) {
 }
 
 const COLUMNS = [
-  { id: 'backlog', label: 'Backlog' },
+  { id: 'backlog', label: 'To Do' },
   { id: 'active',  label: 'Active' },
-  { id: 'waiting', label: 'Waiting' },
   { id: 'done',    label: 'Done' },
 ];
 
 // Column display order — draggable by the user, persisted alongside the cards.
 let COLUMN_ORDER = COLUMNS.map(c => c.id);
 
-// Project boards use a fixed Backlog → Waiting → Active → Done order.
-const PROJECT_COLUMN_ORDER = ['backlog', 'waiting', 'active', 'done'];
+// Project boards use a fixed To Do → Active → Done order.
+const PROJECT_COLUMN_ORDER = ['backlog', 'active', 'done'];
 
 // Projects. Cards with no `project` belong to the "Misc" section.
 let PROJECTS = [];
@@ -1205,10 +1204,28 @@ function isCompleteCard(c) {
   return c.status === 'complete' || c.column === 'done';
 }
 
-function priorityCards() {
+function priorityOpenCards() {
   return CARDS
     .filter(c => c.dueDate && !isCompleteCard(c))
     .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
+}
+
+/** Dated completes for Priority Done — same cards as on their project, not copies. */
+function priorityDoneCards() {
+  return CARDS
+    .filter(c => c.dueDate && isCompleteCard(c))
+    .sort((a, b) => String(b.doneAt || '').localeCompare(String(a.doneAt || '')));
+}
+
+function priorityCards() {
+  return [...priorityOpenCards(), ...priorityDoneCards()];
+}
+
+const DONE_RECENT_MS = 7 * 24 * 60 * 60 * 1000;
+function isRecentlyDone(c) {
+  if (!c || !c.doneAt) return true;
+  const t = new Date(c.doneAt).getTime();
+  return !Number.isNaN(t) && t >= Date.now() - DONE_RECENT_MS;
 }
 
 function isProjectComplete(p) { return !!(p && p.completed); }
@@ -1223,7 +1240,7 @@ function projectToSection(p) {
 // Priority → Misc → active projects. Completed projects render under Complete.
 function boardSections() {
   return [
-    { id: PRIORITY_ID, name: 'Priority tasks', type: null, description: 'Open tasks with a due date, soonest first' },
+    { id: PRIORITY_ID, name: 'Priority tasks', type: null, description: 'Dated tasks — open soonest first; Done shows recent clears' },
     { id: MISC_ID, name: 'Misc', type: null, description: 'General tasks not tied to a project' },
     ...activeProjects().map(projectToSection)
   ];
@@ -1262,10 +1279,10 @@ const SEED_CARDS = [
   { id: 'k9',  title: 'Map monthly fixed expenses for real Mojo target', body: '', column: 'backlog', cat: 'fin', status: 'planned', tasks: [] },
   { id: 'k10', title: 'Decide on Macquarie account (open or defer)', body: '', column: 'backlog', cat: 'fin', status: 'planned', tasks: [] },
 
-  { id: 'k11', title: 'Ode to Sirens (28 Aug) — brief created, next moves with Louise/Gregor', body: '', column: 'waiting', cat: 'evt', status: 'planned', tasks: [] },
-  { id: 'k12', title: "Marketing system build — waiting on Louis's return + intern onboarding", body: '', column: 'waiting', cat: 'mkt', status: 'planned', tasks: [] },
-  { id: 'k13', title: 'Xero cleanup — scheduled for next week', body: '', column: 'waiting', cat: 'fin', status: 'planned', tasks: [] },
-  { id: 'k14', title: 'Swing tags concept — scheduled with Louis, week of 23 July', body: '', column: 'waiting', cat: 'mfg', status: 'planned', tasks: [] },
+  { id: 'k11', title: 'Ode to Sirens (28 Aug) — brief created, next moves with Louise/Gregor', body: '', column: 'backlog', cat: 'evt', status: 'planned', tasks: [] },
+  { id: 'k12', title: "Marketing system build — waiting on Louis's return + intern onboarding", body: '', column: 'backlog', cat: 'mkt', status: 'planned', tasks: [] },
+  { id: 'k13', title: 'Xero cleanup — scheduled for next week', body: '', column: 'backlog', cat: 'fin', status: 'planned', tasks: [] },
+  { id: 'k14', title: 'Swing tags concept — scheduled with Louis, week of 23 July', body: '', column: 'backlog', cat: 'mfg', status: 'planned', tasks: [] },
 
   { id: 'k15', title: 'Manufacturer outreach: add ethics/accreditation question to 5 drafts (HOLD — not sending yet, sequencing TBD)', body: '', column: 'active', cat: 'mfg', status: 'in-progress', tasks: [] },
   { id: 'k16', title: 'Rock Tumbler/IDI board — built, needs ongoing use', body: '', column: 'active', cat: 'per', status: 'in-progress', tasks: [] },
@@ -1287,7 +1304,7 @@ let HIDDEN_EVENT_IDS = [];
 const STORAGE_KEY = 'kanban-board-data';
 const SYNC_URL = '/api/kanban';
 const PATCH_URL = SYNC_URL + '/patch';
-const APP_VERSION = '1.10.12';
+const APP_VERSION = '1.10.17';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
@@ -1315,6 +1332,22 @@ function applyBoardData(data) {
   PROJECTS = Array.isArray(data.projects) ? data.projects : [];
   if (Array.isArray(data.staff) && data.staff.length) STAFF = data.staff;
   HIDDEN_EVENT_IDS = Array.isArray(data.hiddenEventIds) ? data.hiddenEventIds.filter(Boolean) : [];
+}
+
+/** Drop legacy Waiting column — fold into To Do (backlog). */
+function migrateWaitingColumn() {
+  let changed = false;
+  CARDS.forEach(c => {
+    if (c && c.column === 'waiting') {
+      c.column = 'backlog';
+      changed = true;
+    }
+  });
+  if (COLUMN_ORDER.includes('waiting')) {
+    applyColumnOrder(COLUMN_ORDER.filter(id => id !== 'waiting'));
+    changed = true;
+  }
+  return changed;
 }
 
 function saveBoard() {
@@ -1379,7 +1412,10 @@ async function initApp() {
     applyBoardData(data);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (err) {}
   }
-  if (migrateAssignees()) saveBoard();   // single assignee → array, once
+  let migrated = false;
+  if (migrateAssignees()) migrated = true;
+  if (migrateWaitingColumn()) migrated = true;
+  if (migrated) saveBoard();
   await syncCatsFromPlanner();
   showView('board');
 }
@@ -1392,8 +1428,17 @@ async function refreshBoard() {
       const remote = await res.json();
       if (remote && remote.cards && remote.cards.length) {
         applyBoardData(remote);
-        migrateAssignees();
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remote)); } catch (err) {}
+        let migrated = false;
+        if (migrateAssignees()) migrated = true;
+        if (migrateWaitingColumn()) migrated = true;
+        if (migrated) saveBoard();
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          cards: CARDS.map(c => ({ ...c })),
+          order: COLUMN_ORDER.slice(),
+          projects: PROJECTS.map(p => ({ ...p })),
+          staff: STAFF.slice(),
+          hiddenEventIds: HIDDEN_EVENT_IDS.slice()
+        })); } catch (err) {}
         // Drop expanded sections that no longer exist after a remote refresh.
         expandedSections = new Set([...expandedSections].filter(id => id === MISC_ID || id === PRIORITY_ID || projectById(id)));
         await syncCatsFromPlanner();
@@ -1856,7 +1901,7 @@ function renderProjects() {
       if (!n) return;
       const seg = document.createElement('span');
       seg.style.flex = n;
-      seg.style.background = colId === 'done' ? '#4E6E6C' : colId === 'active' ? '#C29A3B' : colId === 'waiting' ? '#6B7A8D' : '#2C2C2C';
+      seg.style.background = colId === 'done' ? '#4E6E6C' : colId === 'active' ? '#C29A3B' : '#2C2C2C';
       bar.appendChild(seg);
     });
 
@@ -2232,8 +2277,16 @@ function makeSectionRow(section, opts) {
   trailing.className = 'section-trailing';
   const count = document.createElement('span');
   count.className = 'section-count';
-  const doneCount = cards.filter(c => c.column === 'done').length;
-  count.textContent = cards.length ? (cards.length + ' · ' + doneCount + ' done') : 'empty';
+  if (section.id === PRIORITY_ID) {
+    const openN = priorityOpenCards().length;
+    const recentDoneN = priorityDoneCards().filter(isRecentlyDone).length;
+    count.textContent = (openN || recentDoneN)
+      ? (openN + ' · ' + recentDoneN + ' done')
+      : 'empty';
+  } else {
+    const doneCount = cards.filter(c => c.column === 'done').length;
+    count.textContent = cards.length ? (cards.length + ' · ' + doneCount + ' done') : 'empty';
+  }
 
   const chev = document.createElement('span');
   chev.className = 'section-chev';
@@ -2439,7 +2492,7 @@ function makeColumn(col, sectionId) {
   if (col.id === 'done') {
     // Cards done in the last 7 days show directly; older ones collapse behind a
     // toggle so the column stays readable as it fills up.
-    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - DONE_RECENT_MS;
     const recent = cardsInCol.filter(c => !c.doneAt || new Date(c.doneAt).getTime() >= cutoff);
     const older = cardsInCol.filter(c => c.doneAt && new Date(c.doneAt).getTime() < cutoff);
 
