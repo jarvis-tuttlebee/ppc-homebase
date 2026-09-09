@@ -15087,7 +15087,7 @@ function fillScheduleContext(card) {
 
   // 2. Prep — production plan (same field as pipeline Prep)
   const prepStage = appendStage('Prep');
-  appendNoteField(prepStage, {
+  const prepPlanInput = appendNoteField(prepStage, {
     key: 'productionPlan',
     label: 'Production plan',
     multiline: true,
@@ -15096,8 +15096,20 @@ function fillScheduleContext(card) {
     placeholder: 'What needs to happen to produce this…'
   });
 
-  // 3. Execute — optional details (same pills as pipeline Execution)
+  // 3. Execute — how to execute + optional pills (same as pipeline Execution)
   const execStage = appendStage('Execute');
+  const execHowInput = appendNoteField(execStage, {
+    key: 'productionPlan',
+    label: 'How to execute',
+    multiline: true,
+    rows: 3,
+    value: stripHtml(card.productionPlan || ''),
+    placeholder: 'Programs, editing approach, steps…'
+  });
+  // Prep plan + Exec how-to share productionPlan in pipeline data — keep both in sync.
+  prepPlanInput.addEventListener('input', () => { execHowInput.value = prepPlanInput.value; });
+  execHowInput.addEventListener('input', () => { prepPlanInput.value = execHowInput.value; });
+
   const openMap = {};
   SCHEDULE_EXEC_OPTIONAL.forEach(spec => {
     openMap[spec.id] = !!stripHtml(card[spec.key] || '').trim();
