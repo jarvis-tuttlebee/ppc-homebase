@@ -8,7 +8,7 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-09 — Execution: how-to + optional sections (Cursor Cloud)
 
 ### Live
-- Version ID: _(pending deploy)_
+- Version ID: `75d51f38-8205-4103-b254-5461b4215a08`
 - Marketing **`0.12.62`**
 - Hard-refresh Marketing → Execution
 
