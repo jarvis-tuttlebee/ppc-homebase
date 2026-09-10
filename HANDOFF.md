@@ -12,9 +12,10 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 - Hard-refresh → Calendar → Week → swipe across days on phone
 
 ### What
-1. Calendar slots / Make items / lead-up cues no longer use HTML5 `draggable`
-   on touch (it was stealing the swipe gesture)
+1. Calendar slots / Make items / lead-up cues use mouse-only HTML5 drag on touch
+   devices (HTML5 `draggable` was stealing the swipe gesture)
 2. Week pan scroller uses native overflow scroll for touch; mouse drag unchanged
+3. Hybrid touch laptops: mousedown re-enables drag so mouse reschedule still works
 
 ---
 

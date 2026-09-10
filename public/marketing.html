@@ -7406,6 +7406,17 @@ const IS_TOUCH = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const SCHEDULE_PANE_PIPELINE_KEY = 'ppc-schedule-pipeline-open';
 const SCHEDULE_PANE_CONTENT_KEY = 'ppc-schedule-content-open';
 
+/** HTML5 drag steals week-strip swipe on touch — keep drag for mouse (incl. hybrids). */
+function bindHtml5DragForMouse(el) {
+  if (!el) return;
+  el.draggable = !IS_TOUCH;
+  if (!IS_TOUCH) return;
+  el.addEventListener('mousedown', e => {
+    if (e.button === 0) el.draggable = true;
+  }, { passive: true });
+  el.addEventListener('touchstart', () => { el.draggable = false; }, { passive: true });
+}
+
 function cleanupMoodPan() {
   if (panMoveHandler) window.removeEventListener('mousemove', panMoveHandler);
   if (panUpHandler) window.removeEventListener('mouseup', panUpHandler);
@@ -11542,8 +11553,7 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
       if (dayAnchorIds.has(anchor.id)) return;
       const cue = document.createElement('span');
       cue.className = 'cal-day-cue cal-day-cue--leadup';
-      // HTML5 drag blocks week-strip swipe on touch devices.
-      cue.draggable = !IS_TOUCH;
+      bindHtml5DragForMouse(cue);
       cue.textContent = leadUpCueLabel(anchor);
       cue.title = leadUpCueTitle(anchor) + ' · drag to move · click to edit';
       cue.addEventListener('click', e => {
@@ -11574,8 +11584,7 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
     prepCardsToday.forEach(card => {
       const row = document.createElement('div');
       row.className = 'cal-day-prep-item';
-      // HTML5 drag blocks week-strip swipe on touch devices.
-      row.draggable = !IS_TOUCH;
+      bindHtml5DragForMouse(row);
       let title = stripHtml(card.body || '').trim();
       if (!title) title = needTypeDisplayLabel(card) || 'Content';
       const pub = card.scheduledAt ? formatShortDate(new Date(card.scheduledAt)) : '';
@@ -11657,8 +11666,7 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
     }) || leadUpAnchors[0];
     const dragSlot = findLeadUpSlotOnDay(preferred.id, key);
     dayBody.classList.add('cal-day-body--movable');
-    // HTML5 drag blocks week-strip swipe on touch devices.
-    dayBody.draggable = !IS_TOUCH;
+    bindHtml5DragForMouse(dayBody);
     dayBody.title = 'Drag to move this event slot to another day';
     dayBody.addEventListener('dragstart', e => {
       // Slot/add handle their own drags — do not cancel them with preventDefault.
@@ -14192,8 +14200,8 @@ function renderCalSlot(card) {
     + (emptyNeed ? ' cal-slot--need cal-slot--need-empty' : '')
     + (isPosted ? ' cal-slot--posted' : '');
   el.dataset.scheduleId = card.id;
-  // Native HTML5 drag steals the week-view swipe gesture on touch — skip it there.
-  el.draggable = !IS_TOUCH;
+  // Native HTML5 drag steals the week-view swipe gesture on touch — mouse-only drag.
+  bindHtml5DragForMouse(el);
   el.title = emptyNeed
     ? (quiet
       ? 'Planned for later · fill closer to the date · drag to a day or Unscheduled'
@@ -14465,7 +14473,7 @@ function renderScheduleCard(card) {
   const el = document.createElement('div');
   el.className = 'schedule-card';
   el.dataset.scheduleId = card.id;
-  el.draggable = !IS_TOUCH;
+  bindHtml5DragForMouse(el);
   applyPrepCardStyle(el, card.pillar, card.format);
   const emptyNeed = isNeedContentCard(card) && !stripHtml(card.body || '').trim();
   el.title = emptyNeed
