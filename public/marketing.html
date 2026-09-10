@@ -11354,12 +11354,12 @@ function buildMarketingWeekRow(band, cardsByDay, leadUpByDay, prepByDay, today) 
 
   for (let i = 0; i < WEEK_PAN_TOTAL_DAYS; i++) {
     const cellDate = addCalendarDays(stripStart, i);
-    const inFocusWeek = i >= WEEK_PAN_BUFFER_DAYS && i < WEEK_PAN_BUFFER_DAYS + 7;
     grid.appendChild(buildMarketingDayCell({
       date: cellDate,
       dayNum: cellDate.getDate(),
-      // Soften days outside the anchored week so the focus span still reads clearly.
-      inMonth: inFocusWeek
+      // Keep every day in the pan strip at full strength — fading “other”
+      // days made mid-week views look whited-out.
+      inMonth: true
     }, cardsByDay, leadUpByDay, prepByDay, today));
   }
 
