@@ -4803,7 +4803,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.81';
+const APP_VERSION = '0.12.82';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -11230,7 +11230,7 @@ function settleWeekPanScroll(scroller) {
 function bindWeekPanScroller(scroller) {
   if (!scroller || scroller.dataset.panBound === '1') return;
   scroller.dataset.panBound = '1';
-  scroller.title = 'Drag dates to scroll into nearby weeks';
+  scroller.title = 'Swipe or drag dates to scroll into nearby weeks';
 
   let panning = false;
   let moved = false;
@@ -11263,6 +11263,8 @@ function bindWeekPanScroller(scroller) {
 
   scroller.addEventListener('pointerdown', e => {
     if (e.button != null && e.button !== 0) return;
+    // Touch: rely on native overflow-x scroll (pointer capture fights iOS swipe).
+    if (e.pointerType === 'touch' || (IS_TOUCH && e.pointerType !== 'mouse')) return;
     if (e.target.closest('.cal-slot, .cal-day-prep-item, .cal-day-cue, .cal-day-clear, button, a, input, textarea, select, [contenteditable="true"]')) {
       return;
     }
@@ -11540,7 +11542,8 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
       if (dayAnchorIds.has(anchor.id)) return;
       const cue = document.createElement('span');
       cue.className = 'cal-day-cue cal-day-cue--leadup';
-      cue.draggable = true;
+      // HTML5 drag blocks week-strip swipe on touch devices.
+      cue.draggable = !IS_TOUCH;
       cue.textContent = leadUpCueLabel(anchor);
       cue.title = leadUpCueTitle(anchor) + ' · drag to move · click to edit';
       cue.addEventListener('click', e => {
@@ -11571,7 +11574,8 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
     prepCardsToday.forEach(card => {
       const row = document.createElement('div');
       row.className = 'cal-day-prep-item';
-      row.draggable = true;
+      // HTML5 drag blocks week-strip swipe on touch devices.
+      row.draggable = !IS_TOUCH;
       let title = stripHtml(card.body || '').trim();
       if (!title) title = needTypeDisplayLabel(card) || 'Content';
       const pub = card.scheduledAt ? formatShortDate(new Date(card.scheduledAt)) : '';
@@ -11653,7 +11657,8 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
     }) || leadUpAnchors[0];
     const dragSlot = findLeadUpSlotOnDay(preferred.id, key);
     dayBody.classList.add('cal-day-body--movable');
-    dayBody.draggable = true;
+    // HTML5 drag blocks week-strip swipe on touch devices.
+    dayBody.draggable = !IS_TOUCH;
     dayBody.title = 'Drag to move this event slot to another day';
     dayBody.addEventListener('dragstart', e => {
       // Slot/add handle their own drags — do not cancel them with preventDefault.
@@ -14187,7 +14192,8 @@ function renderCalSlot(card) {
     + (emptyNeed ? ' cal-slot--need cal-slot--need-empty' : '')
     + (isPosted ? ' cal-slot--posted' : '');
   el.dataset.scheduleId = card.id;
-  el.draggable = true;
+  // Native HTML5 drag steals the week-view swipe gesture on touch — skip it there.
+  el.draggable = !IS_TOUCH;
   el.title = emptyNeed
     ? (quiet
       ? 'Planned for later · fill closer to the date · drag to a day or Unscheduled'
