@@ -2491,6 +2491,45 @@
       padding: 4px 8px 6px;
       overflow-x: auto;
     }
+    /* Week view: horizontal pan across adjacent weeks (drag the date row). */
+    .cal-week-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
+      cursor: grab;
+      scrollbar-width: thin;
+      touch-action: pan-x;
+    }
+    .cal-week-scroll.is-panning {
+      cursor: grabbing;
+      user-select: none;
+    }
+    .cal-week-scroll.is-panning .cal-day-body,
+    .cal-week-scroll.is-panning .cal-slot,
+    .cal-week-scroll.is-panning .cal-day-prep-item,
+    .cal-week-scroll.is-panning .cal-day-cue,
+    .cal-week-scroll.is-panning .cal-day-cue--leadup {
+      pointer-events: none;
+    }
+    .cal-wrap--week .cal-week-grid--pan {
+      display: grid;
+      grid-template-columns: repeat(var(--cal-pan-days, 21), minmax(0, 1fr));
+      width: calc(100% * var(--cal-pan-days, 21) / 7);
+      max-width: none;
+      overflow: visible;
+      gap: 5px;
+      padding: 4px 8px 6px;
+    }
+    .cal-wrap--week .cal-week-grid--pan > .cal-day {
+      min-width: 0;
+    }
+    .cal-wrap--week .cal-day-head {
+      cursor: grab;
+    }
+    .cal-week-scroll.is-panning .cal-day-head {
+      cursor: grabbing;
+    }
     .cal-day {
       display: flex;
       flex-direction: column;
@@ -6173,6 +6212,11 @@ let scheduleViewWeekStart = (() => {
   const n = new Date();
   return weekStartSunday(new Date(n.getFullYear(), n.getMonth(), n.getDate()));
 })();
+/** Preserve week-strip scroll across re-renders; null = show focus week. */
+let scheduleWeekScrollLeft = null;
+const WEEK_PAN_BUFFER_DAYS = 7;
+const WEEK_PAN_TOTAL_DAYS = 7 + WEEK_PAN_BUFFER_DAYS * 2;
+let weekPanSettleTimer = null;
 let scheduleCalRange = (() => {
   try {
     const v = localStorage.getItem(CAL_RANGE_KEY);
@@ -10992,6 +11036,7 @@ function scheduleNavTitle() {
 function setScheduleCalRange(mode) {
   scheduleCalRange = mode === 'month' ? 'month' : 'week';
   try { localStorage.setItem(CAL_RANGE_KEY, scheduleCalRange); } catch (_) {}
+  scheduleWeekScrollLeft = null;
   if (scheduleCalRange === 'week') {
     // Keep week aligned with the month currently shown.
     const mid = new Date(scheduleViewYear, scheduleViewMonth, 15);
@@ -11008,6 +11053,7 @@ function jumpScheduleToDate(d) {
   scheduleViewWeekStart = weekStartSunday(day);
   scheduleViewYear = day.getFullYear();
   scheduleViewMonth = day.getMonth();
+  scheduleWeekScrollLeft = null;
   renderBoard();
 }
 
@@ -11017,11 +11063,139 @@ function shiftScheduleView(delta) {
     scheduleViewWeekStart = weekStartSunday(new Date(s.getFullYear(), s.getMonth(), s.getDate() + delta * 7));
     scheduleViewYear = scheduleViewWeekStart.getFullYear();
     scheduleViewMonth = scheduleViewWeekStart.getMonth();
+    scheduleWeekScrollLeft = null;
   } else {
     shiftScheduleMonth(delta);
     return;
   }
   renderBoard();
+}
+
+function addCalendarDays(d, n) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+
+function formatWeekRangeTitle(start, end) {
+  const sameMonth = start.getMonth() === end.getMonth();
+  const sameYear = start.getFullYear() === end.getFullYear();
+  if (sameMonth) {
+    return start.getDate() + '–' + end.getDate() + ' ' + MONTH_NAMES[start.getMonth()] + ' ' + start.getFullYear();
+  }
+  if (sameYear) {
+    return formatShortDate(start) + ' – ' + formatShortDate(end) + ' ' + end.getFullYear();
+  }
+  return formatShortDate(start) + ' ' + start.getFullYear() + ' – ' + formatShortDate(end) + ' ' + end.getFullYear();
+}
+
+function updateWeekNavTitleFromScroll(scroller) {
+  const title = document.querySelector('.cal-nav-title');
+  if (!title || !scroller) return;
+  const dayW = scroller.scrollWidth / WEEK_PAN_TOTAL_DAYS;
+  if (!(dayW > 0)) return;
+  const stripStart = addCalendarDays(scheduleViewWeekStart, -WEEK_PAN_BUFFER_DAYS);
+  const startIdx = Math.max(0, Math.min(WEEK_PAN_TOTAL_DAYS - 1, Math.floor(scroller.scrollLeft / dayW + 0.001)));
+  const endIdx = Math.max(startIdx, Math.min(
+    WEEK_PAN_TOTAL_DAYS - 1,
+    Math.ceil((scroller.scrollLeft + scroller.clientWidth) / dayW - 0.001)
+  ));
+  title.textContent = formatWeekRangeTitle(addCalendarDays(stripStart, startIdx), addCalendarDays(stripStart, endIdx));
+}
+
+function settleWeekPanScroll(scroller) {
+  if (scheduleCalRange !== 'week' || !scroller) return;
+  if (scroller.dataset.panReady !== '1') return;
+  const dayW = scroller.scrollWidth / WEEK_PAN_TOTAL_DAYS;
+  if (!(dayW > 1)) return;
+  const scroll = scroller.scrollLeft;
+  const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+  scheduleWeekScrollLeft = scroll;
+  updateWeekNavTitleFromScroll(scroller);
+
+  // Extend the buffer when the viewport nears either end so drag stays continuous.
+  const edge = dayW * 1.75;
+  let daysShift = 0;
+  if (scroll < edge) daysShift = -7;
+  else if (scroll > maxScroll - edge) daysShift = 7;
+  if (!daysShift) return;
+
+  const nextStart = weekStartSunday(addCalendarDays(scheduleViewWeekStart, daysShift));
+  if (nextStart.getTime() === scheduleViewWeekStart.getTime()) return;
+  scheduleViewWeekStart = nextStart;
+  scheduleViewYear = scheduleViewWeekStart.getFullYear();
+  scheduleViewMonth = scheduleViewWeekStart.getMonth();
+  // Keep the same days under the viewport after the strip re-centers.
+  let nextLeft = scroll - daysShift * dayW;
+  // Stay away from the new strip edges so settle doesn't immediately rebuffer again.
+  const minSafe = dayW * 2.5;
+  const maxSafe = dayW * (WEEK_PAN_TOTAL_DAYS - 9.5);
+  scheduleWeekScrollLeft = Math.max(minSafe, Math.min(maxSafe, nextLeft));
+  renderBoard();
+}
+
+function bindWeekPanScroller(scroller) {
+  if (!scroller || scroller.dataset.panBound === '1') return;
+  scroller.dataset.panBound = '1';
+  scroller.title = 'Drag dates to scroll into nearby weeks';
+
+  let panning = false;
+  let moved = false;
+  let startX = 0;
+  let startScroll = 0;
+  let pointerId = null;
+
+  const onMove = e => {
+    if (!panning || e.pointerId !== pointerId) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 4) moved = true;
+    scroller.scrollLeft = startScroll - dx;
+    e.preventDefault();
+  };
+  const onUp = e => {
+    if (!panning || e.pointerId !== pointerId) return;
+    panning = false;
+    pointerId = null;
+    scroller.classList.remove('is-panning');
+    try { scroller.releasePointerCapture(e.pointerId); } catch (_) {}
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onUp);
+    if (moved) {
+      scroller.dataset.suppressClick = '1';
+      setTimeout(() => { delete scroller.dataset.suppressClick; }, 40);
+    }
+    settleWeekPanScroll(scroller);
+  };
+
+  scroller.addEventListener('pointerdown', e => {
+    if (e.button != null && e.button !== 0) return;
+    if (e.target.closest('.cal-slot, .cal-day-prep-item, .cal-day-cue, .cal-day-clear, button, a, input, textarea, select, [contenteditable="true"]')) {
+      return;
+    }
+    panning = true;
+    moved = false;
+    startX = e.clientX;
+    startScroll = scroller.scrollLeft;
+    pointerId = e.pointerId;
+    scroller.classList.add('is-panning');
+    try { scroller.setPointerCapture(e.pointerId); } catch (_) {}
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+  });
+
+  scroller.addEventListener('click', e => {
+    if (scroller.dataset.suppressClick) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+
+  scroller.addEventListener('scroll', () => {
+    scheduleWeekScrollLeft = scroller.scrollLeft;
+    updateWeekNavTitleFromScroll(scroller);
+    clearTimeout(weekPanSettleTimer);
+    weekPanSettleTimer = setTimeout(() => settleWeekPanScroll(scroller), 140);
+  }, { passive: true });
 }
 
 function marketingWeekBandFromStart(sunStart) {
@@ -11156,12 +11330,58 @@ function weekBandEndsBefore(band, todayStart) {
 }
 
 function buildMarketingWeekRow(band, cardsByDay, leadUpByDay, prepByDay, today) {
+  // Month view keeps a fixed 7-day row; week view gets a pannable multi-week strip.
+  if (scheduleCalRange !== 'week') {
+    const grid = document.createElement('div');
+    grid.className = 'cal-week-grid';
+    band.days.forEach(cell => {
+      grid.appendChild(buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today));
+    });
+    return grid;
+  }
+
+  const focusStart = band.days[0].date;
+  const stripStart = addCalendarDays(focusStart, -WEEK_PAN_BUFFER_DAYS);
+
+  const scroller = document.createElement('div');
+  scroller.className = 'cal-week-scroll';
+  scroller.setAttribute('data-cal-week-scroll', '1');
+  scroller.setAttribute('aria-label', 'Scroll calendar dates');
+
   const grid = document.createElement('div');
-  grid.className = 'cal-week-grid';
-  band.days.forEach(cell => {
-    grid.appendChild(buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today));
+  grid.className = 'cal-week-grid cal-week-grid--pan';
+  grid.style.setProperty('--cal-pan-days', String(WEEK_PAN_TOTAL_DAYS));
+
+  for (let i = 0; i < WEEK_PAN_TOTAL_DAYS; i++) {
+    const cellDate = addCalendarDays(stripStart, i);
+    const inFocusWeek = i >= WEEK_PAN_BUFFER_DAYS && i < WEEK_PAN_BUFFER_DAYS + 7;
+    grid.appendChild(buildMarketingDayCell({
+      date: cellDate,
+      dayNum: cellDate.getDate(),
+      // Soften days outside the anchored week so the focus span still reads clearly.
+      inMonth: inFocusWeek
+    }, cardsByDay, leadUpByDay, prepByDay, today));
+  }
+
+  scroller.appendChild(grid);
+  bindWeekPanScroller(scroller);
+
+  requestAnimationFrame(() => {
+    const dayW = scroller.scrollWidth / WEEK_PAN_TOTAL_DAYS;
+    if (!(dayW > 0)) return;
+    let left = scheduleWeekScrollLeft;
+    if (left == null || !Number.isFinite(left)) {
+      // Show the anchored week (middle 7 days of the 21-day strip).
+      left = dayW * WEEK_PAN_BUFFER_DAYS;
+    }
+    const max = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+    scroller.scrollLeft = Math.max(0, Math.min(max, left));
+    scheduleWeekScrollLeft = scroller.scrollLeft;
+    updateWeekNavTitleFromScroll(scroller);
+    scroller.dataset.panReady = '1';
   });
-  return grid;
+
+  return scroller;
 }
 
 function leadUpCueLabel(anchor) {
