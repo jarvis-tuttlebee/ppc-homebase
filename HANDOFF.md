@@ -5,6 +5,20 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-10 — Clear Make when Scheduled (Cursor Cloud)
+
+### Live
+- (deploy pending)
+- Marketing **`0.12.80`**
+- Hard-refresh → Calendar → set Status to Scheduled
+
+### What
+1. Moving a card to **Scheduled** or **Posted** clears its Make-by reminder
+2. Make strips / “Make today” chips no longer show for Scheduled/Posted cards
+3. Existing Scheduled cards drop Make on load/normalize
+
+---
+
 ## 2026-09-10 — Calendar statuses renamed (Cursor Cloud)
 
 ### Live
