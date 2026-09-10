@@ -3032,13 +3032,19 @@
       color: #8a6a1a;
       background: rgba(194,154,59,0.16);
     }
+    .cal-slot-flag--preparing,
     .cal-slot-flag--prep {
       color: #6B7A8D;
       background: rgba(107,122,141,0.14);
     }
+    .cal-slot-flag--shooting,
     .cal-slot-flag--execute {
       color: #C29A3B;
       background: rgba(194,154,59,0.18);
+    }
+    .cal-slot-flag--editing {
+      color: #7A6B8D;
+      background: rgba(122,107,141,0.16);
     }
     .cal-slot-flag--ready {
       color: #4A7C59;
@@ -4773,7 +4779,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.78';
+const APP_VERSION = '0.12.79';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6160,32 +6166,42 @@ const SAMPLE_PREP = [
 
 const PUBLISH_STATUS_OPTIONS = [
   { id: 'need', label: 'Need', color: '#8a6a1a' },
-  { id: 'prep', label: 'Prep', color: '#6B7A8D' },
-  { id: 'execute', label: 'Execute', color: '#C29A3B' },
+  { id: 'preparing', label: 'Preparing', color: '#6B7A8D' },
+  { id: 'shooting', label: 'Shooting', color: '#C29A3B' },
+  { id: 'editing', label: 'Editing', color: '#7A6B8D' },
   { id: 'scheduled', label: 'Scheduled', color: '#5B6B8C' },
   { id: 'posted', label: 'Posted', color: '#4E6E6C' }
 ];
 const PUBLISH_STATUS_IDS = new Set(PUBLISH_STATUS_OPTIONS.map(o => o.id));
 const PUBLISH_STATUS_COLORS = {
   need: '#8a6a1a',
-  prep: '#6B7A8D',
-  execute: '#C29A3B',
+  preparing: '#6B7A8D',
+  shooting: '#C29A3B',
+  editing: '#7A6B8D',
   scheduled: '#5B6B8C',
-  posted: '#4E6E6C'
+  posted: '#4E6E6C',
+  // Legacy ids kept for any in-memory chips before migrate runs.
+  prep: '#6B7A8D',
+  execute: '#C29A3B'
 };
 const PUBLISH_STATUS_FLAG_CLASS = {
   need: 'cal-slot-flag--need',
-  prep: 'cal-slot-flag--prep',
-  execute: 'cal-slot-flag--execute',
+  preparing: 'cal-slot-flag--preparing',
+  shooting: 'cal-slot-flag--shooting',
+  editing: 'cal-slot-flag--editing',
   scheduled: 'cal-slot-flag--scheduled',
-  posted: 'cal-slot-flag--posted'
+  posted: 'cal-slot-flag--posted',
+  prep: 'cal-slot-flag--preparing',
+  execute: 'cal-slot-flag--shooting'
 };
 const PUBLISH_STATUS_LEGACY = {
   open: 'need',
   unscheduled: 'need',
-  'in-progress': 'execute',
+  'in-progress': 'shooting',
   complete: 'posted',
-  ready: 'scheduled'
+  ready: 'scheduled',
+  prep: 'preparing',
+  execute: 'shooting'
 };
 /** Pinterest/Cosmos — calendar-only lite flow (Drive → pin). */
 const DISCOVER_FORMAT_ID = 'pinterest';
@@ -6224,7 +6240,9 @@ function scheduleSlotHasContent(card) {
 function normalizeDiscoverStatus(status, card) {
   if (status === 'ready') return 'scheduled';
   if (DISCOVER_STATUS_IDS.includes(status)) return status;
-  if (status === 'prep' || status === 'execute') return scheduleSlotHasContent(card) ? 'scheduled' : 'need';
+  if (status === 'prep' || status === 'execute' || status === 'preparing' || status === 'shooting' || status === 'editing') {
+    return scheduleSlotHasContent(card) ? 'scheduled' : 'need';
+  }
   return scheduleSlotHasContent(card) ? 'scheduled' : 'need';
 }
 
@@ -10347,7 +10365,8 @@ function syncLinkedSchedulePreview(card, stage) {
   const slot = scheduleCards().find(c => c.id === card.linkedScheduleId);
   if (!slot || isDiscoverCard(slot)) return null;
   const previewStatus = stage === 'ideas' ? 'need'
-    : (stage === 'prep' ? 'prep' : 'execute');
+    : (stage === 'prep' ? 'preparing'
+      : (stage === 'review' ? 'editing' : 'shooting'));
   // Prefer pipeline card fields when set; otherwise keep existing calendar progress.
   const keep = (next, prev) => {
     const n = next == null ? '' : next;
@@ -15929,7 +15948,7 @@ async function applyImageToScheduleMedia(file) {
     }
     card.needContent = !scheduleSlotHasContent(card);
     if (card.publishStatus === 'need' && !card.needContent) {
-      card.publishStatus = isDiscoverCard(card) ? 'scheduled' : 'prep';
+      card.publishStatus = isDiscoverCard(card) ? 'scheduled' : 'preparing';
     }
     refreshScheduleThumb(card);
     scheduleSave();
@@ -16647,7 +16666,7 @@ function savePanel(silent) {
       // Keep the in-memory status (e.g. set via chip / setPublishStatus) when the
       // select is missing or temporarily out of sync.
     } else {
-      card.publishStatus = card.needContent ? 'need' : (isDiscoverFormat(format) ? 'scheduled' : 'prep');
+      card.publishStatus = card.needContent ? 'need' : (isDiscoverFormat(format) ? 'scheduled' : 'preparing');
     }
     const asgEl = document.getElementById('asgSummary');
     if (asgEl && panelMode === 'schedule') {
