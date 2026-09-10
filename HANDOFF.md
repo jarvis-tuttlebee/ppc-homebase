@@ -5,6 +5,23 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-10 — Week date bar drag-scroll (Cursor Cloud)
+
+### Live
+- Version ID: `ad8bc04f-2726-43ab-ae74-c33dba28eb0b`
+- Marketing **`0.12.76`**
+- Hard-refresh → Calendar → Week
+
+### What
+1. Week view date strip is click-drag scrollable across adjacent weeks
+2. Can view mid-week→mid-week (not only Sun–Sat); title updates to visible range
+3. Prev/Next/Today still jump by week; Month view unchanged
+
+### Open / next
+1. Hard-refresh; drag the date headers left/right in Week view
+
+---
+
 ## 2026-09-09 — Calendar→pipeline sync + Content Complete (Cursor Cloud)
 
 ### Live
