@@ -5,6 +5,20 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-10 — Calendar Content link + Update log (Cursor Cloud)
+
+### Live
+- (deploy pending)
+- Marketing **`0.12.81`**
+- Hard-refresh → open a calendar card
+
+### What
+1. Replaced shot/edited media drop with **Content** link under Publish date
+2. Added **Update log** (bullet notes) under Status
+3. Discover pin preview pane unchanged
+
+---
+
 ## 2026-09-10 — Clear Make when Scheduled (Cursor Cloud)
 
 ### Live
