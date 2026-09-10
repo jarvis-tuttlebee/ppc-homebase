@@ -1610,6 +1610,17 @@
     .schedule-ops .panel-section-label { margin-top: 10px; }
     .schedule-ops .panel-section-label:first-child { margin-top: 0; }
     .schedule-ops .panel-field-hint { margin-bottom: 2px; }
+    #scheduleUpdateLogBlock .panel-desc {
+      min-height: 72px;
+      margin-top: 4px;
+    }
+    #scheduleContentLinkBlock .review-video-link {
+      margin-top: 4px;
+    }
+    /* Shoot/edited media pane is Discover-only; normal cards use Content link under publish date. */
+    #panel:not(.schedule-discover) #scheduleContentPane {
+      display: none !important;
+    }
     .schedule-source-layout {
       display: flex;
       flex-direction: column;
@@ -4540,24 +4551,18 @@
             </div>
             <div class="schedule-content-pane" id="scheduleContentPane">
               <button type="button" class="schedule-pane-toggle" id="scheduleContentToggle" aria-expanded="true">
-                <strong class="schedule-pane-label" id="pScheduleContentTitle">Shot / edited content</strong>
+                <strong class="schedule-pane-label" id="pScheduleContentTitle">Pin preview</strong>
                 <span class="schedule-pane-chev" id="scheduleContentChev">▾</span>
               </button>
               <div class="schedule-pane-body" id="scheduleContentBody">
-              <div class="panel-field-hint" id="pScheduleMediaHint">Drop or paste media you've already shot or edited.</div>
+              <div class="panel-field-hint" id="pScheduleMediaHint">Drop or paste a pin preview image.</div>
               <div class="review-media-well" id="pScheduleMediaWell" tabindex="0">
-                <div class="placeholder" id="pScheduleMediaEmpty">Drop or paste shot / edited content…</div>
+                <div class="placeholder" id="pScheduleMediaEmpty">Drop or paste pin preview…</div>
                 <img id="pScheduleMediaImg" alt="" style="display:none">
                 <button type="button" class="review-media-clear" id="pScheduleMediaClear" title="Remove media">×</button>
               </div>
               <div id="pScheduleNoteWrap">
                 <textarea id="pScheduleNote" placeholder="Pin note or title…"></textarea>
-              </div>
-              <div class="panel-section-label" id="pScheduleDriveLabel">Link</div>
-              <div class="panel-field-hint" id="pScheduleDriveHint" hidden>Paste the Drive folder or file link for this pin.</div>
-              <div class="review-video-link">
-                <input class="prop-select" id="pScheduleVideoUrl" type="url" placeholder="Paste link…">
-                <a class="review-video-open is-disabled" id="pScheduleVideoOpen" href="#" target="_blank" rel="noopener noreferrer">Open</a>
               </div>
               <div class="schedule-review-details" id="scheduleReviewDetails">
                 <button type="button" class="review-context-toggle" id="scheduleReviewToggle">
@@ -4609,6 +4614,17 @@
           <div class="schedule-ops">
             <div class="panel-section-label">Status</div>
             <div id="pScheduleStatusWrap" style="margin-top:2px"></div>
+            <div id="scheduleUpdateLogBlock">
+              <div class="panel-section-label">Update log</div>
+              <div class="panel-field-hint">Dot points for where you’re at.</div>
+              <div class="fmt-bar">
+                <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pScheduleUpdateLog','bold')"><b>B</b></button>
+                <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pScheduleUpdateLog','italic')"><i>I</i></button>
+                <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pScheduleUpdateLog','insertUnorderedList')">&#8226;</button>
+                <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pScheduleUpdateLog','removeFormat')">Clear</button>
+              </div>
+              <div class="panel-desc" id="pScheduleUpdateLog" contenteditable="true" placeholder="• Shot…&#10;• Editing…"></div>
+            </div>
             <div class="panel-section-label">Assignees</div>
             <div id="pScheduleAssigneeWrap" style="margin-top:2px">
               <div class="asg" id="asgWrap">
@@ -4638,6 +4654,14 @@
             </label>
             <div class="panel-section-label">Publish date</div>
             <input class="prop-select" id="pScheduleEditAt" type="datetime-local" style="margin-top:2px">
+            <div id="scheduleContentLinkBlock">
+              <div class="panel-section-label">Content</div>
+              <div class="panel-field-hint" id="pScheduleContentLinkHint">Link to the file you’ll post.</div>
+              <div class="review-video-link">
+                <input class="prop-select" id="pScheduleVideoUrl" type="url" placeholder="Paste link…">
+                <a class="review-video-open is-disabled" id="pScheduleVideoOpen" href="#" target="_blank" rel="noopener noreferrer">Open</a>
+              </div>
+            </div>
           </div>
           <div class="schedule-collapse-stack">
             <button type="button" class="review-context-toggle" id="schedulePostDetailsToggle">
@@ -4779,7 +4803,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.80';
+const APP_VERSION = '0.12.81';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6630,6 +6654,7 @@ function migrateSchedule(card) {
   if (card.leadUp == null) card.leadUp = false;
   if (card.slotMoved == null) card.slotMoved = false;
   if (card.needLabel == null) card.needLabel = '';
+  if (card.updateLog == null) card.updateLog = '';
   if (card.prepBy == null) card.prepBy = '';
   if (card.prepByManual == null) card.prepByManual = false;
   if (typeof card.prepBy === 'string' && card.prepBy.length > 10) {
@@ -15962,23 +15987,18 @@ function applyScheduleMediaResult(result) {
 async function applyImageToScheduleMedia(file) {
   if (!file || !file.type.startsWith('image/')) return;
   if (panelMode !== 'schedule' || !activeScheduleId) return;
+  const card = scheduleCards().find(c => c.id === activeScheduleId);
+  // Calendar shoot cards use a Content link only — media drops are Discover pins.
+  if (!card || !isDiscoverCard(card)) return;
   try {
     const result = await processImageFile(file);
     applyScheduleMediaResult(result);
-    const card = scheduleCards().find(c => c.id === activeScheduleId);
-    if (!card) return;
-    if (isDiscoverCard(card)) {
-      card.imageData = result.imageData;
-      card.imageW = result.imageW;
-      card.imageH = result.imageH;
-    } else {
-      card.reviewMedia = result.imageData;
-      card.reviewMediaW = result.imageW;
-      card.reviewMediaH = result.imageH;
-    }
+    card.imageData = result.imageData;
+    card.imageW = result.imageW;
+    card.imageH = result.imageH;
     card.needContent = !scheduleSlotHasContent(card);
     if (card.publishStatus === 'need' && !card.needContent) {
-      card.publishStatus = isDiscoverCard(card) ? 'scheduled' : 'preparing';
+      card.publishStatus = 'scheduled';
     }
     refreshScheduleThumb(card);
     scheduleSave();
@@ -15990,17 +16010,11 @@ async function applyImageToScheduleMedia(file) {
 function clearScheduleMedia() {
   if (panelMode !== 'schedule' || !activeScheduleId) return;
   const card = scheduleCards().find(c => c.id === activeScheduleId);
-  if (!card) return;
+  if (!card || !isDiscoverCard(card)) return;
   applyScheduleMediaResult(null);
-  if (isDiscoverCard(card)) {
-    card.imageData = null;
-    card.imageW = null;
-    card.imageH = null;
-  } else {
-    card.reviewMedia = null;
-    card.reviewMediaW = null;
-    card.reviewMediaH = null;
-  }
+  card.imageData = null;
+  card.imageW = null;
+  card.imageH = null;
   card.needContent = !scheduleSlotHasContent(card);
   if (card.needContent && (card.publishStatus === 'scheduled' || card.publishStatus === 'posted')) {
     card.publishStatus = 'need';
@@ -16035,12 +16049,16 @@ function refreshSchedulePipelineThumb(card) {
 }
 
 function refreshScheduleContentMedia(card) {
-  const isDiscover = isDiscoverCard(card);
-  const media = isDiscover ? (card.imageData || null) : (card.reviewMedia || null);
+  if (!isDiscoverCard(card)) {
+    pendingReviewMedia = null;
+    setScheduleMediaUI(null);
+    return;
+  }
+  const media = card.imageData || null;
   pendingReviewMedia = {
     imageData: media,
-    imageW: isDiscover ? (card.imageW || null) : (card.reviewMediaW || null),
-    imageH: isDiscover ? (card.imageH || null) : (card.reviewMediaH || null)
+    imageW: card.imageW || null,
+    imageH: card.imageH || null
   };
   setScheduleMediaUI(media);
 }
@@ -16065,18 +16083,20 @@ function applySchedulePanelLayout(card) {
   if (title) title.textContent = discover ? 'Discover post' : 'From pipeline';
 
   const contentTitle = document.getElementById('pScheduleContentTitle');
-  if (contentTitle) contentTitle.textContent = discover ? 'Pin preview' : 'Shot / edited content';
+  if (contentTitle) contentTitle.textContent = 'Pin preview';
   const mediaHint = document.getElementById('pScheduleMediaHint');
   if (mediaHint) {
-    mediaHint.textContent = discover
-      ? 'Drop or paste a pin preview image.'
-      : 'Drop or paste media you\'ve already shot or edited.';
+    mediaHint.textContent = 'Drop or paste a pin preview image.';
   }
+  const mediaEmpty = document.getElementById('pScheduleMediaEmpty');
+  if (mediaEmpty) mediaEmpty.textContent = 'Drop or paste pin preview…';
 
-  const driveLabel = document.getElementById('pScheduleDriveLabel');
-  if (driveLabel) driveLabel.textContent = 'Link';
-  const driveHint = document.getElementById('pScheduleDriveHint');
-  if (driveHint) driveHint.hidden = !discover;
+  const contentLinkHint = document.getElementById('pScheduleContentLinkHint');
+  if (contentLinkHint) {
+    contentLinkHint.textContent = discover
+      ? 'Paste the Drive folder or file link for this pin.'
+      : 'Link to the file you’ll post.';
+  }
 
   const note = document.getElementById('pScheduleNote');
   const ideaText = document.getElementById('pScheduleIdeaText');
@@ -16144,15 +16164,22 @@ function applySchedulePanelLayout(card) {
     String(card.music || '').trim()
   );
   setSchedulePostDetailsOpen(hasPostMeta);
-  const hasReview = !!(
-    String(card.reviewVideoUrl || '').trim() ||
-    stripHtml(card.reviewNotes || '')
-  );
-  const hasOutcome = !!stripHtml(card.contentOutcome || '');
-  const hasTweaks = !!stripHtml(card.tweaks || '');
-  setScheduleReviewOpen(hasReview);
-  setScheduleOutcomeOpen(hasOutcome);
-  setScheduleTweaksOpen(hasTweaks);
+  // Review/outcome/tweaks only live on Discover pin pane now.
+  if (discover) {
+    const hasReview = !!(
+      String(card.reviewVideoUrl || '').trim() ||
+      stripHtml(card.reviewNotes || '')
+    );
+    const hasOutcome = !!stripHtml(card.contentOutcome || '');
+    const hasTweaks = !!stripHtml(card.tweaks || '');
+    setScheduleReviewOpen(hasReview);
+    setScheduleOutcomeOpen(hasOutcome);
+    setScheduleTweaksOpen(hasTweaks);
+  } else {
+    setScheduleReviewOpen(false);
+    setScheduleOutcomeOpen(false);
+    setScheduleTweaksOpen(false);
+  }
 
   refreshScheduleThumb(card);
 }
@@ -16212,6 +16239,8 @@ function openSchedulePanel(scheduleId) {
   document.getElementById('pScheduleMusic').value = card.music || '';
   document.getElementById('pScheduleVideoUrl').value = card.reviewVideoUrl || '';
   setVideoOpenLink('pScheduleVideoOpen', card.reviewVideoUrl || '');
+  const updateLogEl = document.getElementById('pScheduleUpdateLog');
+  if (updateLogEl) updateLogEl.innerHTML = sanitizeHtml(card.updateLog || '');
   const reviewNotesEl = document.getElementById('pScheduleReviewNotes');
   if (reviewNotesEl) reviewNotesEl.innerHTML = sanitizeHtml(card.reviewNotes || '');
   const outcomeEl = document.getElementById('pScheduleOutcome');
@@ -16662,14 +16691,11 @@ function savePanel(silent) {
       card.music = (document.getElementById('pScheduleMusic') || {}).value || '';
     }
     if (pendingReviewMedia) {
+      // Media drops only apply to Discover pin previews now.
       if (isDiscoverFormat(format)) {
         card.imageData = pendingReviewMedia.imageData || null;
         card.imageW = pendingReviewMedia.imageW || null;
         card.imageH = pendingReviewMedia.imageH || null;
-      } else {
-        card.reviewMedia = pendingReviewMedia.imageData || null;
-        card.reviewMediaW = pendingReviewMedia.imageW || null;
-        card.reviewMediaH = pendingReviewMedia.imageH || null;
       }
     }
     card.needContent = !scheduleSlotHasContent(card);
@@ -16713,6 +16739,8 @@ function savePanel(silent) {
     card.anchorId = document.getElementById('pScheduleAnchor')?.value || '';
     card.caption = document.getElementById('pScheduleCaption')?.value || '';
     card.tags = document.getElementById('pScheduleTags')?.value || '';
+    const updateLogEl = document.getElementById('pScheduleUpdateLog');
+    if (updateLogEl) card.updateLog = sanitizeHtml(updateLogEl.innerHTML).trim();
     const reviewNotesEl = document.getElementById('pScheduleReviewNotes');
     if (reviewNotesEl) card.reviewNotes = sanitizeHtml(reviewNotesEl.innerHTML).trim();
     const outcomeEl = document.getElementById('pScheduleOutcome');

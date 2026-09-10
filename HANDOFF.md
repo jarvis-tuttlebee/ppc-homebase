@@ -8,7 +8,7 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-10 — Clear Make when Scheduled (Cursor Cloud)
 
 ### Live
-- (deploy pending)
+- Version ID: `b06244af-c9ab-4cac-b3bb-6af6452b2f77`
 - Marketing **`0.12.80`**
 - Hard-refresh → Calendar → set Status to Scheduled
 
