@@ -4779,7 +4779,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.79';
+const APP_VERSION = '0.12.80';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6639,6 +6639,11 @@ function migrateSchedule(card) {
   if (!card.prepByManual) {
     card.prepBy = '';
   }
+  // Scheduled / Posted means make work is done — drop Make reminders.
+  if (card.publishStatus === 'scheduled' || card.publishStatus === 'posted') {
+    card.prepBy = '';
+    card.prepByManual = false;
+  }
   return card;
 }
 
@@ -6646,6 +6651,20 @@ function migrateSchedule(card) {
 function prepByOf(card) {
   if (!card || !card.prepByManual) return '';
   return String(card.prepBy || '').slice(0, 10);
+}
+
+/** Make reminders stop once content is Scheduled or Posted. */
+function shouldShowPrepReminder(card) {
+  const st = publishStatusOf(card);
+  return st !== 'scheduled' && st !== 'posted';
+}
+
+function clearPrepByFields(card) {
+  if (!card) return false;
+  if (!card.prepBy && !card.prepByManual) return false;
+  card.prepBy = '';
+  card.prepByManual = false;
+  return true;
 }
 
 function applyPrepByFromUi(card, raw) {
@@ -11715,7 +11734,7 @@ function collectLeadUpByDay() {
 function collectPrepByDay() {
   const map = new Map();
   scheduleCards().forEach(card => {
-    if (publishStatusOf(card) === 'posted') return;
+    if (!shouldShowPrepReminder(card)) return;
     const pb = prepByOf(card);
     if (!pb) return;
     const pub = card.scheduledAt ? dateKey(new Date(card.scheduledAt)) : '';
@@ -11730,7 +11749,7 @@ function marketingActionCounts() {
   const today = todayDateOnly();
   const todayKey = dateKey(today);
   const makes = scheduleCards().filter(c => {
-    if (publishStatusOf(c) === 'posted') return false;
+    if (!shouldShowPrepReminder(c)) return false;
     return prepByOf(c) === todayKey;
   });
   const posts = scheduleCards().filter(c => {
@@ -11806,8 +11825,7 @@ function movePrepByToDate(scheduleId, dayDate) {
 function clearPrepBy(scheduleId) {
   const card = scheduleCards().find(c => c.id === scheduleId);
   if (!card || !prepByOf(card)) return false;
-  card.prepBy = '';
-  card.prepByManual = false;
+  clearPrepByFields(card);
   scheduleSave();
   renderBoard();
   PPC.showToast('Prep reminder cleared');
@@ -13831,6 +13849,18 @@ function setPublishStatus(cardId, status, opts) {
       if (statusEl) statusEl.value = next;
     }
   }
+  // Scheduled / Posted: drop Make reminder — content is already on the calendar.
+  if (next === 'scheduled' || next === 'posted') {
+    clearPrepByFields(card);
+    if (panelMode === 'schedule' && activeScheduleId === cardId) {
+      if (typeof setPpcDateValue === 'function') setPpcDateValue('pSchedulePrepBy', '');
+      else {
+        const prepEl = document.getElementById('pSchedulePrepBy');
+        if (prepEl) prepEl.value = '';
+      }
+      if (typeof syncSchedulePrepRemindUi === 'function') syncSchedulePrepRemindUi();
+    }
+  }
   if (next === 'posted') archiveScheduleToComplete(card, { silent: true });
   // Persist immediately — debounced scheduleSave can be cancelled by closePanel/savePanel.
   clearTimeout(saveTimer);
@@ -14188,7 +14218,7 @@ function renderCalSlot(card) {
     }
 
     const prepNeed = prepByOf(card);
-    if (prepNeed && status !== 'posted') {
+    if (prepNeed && shouldShowPrepReminder(card)) {
       const prepEl = document.createElement('span');
       prepEl.className = 'cal-slot-prep';
       const pd = parseDateOnly(prepNeed);
@@ -14274,7 +14304,7 @@ function renderCalSlot(card) {
     }
 
     const prepFilled = prepByOf(card);
-    if (prepFilled && status !== 'posted') {
+    if (prepFilled && shouldShowPrepReminder(card)) {
       const prepEl = document.createElement('span');
       prepEl.className = 'cal-slot-prep';
       const pd = parseDateOnly(prepFilled);
@@ -16668,6 +16698,10 @@ function savePanel(silent) {
     } else {
       card.publishStatus = card.needContent ? 'need' : (isDiscoverFormat(format) ? 'scheduled' : 'preparing');
     }
+    // Scheduled / Posted: drop Make reminder — content is already on the calendar.
+    if (card.publishStatus === 'scheduled' || card.publishStatus === 'posted') {
+      clearPrepByFields(card);
+    }
     const asgEl = document.getElementById('asgSummary');
     if (asgEl && panelMode === 'schedule') {
       card.assignees = panelAssignees.slice();
@@ -16676,9 +16710,9 @@ function savePanel(silent) {
       card.assignees = assigneesOf(card);
       delete card.assignee;
     }
-    card.anchorId = (document.getElementById('pScheduleAnchor') || {}).value || '';
-    card.caption = (document.getElementById('pScheduleCaption') || {}).value || '';
-    card.tags = (document.getElementById('pScheduleTags') || {}).value || '';
+    card.anchorId = document.getElementById('pScheduleAnchor')?.value || '';
+    card.caption = document.getElementById('pScheduleCaption')?.value || '';
+    card.tags = document.getElementById('pScheduleTags')?.value || '';
     const reviewNotesEl = document.getElementById('pScheduleReviewNotes');
     if (reviewNotesEl) card.reviewNotes = sanitizeHtml(reviewNotesEl.innerHTML).trim();
     const outcomeEl = document.getElementById('pScheduleOutcome');
