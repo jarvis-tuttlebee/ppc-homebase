@@ -2514,6 +2514,7 @@
     }
     .cal-wrap--week .cal-week-grid--pan {
       display: grid;
+      /* Desktop: keep ~7 days filling the viewport. */
       grid-template-columns: repeat(var(--cal-pan-days, 21), minmax(0, 1fr));
       width: calc(100% * var(--cal-pan-days, 21) / 7);
       max-width: none;
@@ -2523,6 +2524,37 @@
     }
     .cal-wrap--week .cal-week-grid--pan > .cal-day {
       min-width: 0;
+    }
+    /* Tablet: ~3–4 readable days; swipe/drag for the rest. */
+    @media (max-width: 1100px) {
+      .cal-wrap--week .cal-week-grid--pan {
+        --cal-day-col: 168px;
+        grid-template-columns: repeat(var(--cal-pan-days, 21), var(--cal-day-col));
+        width: calc(var(--cal-pan-days, 21) * var(--cal-day-col) + (var(--cal-pan-days, 21) - 1) * 5px + 16px);
+      }
+      .cal-wrap--week .cal-week-grid--pan > .cal-day {
+        min-width: var(--cal-day-col);
+        width: var(--cal-day-col);
+      }
+    }
+    /* Phone: ~2 thick days so titles stay readable. */
+    @media (max-width: 700px) {
+      .cal-wrap--week .cal-week-grid--pan {
+        --cal-day-col: 210px;
+        grid-template-columns: repeat(var(--cal-pan-days, 21), var(--cal-day-col));
+        width: calc(var(--cal-pan-days, 21) * var(--cal-day-col) + (var(--cal-pan-days, 21) - 1) * 5px + 16px);
+      }
+      .cal-wrap--week .cal-week-grid--pan > .cal-day {
+        min-width: var(--cal-day-col);
+        width: var(--cal-day-col);
+      }
+      .cal-wrap--week .cal-slot-title {
+        white-space: normal;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+      }
     }
     .cal-wrap--week .cal-day-head {
       cursor: grab;
@@ -4741,7 +4773,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.77';
+const APP_VERSION = '0.12.78';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
