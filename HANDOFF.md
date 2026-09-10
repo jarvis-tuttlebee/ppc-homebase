@@ -8,7 +8,7 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-10 — Week pan no fade (Cursor Cloud)
 
 ### Live
-- Version ID: `dab2d4a7-1edb-4869-be4f-951a2b920913`
+- Version ID: `84fb1919-5ee8-4e46-ba82-b0f82dc76256`
 - Marketing **`0.12.77`**
 - Hard-refresh → Calendar → Week → drag mid-week
 
