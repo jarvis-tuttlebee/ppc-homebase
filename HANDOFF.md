@@ -5,16 +5,16 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
-## 2026-09-10 — Wider week columns on phone (Cursor Cloud)
+## 2026-09-10 — Calendar statuses renamed (Cursor Cloud)
 
 ### Live
-- Version ID: `0c52e8d9-1a6a-483e-b5b4-f9ff853f1129`
-- Marketing **`0.12.78`**
-- Hard-refresh → Calendar → Week (phone)
+- Version ID: `c1543835-b56e-4987-8a5a-4f9adde8f7bc`
+- Marketing **`0.12.79`**
+- Hard-refresh → Calendar card Status
 
 ### What
-1. Phone week view uses ~210px day columns (~2 days on screen); tablet ~168px
-2. Drag/scroll still pans the rest of the week; desktop still fits ~7 days
+1. Statuses: **Need → Preparing → Shooting → Editing → Scheduled → Posted**
+2. Legacy Prep→Preparing, Execute→Shooting on load
 
 ---
 
