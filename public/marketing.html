@@ -14465,7 +14465,7 @@ function renderScheduleCard(card) {
   const el = document.createElement('div');
   el.className = 'schedule-card';
   el.dataset.scheduleId = card.id;
-  el.draggable = true;
+  el.draggable = !IS_TOUCH;
   applyPrepCardStyle(el, card.pillar, card.format);
   const emptyNeed = isNeedContentCard(card) && !stripHtml(card.body || '').trim();
   el.title = emptyNeed
