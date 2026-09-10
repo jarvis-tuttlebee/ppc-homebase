@@ -8,7 +8,7 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ## 2026-09-10 — Calendar Content link + Update log (Cursor Cloud)
 
 ### Live
-- (deploy pending)
+- Version ID: `af77f6fe-e4bc-4343-a126-21bd3a8ea714`
 - Marketing **`0.12.81`**
 - Hard-refresh → open a calendar card
 

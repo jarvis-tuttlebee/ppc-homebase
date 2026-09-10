@@ -17116,6 +17116,18 @@ document.getElementById('pScheduleVideoUrl').addEventListener('input', e => {
   setVideoOpenLink('pScheduleVideoOpen', e.target.value);
 });
 
+(function setupScheduleUpdateLog() {
+  const el = document.getElementById('pScheduleUpdateLog');
+  if (!el) return;
+  el.addEventListener('focus', () => {
+    if (stripHtml(el.innerHTML || '').trim()) return;
+    try {
+      el.focus();
+      document.execCommand('insertUnorderedList');
+    } catch (_) {}
+  });
+})();
+
 // ─── MOVE TO PREPARATION ─────────────────────────────────────────────────────
 
 function moveIdeaToPrep(idea, pillar, format) {
