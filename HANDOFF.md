@@ -5,6 +5,20 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-10 — Week view mobile swipe (Cursor Cloud)
+
+### Live
+- Marketing **`0.12.82`** (pending deploy)
+- Hard-refresh → Calendar → Week → swipe across days on phone
+
+### What
+1. Calendar slots / Make items / lead-up cues use mouse-only HTML5 drag on touch
+   devices (HTML5 `draggable` was stealing the swipe gesture)
+2. Week pan scroller uses native overflow scroll for touch; mouse drag unchanged
+3. Hybrid touch laptops: mousedown re-enables drag so mouse reschedule still works
+
+---
+
 ## 2026-09-10 — Calendar Content link + Update log (Cursor Cloud)
 
 ### Live
