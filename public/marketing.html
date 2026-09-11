@@ -4803,7 +4803,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.81';
+const APP_VERSION = '0.12.82';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -11572,8 +11572,8 @@ function buildMarketingDayCell(cell, cardsByDay, leadUpByDay, prepByDay, today) 
       const row = document.createElement('div');
       row.className = 'cal-day-prep-item';
       row.draggable = true;
-      let title = stripHtml(card.body || '').trim();
-      if (!title) title = needTypeDisplayLabel(card) || 'Content';
+      // Match calendar slots: slot label (via needTypeDisplayLabel), not raw idea text.
+      const title = scheduleGlanceTitle(card);
       const pub = card.scheduledAt ? formatShortDate(new Date(card.scheduledAt)) : '';
       row.title = 'Click to open calendar card' + (pub ? ' · posts ' + pub : '') + ' · drag to move · × clears reminder';
       const clearBtn = document.createElement('button');
@@ -14174,6 +14174,14 @@ function needTypeDisplayLabel(card) {
     || 'Need';
   const custom = String(card && card.needLabel || '').trim();
   return custom ? (format + ' - ' + custom) : format;
+}
+
+/** Compact calendar title — prefer slot label over long idea text. */
+function scheduleGlanceTitle(card) {
+  const labeled = needTypeDisplayLabel(card);
+  if (String(card && card.needLabel || '').trim()) return labeled;
+  const idea = stripHtml(card && card.body || '').trim();
+  return labeled || idea || 'Content';
 }
 
 function renderCalSlot(card) {
