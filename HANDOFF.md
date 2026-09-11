@@ -5,6 +5,503 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-11 — Make cards show slot labels (Cursor Cloud)
+
+### Live
+- (deploy pending)
+- Marketing **`0.12.82`**
+- Hard-refresh → Calendar Make strip
+
+### What
+1. Make reminders use slot labels (format + needLabel), not raw idea text
+2. Matches calendar Need / filled-slot labelling
+
+---
+
+## 2026-09-10 — Calendar Content link + Update log (Cursor Cloud)
+
+### Live
+- Version ID: `0158dc20-2662-4099-b982-2f3f35828a07`
+- Marketing **`0.12.81`**
+- Hard-refresh → open a calendar card
+
+### What
+1. Replaced shot/edited media drop with **Content** link under Publish date
+2. Added **Update log** (bullet notes) under Status
+3. Discover pin preview pane unchanged
+
+---
+
+## 2026-09-10 — Clear Make when Scheduled (Cursor Cloud)
+
+### Live
+- Version ID: `b06244af-c9ab-4cac-b3bb-6af6452b2f77`
+- Marketing **`0.12.80`**
+- Hard-refresh → Calendar → set Status to Scheduled
+
+### What
+1. Moving a card to **Scheduled** or **Posted** clears its Make-by reminder
+2. Make strips / “Make today” chips no longer show for Scheduled/Posted cards
+3. Existing Scheduled cards drop Make on load/normalize
+
+---
+
+## 2026-09-10 — Calendar statuses renamed (Cursor Cloud)
+
+### Live
+- Version ID: `c1543835-b56e-4987-8a5a-4f9adde8f7bc`
+- Marketing **`0.12.79`**
+- Hard-refresh → Calendar card Status
+
+### What
+1. Statuses: **Need → Preparing → Shooting → Editing → Scheduled → Posted**
+2. Legacy Prep→Preparing, Execute→Shooting on load
+
+---
+
+## 2026-09-10 — Week pan no fade (Cursor Cloud)
+
+### Live
+- Version ID: `84fb1919-5ee8-4e46-ba82-b0f82dc76256`
+- Marketing **`0.12.77`**
+- Hard-refresh → Calendar → Week → drag mid-week
+
+### What
+1. Days in the week pan strip no longer fade/white-out outside the anchored Sun–Sat
+
+---
+
+## 2026-09-09 — Calendar→pipeline sync + Content Complete (Cursor Cloud)
+
+### Live
+- Version ID: `aab6926f-2e2f-455f-b155-8c2a5200cfa3`
+- Marketing **`0.12.75`**
+- Hard-refresh → Calendar / Pipeline
+
+### What
+1. Calendar Save / open / live Format+Pillar sync body/format/notes to linked Prep/Exec/Review/Ideas
+2. Heal stale `linkedPipelineId` via `linkedScheduleId` or shared `sourceIdeaId`
+3. **Content Complete** — mark calendar **Posted** to archive (clears Prep/Exec/Review); backfill on load
+
+### How finished works
+Ideas → Prep → Exec → Review → Calendar (Review→Calendar removes the Review card). Calendar status: Need → Prep → Execute → Scheduled → **Posted**. Posted moves the linked pipeline card into **Content Complete** (history of what shipped).
+
+### Open / next
+1. Hard-refresh; open the ODS Film calendar card once (or Save) — Prep should show IG Story / ODS Film
+2. Mark Posted → appears under Content Complete
+
+---
+
+## 2026-09-09 — Calendar slot label + Duplicate (Cursor Cloud)
+
+### Live
+- Version ID: `0224611f-7dab-4c9c-a530-f73e641c2156`
+- Marketing **`0.12.73`**
+- Hard-refresh → Calendar
+
+### What
+1. **Slot label** stays on filled calendar cards; short label preferred over long idea body on the calendar
+2. Right-click calendar card → **Duplicate** (same day; independent copy, no shared pipeline link)
+3. Empty Need duplicates preserve `slotMoved` so event quota pruning stays correct
+
+### Open / next
+1. Hard-refresh; set Slot label on a filled card; right-click → Duplicate
+
+---
+
+## 2026-09-09 — Ideas grid only (Cursor Cloud)
+
+### Live
+- Version ID: `152be0b6-7fcc-4d0c-a01f-a1d72d63d240`
+- Marketing **`0.12.71`**
+- Hard-refresh → Pipeline → Ideas
+
+### What
+1. Removed Board / List Ideas layout toggle — Ideas is always **grid**
+
+---
+
+## 2026-09-09 — Prepare moves off Ideas; keep calendar progress (Cursor Cloud)
+
+### Live
+- Version ID: `703c73a0-18de-43d2-b370-687069e69872`
+- Marketing **`0.12.70`**
+- Hard-refresh → Pipeline → Ideas list/grid → Prepare
+
+### What
+1. Prepare always leaves Ideas (list/grid/board), including calendar-linked ideas
+2. Stop resurrecting prepared Ideas from calendar slots already in Prep/Exec/Review
+3. Pipeline→calendar sync **merges** notes so empty Prep fields don’t wipe calendar progress
+4. Re-Prepare opens existing Prep card (no duplicate)
+
+### Open / next
+1. Hard-refresh; Prepare from list/grid — idea leaves Ideas, Prep opens; calendar notes intact
+
+---
+
+## 2026-09-09 — Prep/Execute calendar notes independent (Cursor Cloud)
+
+### Live
+- Version ID: `ffc98a39-94d9-44f1-8129-f776984b0075`
+- Marketing **`0.12.69`**
+- Hard-refresh → Calendar → Pipeline notes
+
+### What
+1. Prep **Production plan** and Execute **How to execute** are separate fields (no longer synced)
+2. Execute stores `executionHowTo`; clearing one box no longer clears the other
+
+---
+
+## 2026-09-09 — EOD (Cursor Cloud)
+
+### Live
+- Marketing **`0.12.68`** — Version ID `9ff5ba3e-abd5-42a0-a58c-9b69abfeb402`
+- https://ppc-homebase.pressplaycollective.workers.dev/marketing.html (hard-refresh)
+- PR #13 on `cursor/marketing-mobile-ux-2e5d`
+
+### Shipped today (session)
+1. Add-to-calendar uses Homebase **ppc-date**; **Save** places when dates form is open
+2. Calendar panes **full-width**; Pipeline notes **Idea → Prep → Execute** (+ How to execute + pills)
+3. Pipeline note fields **auto-expand** + **fmt bars** (bold / list / etc.)
+
+### Open / next
+- None blocking — session closed clean
+
+---
+
+## 2026-09-09 — Calendar pipeline notes: auto-size + fmt bars (Cursor Cloud)
+
+### Live
+- Version ID: `9ff5ba3e-abd5-42a0-a58c-9b69abfeb402`
+- Marketing **`0.12.68`**
+- Hard-refresh → Calendar → Pipeline notes
+
+### What
+1. Pipeline note fields are rich contenteditables that **grow to fit** existing text
+2. Bold / italic / underline / bullets / clear — same fmt bar as Prep/Exec cards
+
+---
+
+## 2026-09-09 — Restore How to execute in calendar notes (Cursor Cloud)
+
+### Live
+- Version ID: `e360b967-54f0-4195-abfa-d7f3cb1d38e4`
+- Marketing **`0.12.67`**
+- Hard-refresh → Calendar → Pipeline notes
+
+### What
+1. Execute section again has **How to execute** text box (+ optional pills)
+2. Still Idea → Prep (Production plan) → Execute; plan/how-to share `productionPlan` and stay in sync
+
+---
+
+## 2026-09-09 — Calendar pipeline notes: Idea / Prep / Execute (Cursor Cloud)
+
+### Live
+- Version ID: `5b1345d8-72a5-450a-b254-1bf839be9d36`
+- Marketing **`0.12.66`**
+- Hard-refresh → Calendar card → Pipeline notes
+
+### What
+1. Pipeline notes are three peer sections: **Idea** → **Prep** → **Execute**
+2. Idea = idea text; Prep = Production plan; Execute = + Products / Location / Requirements pills
+
+### Open / next
+1. Hard-refresh; confirm section order Idea / Prep / Execute
+
+---
+
+## 2026-09-09 — Save places on calendar when dates form open (Cursor Cloud)
+
+### Live
+- Version ID: `279d7d01-cf7b-4253-a866-31a3e20c112b`
+- Marketing **`0.12.65`**
+- Hard-refresh Marketing → Pipeline
+
+### What
+1. With Add to calendar dates open, **Save changes** also places/updates the calendar link (same as Place on calendar)
+2. Save button label becomes **Save & place on calendar** while the form is open
+3. New placements jump to the calendar card (same as date updates)
+
+### Open / next
+1. Hard-refresh; open Add to calendar → set dates → Save changes → should land on calendar
+
+---
+
+## 2026-09-09 — Calendar card: full-width panes + Prep/Exec notes (Cursor Cloud)
+
+### Live
+- Version ID: `3b94c697-56a7-461b-8850-ccd8a2623d53`
+- Marketing **`0.12.64`**
+- Hard-refresh Marketing → Calendar card
+
+### What
+1. **From pipeline** / **Shot / edited content** stack full-width (no 50/50 split)
+2. Pipeline notes: **Prep** (Idea) + **Execution** (How to execute) with **+ Products / + Location / + Requirements** pills
+3. Outcome / Tweaks stay under Shot content Review (removed from pipeline notes dump)
+
+### Open / next
+1. Hard-refresh; expand panes — full card width; pipeline notes match Exec pills
+2. Queued: Save Changes vs Place on calendar bug report
+
+---
+
+## 2026-09-09 — Add-to-calendar branded ppc-date + Save closes (Cursor Cloud)
+
+### Live
+- Version ID: `a4e3b584-3eda-45fe-a6cf-460a656b9830`
+- Marketing **`0.12.63`**
+- Hard-refresh Marketing → Pipeline → Add to calendar
+
+### What
+1. Add to calendar Publish / Make by use Homebase **ppc-date** (no native OS dark picker)
+2. **Save changes** closes the Marketing panel (Ideas / Prep / Exec / Review / Schedule), same as Task Board
+3. Fixed dead `savePanelEdits` calls → `savePanel`
+
+### Open / next
+1. Hard-refresh; Add to calendar → confirm light ppc-date menu; Save changes → panel closes
+
+---
+
+## 2026-09-09 — Execution: how-to + optional sections (Cursor Cloud)
+
+### Live
+- Version ID: `75d51f38-8205-4103-b254-5461b4215a08`
+- Marketing **`0.12.62`**
+- Hard-refresh Marketing → Execution
+
+### What
+1. Exec panel core = **How to execute** (programs, editing, steps)
+2. Products / Location / Requirements are optional **+ pills** — add only when needed
+3. Removed Exec date/time (use calendar publish + make-by instead)
+
+### Open / next
+1. Hard-refresh; open Exec card; confirm pills + how-to field
+
+---
+
+## 2026-09-09 — Add to calendar: publish + make-by (Cursor Cloud)
+
+### Live
+- Version ID: `b60cb045-06e5-4f80-a658-3f75dc282e4d`
+- Marketing **`0.12.61`**
+- Hard-refresh Marketing → Pipeline
+
+### What
+1. Add to calendar (Ideas / Prep / Exec / Review): **Publish date** + optional **Make by**
+2. Works from any phase — no need to reach Review first; card stays in pipeline
+3. Linked cards: **Edit dates** to change publish / make-by; badge shows Make date when set
+
+### Open / next
+1. Hard-refresh; Add to calendar with both dates; confirm Make strip on calendar day
+
+---
+
+## 2026-09-09 — Add to calendar from pipeline (Cursor Cloud)
+
+### Live
+- Version ID: `0f122120-f2bf-4209-9b52-9ca4fcd81a61`
+- Marketing **`0.12.60`**
+- Hard-refresh Marketing → Pipeline
+
+### What
+1. Ideas / Prep / Exec / Review panels: **Add to calendar** → pick a date → live link on that day
+2. Card stays in the pipeline; calendar slot mirrors progress (same link as Need-fill)
+3. If already linked, button shows the date badge and jumps to the calendar card
+
+### Open / next
+1. Hard-refresh; open a Prep card → Add to calendar → Place → confirm both sides stay linked
+
+---
+
+## 2026-09-09 — Sticky pipeline section titles (Cursor Cloud)
+
+### Live
+- Version ID: `dd1f5d2d-c657-4468-a48c-bd25540f126b`
+- Marketing **`0.12.59`**
+- Hard-refresh Marketing → Pipeline
+
+### What
+1. Section headers (Content Ideas / Preparation / Execution / Review / Calendar) stick while you scroll that section
+2. Tap the stuck title to collapse without scrolling back up
+
+### Open / next
+1. Hard-refresh; open Prep, scroll down, confirm title stays and can minimize
+
+---
+
+## 2026-09-09 — Prep cards newest-first (Cursor Cloud)
+
+### Live
+- Version ID: `749214de-953f-4f47-9cdc-065a1e604f21`
+- Marketing **`0.12.58`**
+- Hard-refresh Marketing → Preparation
+
+### What
+1. Preparation lane cards sorted by most recently moved into Prep (`movedAt`, then `createdAt`)
+
+### Open / next
+1. Prepare a new idea; confirm it appears at the top of its lane
+
+---
+
+## 2026-09-09 — Calendar weekday labels scroll with days (Cursor Cloud)
+
+### Live
+- Version ID: `be138b90-c245-45b1-ba85-fc1d315f0588`
+- Marketing **`0.12.57`**
+- Hard-refresh Marketing → Calendar (narrow / phone)
+
+### What
+1. Removed detached SUN–SAT header that stayed put while the week grid scrolled
+2. Each day column now shows its own weekday + date (Wed / 9) so swipe keeps context
+
+### Open / next
+1. Hard-refresh; swipe week view on phone and confirm Wed moves with the 9th
+
+---
+
+## 2026-09-09 — Pipeline no-photo card consistency (Cursor Cloud)
+
+### Live
+- Version ID: `446d99ce-5511-46e4-9dfd-aeb82f4500cf`
+- Marketing **`0.12.56`**
+- Hard-refresh Marketing → Preparation / Execution / Review
+
+### What
+1. Prep / Exec / Review / Unscheduled list cards: no empty “No image” boxes
+2. Text-only cards keep accent wash + left border (same idea as Ideas List/Grid + calendar)
+3. Mild Ideas List max-width on desktop so rows don’t stretch forever
+
+### Open / next
+1. Hard-refresh; check Prep lanes with mixed photo / text-only cards
+
+---
+
+## 2026-09-09 — Ideas List/Grid text-first cards (Cursor Cloud)
+
+### Live
+- Version ID: `ff1908fc-d8a2-4179-b4da-313e1c9d5766`
+- Marketing **`0.12.55`**
+- Hard-refresh Marketing → Pipeline → Content Ideas
+
+### What
+1. List/Grid: no empty photo boxes when an idea has no image
+2. Text-only cards use calendar-style left accent + wash
+3. **Add photo** on those cards opens the system picker; panel Photo well is optional (tap / drop / paste)
+4. Empty-state copy frames the TikTok-style flow: jot idea → Prepare when ready
+
+### Open / next
+1. Hard-refresh; check List + Grid on phone with mixed photo / text-only ideas
+
+---
+
+## 2026-09-09 — Ideas Board / List / Grid views (Cursor Cloud)
+
+### Live
+- Version ID: `0e6b0cb3-d3f0-4527-82fc-7b888e7c0197`
+- Marketing **`0.12.54`**
+- Hard-refresh Marketing → Pipeline → Content Ideas
+
+### What
+1. Content Ideas: segmented **Board · List · Grid** toggle (matches Week/Month chrome)
+2. List = scrollable rows; Grid = tidy image cards; Board = existing mood board
+3. Preference saved in localStorage
+
+### Open / next
+1. Hard-refresh Marketing → Pipeline → Content Ideas; flick views on phone + desktop
+
+---
+
+## 2026-09-09 — Team polish pack (Cursor Cloud)
+
+### Live
+- Version ID: `2174cb2a-3494-49a4-bbb5-eeaf2667a1b0`
+- Marketing **`0.12.53`**, Task Board / Planner / Home use `ppc-homebase.js?v=18`
+- Hard-refresh all Homebase pages
+
+### What
+1. Prep cards: long-press touch drag between lanes
+2. Undo toast on idea/prep/exec/review delete and Need content clear
+3. Calendar triage strip (Make today / Post today / Needs · 7d) + last saved
+4. People filter on calendar assignees
+5. Ideas empty state; lazy-loaded board thumbnails
+6. Optional Team PIN in Settings (session unlock) on all Homebase pages
+
+### Open / next
+1. Hard-refresh all pages; set Team PIN in Settings if desired
+2. Cloudflare Access still recommended for internet-facing lock
+
+---
+
+## 2026-09-09 — Calendar header cleanup on mobile (Cursor Cloud)
+
+### Live
+- Version ID: `9d1150de-b3bd-4e5d-a4fa-712c39fc2937`
+- Marketing **`0.12.52`**
+- Hard-refresh Marketing → Calendar on phone
+
+### What
+1. Events row → single **Events** dropdown (list + Add event), matching Types
+2. Mobile nav: date on its own row; Week/Month + Types left, ‹ Today › right
+
+### Open / next
+1. Hard-refresh Marketing → Calendar on phone
+
+---
+
+## 2026-09-09 — Mobile panel ✕ no longer overlaps Pillar (Cursor Cloud)
+
+### Live
+- Version ID: `255cd403-376c-4d3c-aca0-ae24d6aeafb0`
+- Marketing **`0.12.51`**
+- Hard-refresh Marketing on phone
+
+### What
+1. Extra top padding in the card panel so the close control clears Pillar/Format
+
+### Open / next
+1. Hard-refresh Marketing on phone
+
+---
+
+## 2026-09-09 — Mobile: tap outside to close cards (Cursor Cloud)
+
+### Live
+- Version ID: `8d784300-f65b-4a2a-8959-5edc8418f69b`
+- Marketing **`0.12.50`**
+- Hard-refresh Marketing on phone
+
+### What
+1. Card panel no longer covers the full phone width — left dim strip dismisses the card
+2. Larger ✕ close control; overlay listens for touchend; mobile hint says tap outside
+
+### Open / next
+1. Hard-refresh Marketing on phone and confirm tap-outside closes calendar/idea cards
+
+---
+
+## 2026-09-09 — Marketing mobile Ideas + schedule panes (Cursor Cloud)
+
+### Note
+- Hotfix: declared missing `IS_TOUCH` / schedule-pane keys (startup ReferenceError blanked the board). Now **0.12.49**.
+
+### Live
+- Version ID: `534f94a6-f0dd-42da-8559-ceec3fc27d1a`
+- Marketing **`0.12.49`** (deployed this session)
+- Synced from prior live baselines: Marketing **0.12.47**, Task Board **1.10.17**, Planner **2.10.16**, `ppc-homebase.js?v=17`
+- Hard-refresh Marketing on phone
+
+### What
+1. Content Ideas board: real finger pan, card drag, and pinch-zoom (was mouse-only)
+2. Calendar card panel: minimise/expand on **From pipeline** and **Shot / edited content** (prefs saved; phones default collapsed)
+3. Mobile UX: full-width side panel, larger nav/tool tap targets, always-show delete on touch, Home menu tap targets
+
+### Open / next
+1. Hard-refresh Marketing on phone — confirm Ideas pan/drag and pane toggles
+2. Prep/Exec HTML5 drag on touch still limited (separate pass if needed)
+
+---
 ## 2026-09-07 — Deploy: Marketing Calendar fix + project-type safety (Cursor)
 
 ### Live
