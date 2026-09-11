@@ -5,6 +5,19 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-11 — Make cards show slot labels (Cursor Cloud)
+
+### Live
+- (deploy pending)
+- Marketing **`0.12.82`**
+- Hard-refresh → Calendar Make strip
+
+### What
+1. Make reminders use slot labels (format + needLabel), not raw idea text
+2. Matches calendar Need / filled-slot labelling
+
+---
+
 ## 2026-09-10 — Calendar Content link + Update log (Cursor Cloud)
 
 ### Live
