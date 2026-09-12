@@ -5,6 +5,27 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-12 — Content layers plan (Cursor Cloud)
+
+### Why
+Team feedback + branding deck: stop “pretty → post” without intention. Deck
+cadence table is outdated; near-daily posting needs editable layer mix.
+
+### What (plan only — no product code)
+1. Wrote `CONTENT-LAYERS-PLAN.md` — layers, Intention/Why, Hook pill
+   (Reels/TikTok), Prep-by-layer, weekly layer targets, build phases A–D
+2. Steady default mix ~45% Identity / ~35% Acquisition / ~20% Conversion
+3. **Did not implement or deploy**
+
+### Open / next
+1. Jarvis reviews plan; resolve open questions in the doc
+2. Implement Phase A when ready (Layer + Why + Hook pill)
+
+### Safe for cards?
+Yes — docs only.
+
+---
+
 ## 2026-09-12 — Promote live line to `main` (Cursor Cloud)
 
 ### Why
