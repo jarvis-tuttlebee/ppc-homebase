@@ -5,6 +5,15 @@ versions, deploy rules, open follow-ups, and file layout.
 
 ## Cursor Cloud specific instructions
 
+### Trunk / branching
+- **`main` is the Homebase source of truth** (planner + kanban + marketing).
+- Start new work from latest `main` (`git fetch && git checkout main && git pull`).
+- Open PRs **into `main`**. Do not stack long-lived draft PRs on each other.
+- **Git merges do not move or delete cards.** Boards live in Cloudflare KV
+  (`PLANNER_KV`); media in R2. Never treat a branch switch as a data migrate.
+- Deploy is a separate step (`npx wrangler deploy`) and is what updates live UI.
+  Merging to `main` alone does not change production.
+
 ### What this is
 `ppc-homebase` is a single Cloudflare Worker (`src/index.js`) that serves static
 pages from `public/` (Home `/`, `/planner`, `/kanban`, `/marketing`) and a

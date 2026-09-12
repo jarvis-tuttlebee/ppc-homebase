@@ -5,6 +5,34 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-12 — Promote live line to `main` (Cursor Cloud)
+
+### Why
+`main` was stuck on Jul 28 (Marketing **0.4.2**) while live Homebase ran from
+the `cursor/marketing-mobile-ux-2e5d` stack (Marketing **0.12.82**). That made
+Claude Code / new branches easy to start from the wrong trunk.
+
+### What (git only — no deploy)
+1. Fast-forward `main` to match the live marketing tip (byte-identical
+   `public/marketing.html` to production **0.12.82**)
+2. Document: branch off `main` going forward; one Homebase trunk
+3. **Did not deploy** — live Worker/KV/R2 untouched. Cards stay in `PLANNER_KV`
+
+### Safe for cards?
+Yes. This is a GitHub branch tip update only. Board data is not in git.
+
+### Follow-ups (not in this PR)
+- Week-swipe polish PR #14 still separate (conflicts; live already has partial
+  `draggable = !IS_TOUCH` on prep cards)
+- Old draft PR stack (#1–#13) is historical; new work should PR into `main`
+
+### For Claude Code
+```bash
+git fetch origin && git checkout main && git pull
+```
+
+---
+
 ## 2026-09-11 — Make cards show slot labels (Cursor Cloud)
 
 ### Live
