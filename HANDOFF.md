@@ -10,11 +10,12 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ### Why
 Format should stay a dropdown (not chips), still allow multi-select. Category (Ideas) and Pillar (Prep+) are redundant once Format implies pillar.
 
-### What (Marketing **0.12.88**, not deployed)
+### What (Marketing **0.12.89**, not deployed)
 1. Idea **Format** = multi-select dropdown (grouped by pillar); Save still fans out one card per format
 2. Removed **Category** from Idea panel; removed **Pillar** from Prep / Exec / Review / Calendar panels
 3. Pillar/`cat` set under the hood from the selected format (`pillar::format` keys)
-4. `ppc-select.js?v=9` — multi-select + group headers
+4. Prep+ keeps a single Format dropdown (flat across pillars) — **0.12.89** fixes Format row not being appended
+5. `ppc-select.js?v=9` — multi-select + group headers
 
 ### Safe for cards?
 Yes — same fields; UI only. Hard-refresh after deploy.
