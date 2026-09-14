@@ -663,6 +663,27 @@
       transition: background 0.12s, border-color 0.12s, color 0.12s;
     }
     .idea-format-chip:hover { filter: brightness(0.98); }
+    .idea-format-chip.is-on {
+      background: #fff;
+      border-color: #2C2C2C;
+      color: #2C2C2C;
+    }
+    .idea-format-chip.is-on .idea-format-chip-meta { color: #6B7A8D; }
+    .idea-format-hint {
+      font-size: 10.5px;
+      color: #9a958d;
+      line-height: 1.35;
+      margin: 0 0 8px;
+    }
+    .idea-format-groups { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .idea-format-group-label {
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #b0aaa2;
+      margin-bottom: 4px;
+    }
     .image-well img {
       width: 100%;
       height: 100%;
@@ -4818,7 +4839,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.86';
+const APP_VERSION = '0.12.87';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5690,6 +5711,178 @@ function allFormatOptions() {
     });
   });
   return out;
+}
+
+/** Composite key so Email Campaign ≠ Ads Campaign. */
+function formatPickKey(pillarId, formatId) {
+  return formatColorKey(pillarId, formatId);
+}
+
+function parseFormatPickKey(key) {
+  const raw = String(key || '');
+  const i = raw.indexOf('::');
+  if (i <= 0) return null;
+  const pillar = raw.slice(0, i);
+  const format = raw.slice(i + 2);
+  if (!pillarById(pillar) || !format) return null;
+  if (!formatsForPillar(pillar).some(f => f.id === format)) return null;
+  return { pillar, format };
+}
+
+function readIdeaFormatPicks() {
+  const wrap = document.getElementById('pIdeaFormatChips');
+  if (!wrap) return [];
+  // Prefer click-order (data-order); fall back to DOM order.
+  const buttons = Array.from(wrap.querySelectorAll('.idea-format-chip.is-on'));
+  buttons.sort((a, b) => {
+    const ao = Number(a.dataset.order || 0);
+    const bo = Number(b.dataset.order || 0);
+    if (ao && bo && ao !== bo) return ao - bo;
+    return 0;
+  });
+  const picks = [];
+  const seen = new Set();
+  buttons.forEach(btn => {
+    const parsed = parseFormatPickKey(btn.dataset.pick);
+    if (!parsed) return;
+    const key = formatPickKey(parsed.pillar, parsed.format);
+    if (seen.has(key)) return;
+    seen.add(key);
+    picks.push(parsed);
+  });
+  return picks;
+}
+
+function cloneIdeaForFormat(source, pillar, format) {
+  const size = ideaCardSize(DATA.ideas.length + 1);
+  const pos = placeNearMostRecent(size);
+  return {
+    id: newId(),
+    body: source.body || '',
+    cat: pillar,
+    format,
+    contentWhy: source.contentWhy || '',
+    contentLayer: normalizeContentLayer(source.contentLayer),
+    imageData: source.imageData || null,
+    imageW: source.imageW,
+    imageH: source.imageH,
+    x: pos.x,
+    y: pos.y,
+    createdAt: new Date().toISOString(),
+    clonedFromIdeaId: source.id || null
+  };
+}
+
+/** Apply primary pick to idea; create sibling idea cards for the rest. */
+function fanOutIdeaFormats(idea, picks) {
+  if (!idea) return [];
+  if (!picks || !picks.length) {
+    idea.format = null;
+    return [];
+  }
+  const primary = picks[0];
+  idea.cat = primary.pillar;
+  idea.format = primary.format;
+  const created = [];
+  for (let i = 1; i < picks.length; i++) {
+    const pick = picks[i];
+    const clone = cloneIdeaForFormat(idea, pick.pillar, pick.format);
+    DATA.ideas.push(clone);
+    created.push(clone);
+  }
+  return created;
+}
+
+function buildPrepCardFromIdea(idea, pillar, format, opts) {
+  opts = opts || {};
+  const linkedScheduleId = opts.linkedScheduleId || '';
+  const prepCard = {
+    id: newPrepId(),
+    sourceIdeaId: opts.sourceIdeaId || null,
+    body: idea.body || '',
+    imageData: idea.imageData || null,
+    imageW: idea.imageW,
+    imageH: idea.imageH,
+    pillar,
+    format,
+    contentLayer: normalizeContentLayer(idea.contentLayer),
+    contentWhy: idea.contentWhy || '',
+    productionPlan: '',
+    placementNote: '',
+    linkedScheduleId: linkedScheduleId || '',
+    createdAt: idea.createdAt || new Date().toISOString(),
+    movedAt: new Date().toISOString()
+  };
+  if (linkedScheduleId) {
+    const slot = scheduleCards().find(c => c.id === linkedScheduleId);
+    if (slot) {
+      if (slot.productionPlan) prepCard.productionPlan = slot.productionPlan;
+      if (slot.productsUsed) prepCard.productsUsed = slot.productsUsed;
+      if (slot.location) prepCard.location = slot.location;
+      if (slot.requirements) prepCard.requirements = slot.requirements;
+      if (slot.dateTime) prepCard.dateTime = slot.dateTime;
+      if (!prepCard.contentLayer && slot.contentLayer) {
+        prepCard.contentLayer = normalizeContentLayer(slot.contentLayer);
+      }
+    }
+  }
+  return prepCard;
+}
+
+/** Prepare one idea into N Prep cards (one per format pick). */
+function moveIdeaToPrepMulti(idea, picks) {
+  if (!idea) return;
+  let list = (picks || []).filter(p => p && p.pillar && p.format);
+  if (!list.length) {
+    const pillar = (idea.cat && pillarById(idea.cat)) ? idea.cat : 'organic';
+    list = [{ pillar, format: idea.format || defaultFormatForPillar(pillar) }];
+  }
+
+  const linkedScheduleId = idea.linkedScheduleId || '';
+  const existingPrep = prepCards().find(c => c && c.sourceIdeaId === idea.id);
+  if (existingPrep) {
+    // Already prepared once — keep single-card behaviour.
+    moveIdeaToPrep(idea, existingPrep.pillar || list[0].pillar, existingPrep.format || list[0].format);
+    return;
+  }
+
+  DATA.ideas = DATA.ideas.filter(i => i.id !== idea.id);
+  const created = [];
+  list.forEach((pick, idx) => {
+    const pillar = pillarById(pick.pillar) ? pick.pillar : 'organic';
+    let format = pick.format;
+    if (!format || !formatsForPillar(pillar).some(f => f.id === format)) {
+      format = defaultFormatForPillar(pillar);
+    }
+    const card = buildPrepCardFromIdea(idea, pillar, format, {
+      sourceIdeaId: idx === 0 ? idea.id : null,
+      linkedScheduleId: idx === 0 ? linkedScheduleId : ''
+    });
+    if (idx > 0) card.clonedFromIdeaId = idea.id;
+    prepCards().push(card);
+    created.push(card);
+    expandedPillars.add(pillar);
+  });
+
+  if (linkedScheduleId && created[0]) {
+    syncLinkedSchedulePreview(created[0], 'prep');
+    const liveSlot = scheduleCards().find(c => c.id === linkedScheduleId);
+    if (liveSlot) {
+      liveSlot.linkedPipelineId = created[0].id;
+      liveSlot.linkedPipelineStage = 'prep';
+      liveSlot.sourceIdeaId = idea.id;
+    }
+  }
+
+  expandedSections.add('preparation');
+  closePanel();
+  clearTimeout(saveTimer);
+  saveData();
+  renderBoard();
+  openPrepPanel(created[0].id);
+  if (created.length > 1 && typeof PPC !== 'undefined' && PPC.showToast) {
+    PPC.showToast('Prepared ' + created.length + ' cards (one per format)');
+  }
 }
 
 function customFormats() {
@@ -14965,22 +15158,30 @@ function buildIdeaPanelProps(idea) {
   const wrap = document.getElementById('panelProps');
   wrap.innerHTML = '';
 
-  let selectedFormat = idea.format || '';
   const startPillar = (idea.cat && pillarById(idea.cat)) ? idea.cat : '';
-  if (selectedFormat && startPillar && !formatsForPillar(startPillar).some(f => f.id === selectedFormat)) {
-    selectedFormat = '';
+  let selectedKeys = [];
+  if (idea.format && startPillar && formatsForPillar(startPillar).some(f => f.id === idea.format)) {
+    selectedKeys = [formatPickKey(startPillar, idea.format)];
   }
 
-  function liveApplyIdeaFormat(pick) {
+  function liveApplyPrimaryPick(picks) {
     const live = DATA.ideas.find(i => i.id === activeIdeaId);
     if (!live) return;
-    const catVal = (document.getElementById('pCat') || {}).value || '';
-    live.cat = catVal || null;
+    const primary = picks && picks[0];
+    if (primary) {
+      live.cat = primary.pillar;
+      live.format = primary.format;
+      updatePpcSelect('pCat', { value: primary.pillar });
+      const catHidden = document.getElementById('pCat');
+      if (catHidden) catHidden.value = primary.pillar;
+      updatePanelStrip(primary.pillar, primary.format);
+    } else {
+      const catVal = (document.getElementById('pCat') || {}).value || '';
+      live.cat = catVal || null;
+      live.format = null;
+      updatePanelStrip(catVal, '');
+    }
     const pillar = (live.cat && pillarById(live.cat)) ? live.cat : 'organic';
-    const clean = (pick && pick !== ADD_FORMAT_ID && formatsForPillar(pillar).some(f => f.id === pick))
-      ? pick
-      : null;
-    live.format = clean;
     const cardEl = document.querySelector('.idea-card[data-idea-id="' + live.id + '"]');
     if (cardEl) {
       applyCardCategoryStyle(cardEl, live);
@@ -15010,20 +15211,6 @@ function buildIdeaPanelProps(idea) {
     scheduleSave();
   }
 
-  function refreshIdeaFormatSelect(pillarId, value) {
-    const pillar = (pillarId && pillarById(pillarId)) ? pillarId : 'organic';
-    let next = value || '';
-    if (next && !formatsForPillar(pillar).some(f => f.id === next)) next = '';
-    updatePpcSelect('pIdeaFormat', {
-      options: formatSelectOptions(pillar),
-      value: next,
-      includeNone: true,
-      noneLabel: 'Pick format…'
-    });
-    const hidden = document.getElementById('pIdeaFormat');
-    if (hidden) hidden.value = next;
-  }
-
   const row = document.createElement('div');
   row.className = 'prop-row';
   row.innerHTML = '<span class="prop-label">Category</span><span class="prop-value"></span>';
@@ -15034,37 +15221,84 @@ function buildIdeaPanelProps(idea) {
     includeNone: true,
     colored: false,
     onChange: v => {
-      const p = (v && pillarById(v)) ? v : 'organic';
-      const cur = (document.getElementById('pIdeaFormat') || {}).value || '';
-      const keep = (cur && formatsForPillar(p).some(f => f.id === cur)) ? cur : '';
-      refreshIdeaFormatSelect(p, keep);
-      liveApplyIdeaFormat(keep);
-      updatePanelStrip(v, keep);
+      const picks = readIdeaFormatPicks();
+      // Category alone only applies when no formats are selected.
+      if (!picks.length) {
+        const live = DATA.ideas.find(i => i.id === activeIdeaId);
+        if (live) {
+          live.cat = v || null;
+          live.format = null;
+        }
+        updatePanelStrip(v, '');
+        scheduleSave();
+      }
     }
   }));
 
   const formatRow = document.createElement('div');
   formatRow.className = 'prop-row';
   formatRow.id = 'pIdeaFormatRow';
+  formatRow.style.alignItems = 'flex-start';
   formatRow.innerHTML = '<span class="prop-label">Format</span><span class="prop-value"></span>';
-  const startCat = startPillar || 'organic';
-  formatRow.querySelector('.prop-value').appendChild(createPpcSelect({
-    id: 'pIdeaFormat',
-    options: formatSelectOptions(startCat),
-    value: selectedFormat || '',
-    includeNone: true,
-    noneLabel: 'Pick format…',
-    colored: false,
-    onChange: format => {
-      const catVal = (document.getElementById('pCat') || {}).value || '';
-      const pillar = (catVal && pillarById(catVal)) ? catVal : 'organic';
-      const prev = selectedFormat || '';
-      const next = handleFormatSelectChange(format, pillar, 'pIdeaFormat', prev);
-      selectedFormat = next === ADD_FORMAT_ID ? '' : (next || '');
-      liveApplyIdeaFormat(selectedFormat);
-      updatePanelStrip(catVal, selectedFormat);
-    }
-  }));
+  const formatValue = formatRow.querySelector('.prop-value');
+
+  const hint = document.createElement('div');
+  hint.className = 'idea-format-hint';
+  hint.textContent = 'Select one or more — Save makes a card for each format.';
+  formatValue.appendChild(hint);
+
+  const groups = document.createElement('div');
+  groups.className = 'idea-format-groups';
+  groups.id = 'pIdeaFormatChips';
+  groups.dataset.pickSeq = selectedKeys.length ? '1' : '0';
+
+  const byPillar = {};
+  allFormatOptions().forEach(opt => {
+    if (!byPillar[opt.pillar]) byPillar[opt.pillar] = { label: opt.pillarLabel, items: [] };
+    byPillar[opt.pillar].items.push(opt);
+  });
+
+  Object.keys(byPillar).forEach(pillarId => {
+    const group = byPillar[pillarId];
+    const block = document.createElement('div');
+    const gl = document.createElement('div');
+    gl.className = 'idea-format-group-label';
+    gl.textContent = group.label || pillarId;
+    block.appendChild(gl);
+    const chips = document.createElement('div');
+    chips.className = 'idea-format-chips';
+    group.items.forEach(opt => {
+      const key = formatPickKey(opt.pillar, opt.format);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const selected = selectedKeys.includes(key);
+      btn.className = 'idea-format-chip' + (selected ? ' is-on' : '');
+      btn.dataset.pick = key;
+      if (selected) btn.dataset.order = '1';
+      const tone = formatColor(opt.format, opt.pillar);
+      if (tone) btn.style.borderLeftColor = tone;
+      btn.textContent = opt.label || opt.format;
+      btn.title = (opt.pillarLabel || opt.pillar) + ' · ' + (opt.label || opt.format);
+      btn.addEventListener('click', () => {
+        const on = !btn.classList.contains('is-on');
+        btn.classList.toggle('is-on', on);
+        if (on) {
+          const wrapEl = document.getElementById('pIdeaFormatChips');
+          const next = Number((wrapEl && wrapEl.dataset.pickSeq) || 0) + 1;
+          if (wrapEl) wrapEl.dataset.pickSeq = String(next);
+          btn.dataset.order = String(next);
+        } else {
+          delete btn.dataset.order;
+        }
+        liveApplyPrimaryPick(readIdeaFormatPicks());
+      });
+      chips.appendChild(btn);
+    });
+    block.appendChild(chips);
+    groups.appendChild(block);
+  });
+
+  formatValue.appendChild(groups);
 
   wrap.appendChild(row);
   wrap.appendChild(formatRow);
@@ -15077,6 +15311,7 @@ function buildIdeaPanelProps(idea) {
     }
   });
 }
+
 
 function buildPrepPanelProps(card) {
   const wrap = document.getElementById('panelProps');
@@ -16650,14 +16885,7 @@ function savePanel(silent) {
   if (panelMode === 'idea' && activeIdeaId) {
     const idea = DATA.ideas.find(i => i.id === activeIdeaId);
     if (!idea) return;
-    const catVal = document.getElementById('pCat').value;
-    const formatVal = (document.getElementById('pIdeaFormat') || {}).value || '';
-    idea.cat = catVal || null;
-    if (formatVal && formatsForPillar(idea.cat || 'organic').some(f => f.id === formatVal)) {
-      idea.format = formatVal;
-    } else {
-      idea.format = null;
-    }
+    const picks = readIdeaFormatPicks();
     idea.body = sanitizeHtml(document.getElementById('pDesc').innerHTML).trim();
     idea.contentWhy = readContentWhyInput();
     idea.contentLayer = readContentLayerInput();
@@ -16669,20 +16897,41 @@ function savePanel(silent) {
         }
         return;
       }
-      const pillarRaw = idea.cat || 'organic';
-      const pillar = pillarById(pillarRaw) ? pillarRaw : 'organic';
-      let format = idea.format;
-      if (!format || !formatsForPillar(pillar).some(f => f.id === format)) {
-        format = defaultFormatForPillar(pillar);
+      if (picks.length) {
+        moveIdeaToPrepMulti(idea, picks);
+      } else {
+        const pillarRaw = (document.getElementById('pCat') || {}).value || idea.cat || 'organic';
+        const pillar = pillarById(pillarRaw) ? pillarRaw : 'organic';
+        let format = idea.format;
+        if (!format || !formatsForPillar(pillar).some(f => f.id === format)) {
+          format = defaultFormatForPillar(pillar);
+        }
+        idea.cat = pillar;
+        idea.format = format;
+        moveIdeaToPrep(idea, pillar, format);
       }
-      moveIdeaToPrep(idea, pillar, format);
       return;
+    }
+
+    const created = fanOutIdeaFormats(idea, picks);
+    if (!picks.length) {
+      const catVal = (document.getElementById('pCat') || {}).value || '';
+      idea.cat = catVal || null;
+      idea.format = null;
     }
 
     // Only mirror onto the calendar while the link is still at Ideas stage.
     const linked = linkedScheduleForIdea(idea);
     if (linked && (!linked.linkedPipelineStage || linked.linkedPipelineStage === 'ideas')) {
       syncLinkedSchedulePreview(idea, 'ideas');
+    }
+
+    if (!silent && created.length && typeof PPC !== 'undefined' && PPC.showToast) {
+      const labels = [idea.format].concat(created.map(c => c.format)).map((fid, idx) => {
+        const pillar = idx === 0 ? idea.cat : created[idx - 1].cat;
+        return formatLabel(pillar, fid) || fid;
+      }).filter(Boolean);
+      PPC.showToast('Created ' + (created.length + 1) + ' cards: ' + labels.join(', '));
     }
 
     finishPipelinePanelSave(silent);

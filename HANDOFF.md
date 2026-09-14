@@ -5,6 +5,22 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-14 — Multi-format Idea fan-out (Cursor Cloud)
+
+### Why
+One idea often ships as IG Reel + TikTok + newsletter / site — need a card per format on the board and calendar.
+
+### What (Marketing **0.12.87**, not deployed)
+1. Idea **Format** is multi-select chips (all pillars; composite `pillar::format` keys)
+2. **Save** keeps the primary format on the open card and clones a sibling Idea per extra format (same body / Why / Layer / image)
+3. **Prepare** with multiple formats creates one Prep card per format
+4. Hint under Format: “Select one or more — Save makes a card for each format.”
+
+### Safe for cards?
+Additive — still one `format` per card; no schema change. Hard-refresh after deploy.
+
+---
+
 ## 2026-09-14 — Why/Intention spacing under Idea (Cursor Cloud)
 
 ### Why
