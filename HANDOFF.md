@@ -11,13 +11,14 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 Format pills on Ideas were inconsistent with Category / Layer dropdowns.
 Prep “Other” column was unclear.
 
-### What (Marketing **0.12.84**)
+### What (Marketing **0.12.84** — **LIVE**)
 1. Idea **Format** is a dropdown (same control as Category / Layer)
 2. Prep holding lane renamed **No layer** (cards without a layer yet)
-3. Deploy when Jarvis asked
+3. Deployed: Version ID `3980d58e-29dd-4cb4-b671-67df340accdf`
+   https://ppc-homebase.pressplaycollective.workers.dev
 
 ### Safe for cards?
-Yes — UI only; `contentLayer` / `contentWhy` unchanged.
+Yes — UI only; `contentLayer` / `contentWhy` unchanged. Hard-refresh Marketing.
 
 ---
 
