@@ -5,12 +5,24 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-14 — Deploy Marketing 0.12.87 (Cursor Cloud)
+
+### What
+Deployed branch `cursor/content-layers-plan-d899` (multi-format fan-out + Why spacing).
+- Live: https://ppc-homebase.pressplaycollective.workers.dev
+- Version ID: `b768ee5d-7666-4c1c-b4ed-99f1b92b7fe3`
+- Marketing **0.12.87** — **LIVE** (includes **0.12.86** Why spacing)
+
+Hard-refresh Marketing (Cmd/Ctrl+Shift+R).
+
+---
+
 ## 2026-09-14 — Multi-format Idea fan-out (Cursor Cloud)
 
 ### Why
 One idea often ships as IG Reel + TikTok + newsletter / site — need a card per format on the board and calendar.
 
-### What (Marketing **0.12.87**, not deployed)
+### What (Marketing **0.12.87** — **LIVE**)
 1. Idea **Format** is multi-select chips (all pillars; composite `pillar::format` keys)
 2. **Save** keeps the primary format on the open card and clones a sibling Idea per extra format (same body / Why / Layer / image)
 3. **Prepare** with multiple formats creates one Prep card per format
@@ -26,7 +38,7 @@ Additive — still one `format` per card; no schema change. Hard-refresh after d
 ### Why
 Idea box sat too tight against the Why / Intention label.
 
-### What (Marketing **0.12.86**, not deployed)
+### What (Marketing **0.12.86** — **LIVE** via 0.12.87)
 `#whyBlock { margin-top: 28px }` so Idea → Why has clear breathing room.
 
 ### Safe for cards?
