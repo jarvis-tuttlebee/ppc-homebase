@@ -5,6 +5,29 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-14 — Layers + Why in Marketing pipeline (Cursor Cloud)
+
+### Why
+Louis / team: every post needs intention; layer = job category; Why = what it says.
+Prep thinking should be by layer, not by IG/TikTok columns.
+
+### What (Marketing **0.12.83**, not deployed)
+1. Prep columns → Audience acquisition / Brand identity / Conversion
+2. **Layer** prop under Format on Ideas / Prep / Calendar (Prepare requires it)
+3. **Why / Intention** under Idea text (and on calendar pipeline pane)
+4. Removed throwaway `content-layers-preview.html` mock page
+5. Category + Format unchanged
+
+### Open / next
+1. Smoke + Jarvis review on local `/marketing`
+2. Hook pill (Reels/TikTok) later; week layer targets later
+3. Deploy from Mac/PC when ready
+
+### Safe for cards?
+Yes — additive fields (`contentLayer`, `contentWhy`); existing cards land in Prep “Other” until layered.
+
+---
+
 ## 2026-09-14 — Content layers taxonomy locked (Cursor Cloud)
 
 ### Why
@@ -16,11 +39,7 @@ Layers = **1. Audience acquisition · 2. Brand identity · 3. Conversion**
 
 ### What
 1. Updated `CONTENT-LAYERS-PLAN.md` with locked names + plain-English jobs
-2. No `marketing.html` changes; mock preview was the wrong artifact (discussion only)
-
-### Open / next
-1. More discussion when Jarvis has time (Prep-by-layer, Why field, Hook, week targets)
-2. Implement only inside existing Calendar + Pipeline when ready
+2. Mock preview was the wrong artifact (removed in follow-up)
 
 ### Safe for cards?
 Yes — docs only.

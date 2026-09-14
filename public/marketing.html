@@ -788,6 +788,7 @@
     .panel.review-mode #descSectionLabel,
     .panel.review-mode #descFmtBar,
     .panel.review-mode #pDesc { display: none !important; }
+    .panel.review-mode #whyBlock { display: none !important; }
     .panel-fields { min-width: 0; }
     .panel-apply-hint {
       width: 100%;
@@ -1586,6 +1587,9 @@
       background: #fff;
       box-sizing: border-box;
     }
+    .schedule-why-block { margin-top: 10px; }
+    .schedule-why-block .panel-section-label { margin-bottom: 4px; }
+    #panel.schedule-discover #scheduleWhyBlock { display: none !important; }
     #panel.schedule-discover #pScheduleIdeaText,
     #panel.schedule-discover #pScheduleContentActions,
     #panel.schedule-discover #pScheduleGoIdeas,
@@ -4395,6 +4399,11 @@
           <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pDesc','removeFormat')">Clear</button>
         </div>
         <div class="panel-desc short" id="pDesc" contenteditable="true" placeholder="Add an idea…"></div>
+        <div id="whyBlock">
+          <div class="panel-section-label" id="whySectionLabel">Why / Intention</div>
+          <div class="panel-field-hint" id="whyHint">What is this post meant to say or do?</div>
+          <div class="panel-desc short" id="pWhy" contenteditable="true" placeholder="e.g. Show atelier craft so new followers trust the make before a drop…"></div>
+        </div>
         <div id="prepExtraFields" style="display:none">
           <hr class="panel-divider">
           <div class="panel-section-label">Production plan</div>
@@ -4522,6 +4531,10 @@
                 <div class="review-inspo-thumb" id="pSchedulePipelineThumb"></div>
                 <div class="review-inspo-meta">
                   <div id="pScheduleIdeaText"></div>
+                  <div id="scheduleWhyBlock" class="schedule-why-block">
+                    <div class="panel-section-label">Why / Intention</div>
+                    <div class="panel-desc short" id="pScheduleWhy" contenteditable="true" placeholder="What is this post meant to say or do?"></div>
+                  </div>
                   <div class="schedule-content-actions" id="pScheduleContentActions">
                     <button type="button" class="btn-secondary" id="pScheduleGoIdeas" onclick="openIdeaFillPicker()">Choose from Pipeline</button>
                     <button type="button" class="btn-secondary" id="pScheduleChangeContent" hidden onclick="openIdeaFillPicker({ replace: true })">Change content</button>
@@ -4803,7 +4816,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.82';
+const APP_VERSION = '0.12.83';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5137,76 +5150,99 @@ const FORMAT_MIGRATE = {
   website: { website: 'design' }
 };
 
-/** Flat Prep board columns (replaces Organic→format / Email→format nesting). */
-const IG_FORMAT_IDS = ['ig-post', 'ig-reel', 'ig-story'];
-const PREP_LANES = [
-  {
-    id: 'instagram',
-    label: 'Instagram',
-    toneOf: () => formatColor('ig-post', 'organic'),
-    match: c => c && c.pillar === 'organic' && IG_FORMAT_IDS.includes(c.format),
-    apply: c => {
-      c.pillar = 'organic';
-      if (!IG_FORMAT_IDS.includes(c.format)) c.format = 'ig-post';
-    }
-  },
-  {
-    id: 'tiktok',
-    label: 'TikTok',
-    toneOf: () => formatColor('tiktok', 'organic'),
-    match: c => c && c.pillar === 'organic' && c.format === 'tiktok',
-    apply: c => {
-      c.pillar = 'organic';
-      c.format = 'tiktok';
-    }
-  },
-  {
-    id: 'pinterest',
-    label: 'Pinterest',
-    toneOf: () => formatColor('pinterest', 'organic'),
-    match: c => c && c.pillar === 'organic' && c.format === 'pinterest',
-    apply: c => {
-      c.pillar = 'organic';
-      c.format = 'pinterest';
-    }
-  },
-  {
-    id: 'email',
-    label: 'Email',
-    toneOf: () => pillarColor('email'),
-    match: c => c && c.pillar === 'email',
-    apply: c => {
-      c.pillar = 'email';
-      if (!formatsForPillar('email').some(f => f.id === c.format)) {
-        c.format = defaultFormatForPillar('email');
-      }
-    }
-  },
-  {
-    id: 'ads',
-    label: 'Ads',
-    toneOf: () => pillarColor('ads'),
-    match: c => c && c.pillar === 'ads',
-    apply: c => {
-      c.pillar = 'ads';
-      if (!formatsForPillar('ads').some(f => f.id === c.format)) {
-        c.format = defaultFormatForPillar('ads');
-      }
-    }
-  },
-  {
-    id: 'website',
-    label: 'Website',
-    toneOf: () => pillarColor('website'),
-    match: c => c && c.pillar === 'website',
-    apply: c => {
-      c.pillar = 'website';
-      if (!formatsForPillar('website').some(f => f.id === c.format)) {
-        c.format = defaultFormatForPillar('website');
-      }
-    }
-  }
+/** Content-layer Prep columns (platform stays on the card as Pillar + Format). */
+const CONTENT_LAYERS = [
+  { id: 'acquisition', label: 'Audience acquisition', short: 'Acquisition', tone: '#3D5A80' },
+  { id: 'identity', label: 'Brand identity', short: 'Identity', tone: '#6B5A4A' },
+  { id: 'conversion', label: 'Conversion', short: 'Conversion', tone: '#8B3A3A' }
 ];
+const CONTENT_LAYER_IDS = new Set(CONTENT_LAYERS.map(l => l.id));
+
+function contentLayerById(id) {
+  return CONTENT_LAYERS.find(l => l.id === id) || null;
+}
+
+function contentLayerLabel(id, opts) {
+  const layer = contentLayerById(id);
+  if (!layer) return '';
+  return (opts && opts.short) ? layer.short : layer.label;
+}
+
+function contentLayerSelectOptions(includeNone) {
+  const opts = CONTENT_LAYERS.map(l => ({ id: l.id, label: l.label, color: l.tone }));
+  return opts;
+}
+
+function normalizeContentLayer(value) {
+  const id = String(value || '').trim();
+  return CONTENT_LAYER_IDS.has(id) ? id : '';
+}
+
+
+function readContentLayerInput() {
+  const el = document.getElementById('pContentLayer');
+  return normalizeContentLayer(el ? el.value : '');
+}
+
+
+function readContentWhyInput() {
+  const el = document.getElementById('pWhy');
+  return el ? sanitizeHtml(el.innerHTML || '').trim() : '';
+}
+
+function setContentWhyInput(html) {
+  const el = document.getElementById('pWhy');
+  if (el) el.innerHTML = sanitizeHtml(html || '');
+}
+
+function readScheduleWhyInput() {
+  const el = document.getElementById('pScheduleWhy');
+  return el ? sanitizeHtml(el.innerHTML || '').trim() : '';
+}
+
+function setScheduleWhyInput(html) {
+  const el = document.getElementById('pScheduleWhy');
+  if (el) el.innerHTML = sanitizeHtml(html || '');
+}
+
+/** Layer row under Format — Ideas / Prep / Exec / Review / Calendar. */
+function appendContentLayerProp(wrap, currentValue, opts) {
+  opts = opts || {};
+  if (!wrap) return null;
+  const existing = document.getElementById('pContentLayerRow');
+  if (existing) existing.remove();
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  row.id = 'pContentLayerRow';
+  row.innerHTML = '<span class="prop-label">Layer</span><span class="prop-value"></span>';
+  const value = normalizeContentLayer(currentValue);
+  row.querySelector('.prop-value').appendChild(createPpcSelect({
+    id: 'pContentLayer',
+    options: contentLayerSelectOptions(),
+    value: value,
+    includeNone: true,
+    noneLabel: 'Pick layer…',
+    colored: true,
+    onChange: next => {
+      const layer = normalizeContentLayer(next);
+      if (typeof opts.onChange === 'function') opts.onChange(layer);
+    }
+  }));
+  wrap.appendChild(row);
+  return row;
+}
+
+const PREP_LANES = CONTENT_LAYERS.map(layer => ({
+  id: layer.id,
+  label: layer.label,
+  toneOf: () => layer.tone,
+  match: c => c && normalizeContentLayer(c.contentLayer) === layer.id,
+  apply: c => {
+    if (!c) return;
+    c.contentLayer = layer.id;
+  }
+}));
+
 
 function prepLaneById(id) {
   return PREP_LANES.find(l => l.id === id) || null;
@@ -6542,6 +6578,8 @@ function migrateIdea(idea) {
   } else {
     idea.format = null;
   }
+  idea.contentLayer = normalizeContentLayer(idea.contentLayer);
+  if (idea.contentWhy == null) idea.contentWhy = '';
   return idea;
 }
 
@@ -6564,6 +6602,8 @@ function migratePrep(card) {
     card.placementNote = card.fitNote;
   }
   delete card.fitNote;
+  card.contentLayer = normalizeContentLayer(card.contentLayer);
+  if (card.contentWhy == null) card.contentWhy = '';
   return card;
 }
 
@@ -6612,7 +6652,7 @@ function migrateSchedule(card) {
   if (card.scheduledAt == null) {
     card.scheduledAt = card.scheduleAt || '';
   }
-  if (card.contentLayer == null) card.contentLayer = '';
+  card.contentLayer = normalizeContentLayer(card.contentLayer);
   if (card.anchorId == null) card.anchorId = '';
   if (PUBLISH_STATUS_LEGACY[card.publishStatus]) {
     card.publishStatus = PUBLISH_STATUS_LEGACY[card.publishStatus];
@@ -9992,7 +10032,9 @@ function renderPrepCard(card) {
   const meta = document.createElement('div');
   meta.className = 'prep-card-meta';
   const metaLabel = document.createElement('span');
-  metaLabel.textContent = formatLabel(card.pillar, card.format);
+  const layerShort = contentLayerLabel(card.contentLayer, { short: true });
+  const fmtBit = formatLabel(card.pillar, card.format);
+  metaLabel.textContent = [layerShort, fmtBit].filter(Boolean).join(' · ') || 'No layer';
   const cat = catById(card.pillar);
   if (cat) meta.style.color = accentTextColor(cat.bg);
   meta.appendChild(metaLabel);
@@ -10430,6 +10472,10 @@ function syncLinkedSchedulePreview(card, stage) {
       ? ((card.cat && pillarById(card.cat)) ? card.cat : (slot.pillar || 'organic'))
       : (card.pillar || slot.pillar || 'organic')),
     format: card.format || slot.format,
+    contentLayer: normalizeContentLayer(card.contentLayer) || slot.contentLayer || '',
+    contentWhy: (card.contentWhy != null && String(card.contentWhy).trim())
+      ? card.contentWhy
+      : (slot.contentWhy || ''),
     sourceIdeaId: (stage === 'ideas' ? card.id : null) || card.sourceIdeaId || slot.sourceIdeaId || null,
     productionPlan: (stage === 'prep' || stage === 'ideas')
       ? keep(card.productionPlan, slot.productionPlan)
@@ -10479,6 +10525,8 @@ function syncLinkedPipelineFromSchedule(slot) {
       if (slot.body != null) idea.body = slot.body;
       if (slot.pillar && pillarById(slot.pillar)) idea.cat = slot.pillar;
       if (slot.format) idea.format = slot.format;
+      if (slot.contentLayer != null) idea.contentLayer = normalizeContentLayer(slot.contentLayer);
+      if (slot.contentWhy != null) idea.contentWhy = slot.contentWhy;
       if (slot.imageData) {
         idea.imageData = slot.imageData;
         idea.imageW = slot.imageW != null ? slot.imageW : idea.imageW;
@@ -10537,6 +10585,8 @@ function syncLinkedPipelineFromSchedule(slot) {
   if (slot.body != null) target.body = slot.body;
   if (slot.pillar && pillarById(slot.pillar)) target.pillar = slot.pillar;
   if (slot.format) target.format = slot.format;
+  if (slot.contentLayer != null) target.contentLayer = normalizeContentLayer(slot.contentLayer);
+  if (slot.contentWhy != null) target.contentWhy = slot.contentWhy;
   if (slot.productionPlan != null) target.productionPlan = slot.productionPlan;
   if (slot.executionHowTo != null) target.executionHowTo = slot.executionHowTo;
   if (slot.productsUsed != null) target.productsUsed = slot.productsUsed;
@@ -14316,7 +14366,9 @@ function renderCalSlot(card) {
   } else {
     const metaEl = document.createElement('span');
     metaEl.className = 'cal-slot-meta';
-    metaEl.textContent = formatLabel(card.pillar, card.format);
+    const layerShort = contentLayerLabel(card.contentLayer, { short: true });
+    const fmtBit = formatLabel(card.pillar, card.format);
+    metaEl.textContent = [layerShort, fmtBit].filter(Boolean).join(' · ') || formatLabel(card.pillar, card.format);
     metaEl.style.color = '#2C2C2C';
     metaEl.style.opacity = '1';
     el.appendChild(metaEl);
@@ -15035,6 +15087,14 @@ function buildIdeaPanelProps(idea) {
   wrap.appendChild(row);
   wrap.appendChild(formatRow);
   refreshIdeaFormatChips();
+  appendContentLayerProp(wrap, idea.contentLayer, {
+    onChange: layer => {
+      const live = DATA.ideas.find(i => i.id === activeIdeaId);
+      if (!live) return;
+      live.contentLayer = layer;
+      scheduleSave();
+    }
+  });
 }
 
 function buildPrepPanelProps(card) {
@@ -15114,6 +15174,47 @@ function buildPrepPanelProps(card) {
     }
   }));
   wrap.appendChild(formatRow);
+  appendContentLayerProp(wrap, card.contentLayer, {
+    onChange: layer => {
+      if (panelMode === 'schedule' && activeScheduleId) {
+        const live = scheduleCards().find(c => c.id === activeScheduleId);
+        if (live) {
+          readSchedulePipelineNotes(live);
+          live.contentLayer = layer;
+          syncLinkedPipelineFromSchedule(live);
+          scheduleSave();
+        }
+        return;
+      }
+      if (panelMode === 'prep' && activePrepId) {
+        const live = prepCards().find(c => c.id === activePrepId);
+        if (live) {
+          live.contentLayer = layer;
+          syncLinkedSchedulePreview(live, 'prep');
+          scheduleSave();
+          renderBoard();
+        }
+        return;
+      }
+      if (panelMode === 'exec' && activeExecId) {
+        const live = execCards().find(c => c.id === activeExecId);
+        if (live) {
+          live.contentLayer = layer;
+          syncLinkedSchedulePreview(live, 'execution');
+          scheduleSave();
+        }
+        return;
+      }
+      if (panelMode === 'review' && activeReviewId) {
+        const live = reviewCards().find(c => c.id === activeReviewId);
+        if (live) {
+          live.contentLayer = layer;
+          syncLinkedSchedulePreview(live, 'review');
+          scheduleSave();
+        }
+      }
+    }
+  });
 }
 
 /** Short glance label for calendar cards (empty Needs and filled slots). */
@@ -15155,8 +15256,8 @@ function updateIdeaSaveBtn() {
   if (panelMode === 'idea' && prepareExpanded) {
     btn.textContent = 'Prepare';
     if (hint) hint.textContent = IS_TOUCH
-      ? 'Uses Category + Format above · ' + closeHint
-      : 'Uses Category + Format above · Enter or Ctrl+Enter to prepare · ' + closeHint;
+      ? 'Uses Category + Format + Layer above · ' + closeHint
+      : 'Uses Category + Format + Layer above · Enter or Ctrl+Enter to prepare · ' + closeHint;
   } else if (panelMode === 'prep' && executeArmed) {
     btn.textContent = 'Execute';
     if (hint) hint.textContent = IS_TOUCH
@@ -15198,7 +15299,7 @@ function buildIdeaActions(idea) {
   prepBtn.className = 'btn-secondary';
   prepBtn.id = 'prepareToggle';
   prepBtn.textContent = 'Prepare';
-  prepBtn.title = 'Uses Category + Format on this card';
+  prepBtn.title = 'Uses Category + Format + Layer on this card';
   prepBtn.addEventListener('click', () => {
     prepareExpanded = !prepareExpanded;
     prepBtn.classList.toggle('active', prepareExpanded);
@@ -15481,6 +15582,8 @@ function fillContextRows(wrap, rows, isOpen, chevId) {
 function fillReviewContext(card) {
   fillContextRows(document.getElementById('reviewContext'), [
     ['Idea', stripHtml(card.body || '')],
+    ['Why / Intention', stripHtml(card.contentWhy || '')],
+    ['Layer', contentLayerLabel(card.contentLayer)],
     ['Format', formatLabel(card.pillar, card.format)],
     ['How to execute', stripHtml(card.productionPlan || '')],
     ['Products', stripHtml(card.productsUsed || '')],
@@ -15758,6 +15861,7 @@ function openPanel(ideaId) {
   hideStageExtraFields();
   setPlanHintVisible(false);
   document.getElementById('pDesc').innerHTML = sanitizeHtml(idea.body || '');
+  setContentWhyInput(idea.contentWhy || '');
   setPanelImage(idea.imageData);
   updatePanelStrip(idea.cat, idea.format);
   document.getElementById('panel').classList.add('open');
@@ -15786,6 +15890,7 @@ function openPrepPanel(prepId) {
   hideStageExtraFields();
   document.getElementById('prepExtraFields').style.display = 'block';
   document.getElementById('pDesc').innerHTML = sanitizeHtml(card.body || '');
+  setContentWhyInput(card.contentWhy || '');
   document.getElementById('pPlan').innerHTML = sanitizeHtml(card.productionPlan || '');
   setPlanHintVisible(!stripHtml(card.productionPlan || ''));
   setPanelImage(card.imageData);
@@ -15913,6 +16018,7 @@ function openExecPanel(execId) {
   hideStageExtraFields();
   document.getElementById('execExtraFields').style.display = 'block';
   document.getElementById('pDesc').innerHTML = sanitizeHtml(card.body || '');
+  setContentWhyInput(card.contentWhy || '');
   document.getElementById('pExecPlan').innerHTML = sanitizeHtml(card.productionPlan || '');
   syncExecOptionalSections(card);
   setPlanHintVisible(false);
@@ -16111,11 +16217,13 @@ function applySchedulePanelLayout(card) {
   if (discover) {
     if (note) note.value = stripHtml(card.body || '');
     if (ideaText) ideaText.textContent = '';
+    setScheduleWhyInput('');
   } else {
     const emptyNeed = isNeedContentCard(card) && !stripHtml(card.body || '').trim();
     if (ideaText) {
       ideaText.textContent = stripHtml(card.body || '') || (emptyNeed ? 'Need content — choose from Pipeline' : 'Untitled content');
     }
+    setScheduleWhyInput(card.contentWhy || '');
     if (note) note.value = '';
   }
 
@@ -16570,8 +16678,16 @@ function savePanel(silent) {
       idea.format = null;
     }
     idea.body = sanitizeHtml(document.getElementById('pDesc').innerHTML).trim();
+    idea.contentWhy = readContentWhyInput();
+    idea.contentLayer = readContentLayerInput();
 
     if (prepareExpanded && !silent) {
+      if (!idea.contentLayer) {
+        if (typeof PPC !== 'undefined' && PPC.showToast) {
+          PPC.showToast('Pick a Layer before Prepare');
+        }
+        return;
+      }
       const pillarRaw = idea.cat || 'organic';
       const pillar = pillarById(pillarRaw) ? pillarRaw : 'organic';
       let format = idea.format;
@@ -16602,7 +16718,9 @@ function savePanel(silent) {
     }
     card.pillar = pillar;
     card.format = format || defaultFormatForPillar(pillar);
+    card.contentLayer = readContentLayerInput();
     card.body = sanitizeHtml(document.getElementById('pDesc').innerHTML).trim();
+    card.contentWhy = readContentWhyInput();
     card.productionPlan = sanitizeHtml(document.getElementById('pPlan').innerHTML).trim();
     setPlanHintVisible(!stripHtml(card.productionPlan || ''));
 
@@ -16626,7 +16744,9 @@ function savePanel(silent) {
     }
     card.pillar = pillar;
     card.format = format || defaultFormatForPillar(pillar);
+    card.contentLayer = readContentLayerInput();
     card.body = sanitizeHtml(document.getElementById('pDesc').innerHTML).trim();
+    card.contentWhy = readContentWhyInput();
     card.productionPlan = sanitizeHtml(document.getElementById('pExecPlan').innerHTML).trim();
     card.productsUsed = sanitizeHtml(document.getElementById('pProducts').innerHTML).trim();
     card.location = sanitizeHtml(document.getElementById('pLocation').innerHTML).trim();
@@ -16654,6 +16774,7 @@ function savePanel(silent) {
     }
     card.pillar = pillar;
     card.format = format || defaultFormatForPillar(pillar);
+    card.contentLayer = readContentLayerInput();
     if (pendingReviewMedia) {
       card.reviewMedia = pendingReviewMedia.imageData || null;
       card.reviewMediaW = pendingReviewMedia.imageW || null;
@@ -16689,6 +16810,10 @@ function savePanel(silent) {
     }
     card.pillar = pillar;
     card.format = format;
+    card.contentLayer = readContentLayerInput();
+    if (!isDiscoverFormat(format)) {
+      card.contentWhy = readScheduleWhyInput();
+    }
     // Always read the shared link field before computing need/status.
     card.reviewVideoUrl = (document.getElementById('pScheduleVideoUrl').value || '').trim();
     if (isDiscoverFormat(format)) {
@@ -17178,6 +17303,8 @@ function moveIdeaToPrep(idea, pillar, format) {
     imageH: idea.imageH,
     pillar,
     format,
+    contentLayer: normalizeContentLayer(idea.contentLayer),
+    contentWhy: idea.contentWhy || '',
     productionPlan: '',
     placementNote: '',
     linkedScheduleId,
@@ -17194,6 +17321,9 @@ function moveIdeaToPrep(idea, pillar, format) {
       if (slot.location) prepCard.location = slot.location;
       if (slot.requirements) prepCard.requirements = slot.requirements;
       if (slot.dateTime) prepCard.dateTime = slot.dateTime;
+      if (!prepCard.contentLayer && slot.contentLayer) {
+        prepCard.contentLayer = normalizeContentLayer(slot.contentLayer);
+      }
     }
   }
 

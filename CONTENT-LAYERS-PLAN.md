@@ -1,14 +1,21 @@
 # Content layers + intentional pipeline — plan
 
-Status: **planning** — taxonomy locked 2026-09-14; product changes **not** started. Branding PDF is a starting point; its fixed 4-week volume table is outdated. Cadence will get more complex (near-daily posting). Do not implement until Jarvis is ready to build inside existing Marketing (calendar + pipeline) — no side pages.
+Status: **building** — taxonomy locked 2026-09-14; Marketing UI in progress (Prep columns by layer + Layer prop + Why under Idea). Branding PDF is a starting point; its fixed 4-week volume table is outdated. Cadence will get more complex (near-daily posting). Build only inside existing Marketing (calendar + pipeline) — no side pages.
 
-Live baseline: Marketing **0.12.82**.
+Live baseline: Marketing **0.12.82** → local **0.12.83** (pending deploy).
 
 ---
 
 ## Problem
 
 Content is often found as “looks good → make → post” without a clear job. That weakens motivation and the content itself. Feedback asked for intention early: every piece should know **why** it exists and which **layer** it serves.
+
+### Team feedback (Louis) — why this matters
+- Tell people what they are looking at / what it is saying.
+- Everything has intention.
+- Random aesthetic posts can be fine as world/identity — but a shop button flips the job to **conversion** and needs more consideration.
+- Context matters (e.g. CTA after a fit-check vs the same frame alone).
+- Comes back to the branding doc: purpose / intention / category (world build, conversion, etc.) — layers carry inherent intention; the **Why** field spells the specific post’s job.
 
 ---
 
@@ -33,21 +40,25 @@ Confirmed with Jarvis. Adjust later if needed; do not invent parallel names in t
 
 ## Product decisions (agreed direction)
 
-### 1. Required fields on ideas / prep / calendar cards
-- **Layer** — Acquisition / Identity / Conversion (required once an idea is serious enough to prep).
-- **Intention / Why** — short free-text: what this piece is meant to do (directs the idea beyond the layer label).
-- These sit *above* format/platform. Format still exists; it is not the primary organising axis for prep.
+### 1. Idea + Why (coexist)
+- Keep **Idea** text box as today.
+- Directly under it: **Why / Intention** — what this post is meant to say or do.
+- Visible on Ideas, Prep, Exec; on Calendar under the pipeline idea summary; shown in Review context.
 
-### 2. Optional Hook (pill)
+### 2. Layer on the card (Category + Format stay)
+- **Category/Pillar** and **Format** stay (channel / shape).
+- New **Layer** prop under Format: Audience acquisition / Brand identity / Conversion.
+- Editable on Ideas (before Prepare), Prep, Exec, Review, Calendar — same field everywhere.
+- Prepare requires a Layer.
+
+### 3. Prep columns = layers
+- Preparation board columns are **Audience acquisition | Brand identity | Conversion** (replacing Instagram / TikTok / Pinterest / Email / Ads / Website columns).
+- Dragging between Prep columns sets `contentLayer`.
+- Platform/format remain on the card for calendar Needs and publish logistics.
+
+### 4. Optional Hook (pill) — later
 - Same pattern as Execution’s Products / Location / Requirements: `+ Hook` → text field → removable.
-- **Mainly for Reels and TikToks** — do not force on carousels/stills/stories.
-- Optional UX later: only show the Hook pill when format is Reel/TikTok (still allow manual add elsewhere if useful).
-
-### 3. Prep board organised by layer (not media platforms)
-- Today Prep columns/boards lean on pillars/formats (Organic IG/TikTok, Email, Ads, Website…).
-- **Proposed:** Preparation columns = **Acquisition | Identity | Conversion**.
-- Platform/format remains a property on the card (and still drives calendar Need slots / publish logistics).
-- Rationale: prep time is when intention matters most; platform is a delivery choice, not the thinking frame.
+- **Mainly for Reels and TikToks** — not in this pass.
 
 Open design detail when building:
 - Where do Email / Ads / Website cards live if Prep is layer-first? Options: (a) still tag format+pillar on the card and filter; (b) keep a thin “Other channels” area; (c) layer columns only for Organic feed/stories work first. Prefer (a) unless it gets noisy.
