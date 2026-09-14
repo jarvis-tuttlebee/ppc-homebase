@@ -10,8 +10,8 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 ### Why
 Idea box sat too tight against the Why / Intention label.
 
-### What (Marketing **0.12.85**, not deployed)
-`#whyBlock { margin-top: 18px }` so the gap matches other panel section spacing.
+### What (Marketing **0.12.86**, not deployed)
+`#whyBlock { margin-top: 28px }` so Idea → Why has clear breathing room.
 
 ### Safe for cards?
 Yes — CSS only. Hard-refresh after deploy.
