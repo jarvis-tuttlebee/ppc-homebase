@@ -1,6 +1,6 @@
 # Content layers + intentional pipeline — plan
 
-Status: **planning only** (2026-09-12). Branding PDF is a strong starting point; its fixed 4-week volume table is outdated. Cadence will get more complex (near-daily posting). Do not implement until Jarvis is ready to build.
+Status: **planning** — taxonomy locked 2026-09-14; product changes **not** started. Branding PDF is a starting point; its fixed 4-week volume table is outdated. Cadence will get more complex (near-daily posting). Do not implement until Jarvis is ready to build inside existing Marketing (calendar + pipeline) — no side pages.
 
 Live baseline: Marketing **0.12.82**.
 
@@ -12,20 +12,22 @@ Content is often found as “looks good → make → post” without a clear job
 
 ---
 
-## Branding doc → Homebase language
+## Locked: content layers (2026-09-14)
 
-Three **content layers** (from deck §3 — keep these names):
+Confirmed with Jarvis. Adjust later if needed; do not invent parallel names in the product.
 
-| Layer | Job | Primary / secondary |
-|---|---|---|
-| **Audience Acquisition** | Attract new people visually | Brand discovery → aesthetic recognition |
-| **Brand Identity** | Craft authority + emotional connection | Trust → cultural positioning |
-| **Conversion** | Drive product sales | Sale → purchase activation |
+| # | Layer | Job (plain English) | Deck primary → secondary |
+|---|---|---|---|
+| 1 | **Audience acquisition** | Stop a stranger mid-scroll; introduce Press Play | Brand discovery → Aesthetic recognition |
+| 2 | **Brand identity** | Prove craft + deepen bond for people already watching | Trust building → Cultural positioning |
+| 3 | **Conversion** | Help someone decide to buy | Sale → Purchase activation |
 
-Notes:
-- “World-building” in conversation ≈ **Brand Identity** (craft/studio/community) plus culture-week flavour — not a fourth layer unless we add one later.
-- **Acquisition** here means *audience acquisition* (top of funnel discovery), not “all marketing.”
-- Deck’s Week 1–4 reel/carousel quotas are **reference only**; replace with editable week targets.
+**Considered and not used (for now):** Prep columns named World building / Conversion / Retention. “World building” is real work but mostly sits under **Brand identity** (and sometimes acquisition aesthetics). **Retention** is not in the branding deck — revisit later if needed.
+
+**Clarifications:**
+- Acquisition ≠ all marketing — it means *new eyes* only.
+- Aesthetic recognition vs identity can feel similar (both “world-ish”); the split is **who it’s for** (cold vs already following), not whether it looks branded.
+- Deck Week 1–4 reel/carousel quotas = reference only; weekly mix stays editable.
 
 ---
 

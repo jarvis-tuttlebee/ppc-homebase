@@ -5,6 +5,28 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-14 — Content layers taxonomy locked (Cursor Cloud)
+
+### Why
+Clarify deck language before any Marketing UI work. Avoid parallel taxonomies.
+
+### Decision
+Layers = **1. Audience acquisition · 2. Brand identity · 3. Conversion**
+(adjust later if needed). World building / Retention as Prep names set aside for now.
+
+### What
+1. Updated `CONTENT-LAYERS-PLAN.md` with locked names + plain-English jobs
+2. No `marketing.html` changes; mock preview was the wrong artifact (discussion only)
+
+### Open / next
+1. More discussion when Jarvis has time (Prep-by-layer, Why field, Hook, week targets)
+2. Implement only inside existing Calendar + Pipeline when ready
+
+### Safe for cards?
+Yes — docs only.
+
+---
+
 ## 2026-09-12 — Content layers plan (Cursor Cloud)
 
 ### Why
