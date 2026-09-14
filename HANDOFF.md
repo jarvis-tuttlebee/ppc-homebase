@@ -5,6 +5,22 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-14 — Idea Format dropdown + No layer lane (Cursor Cloud)
+
+### Why
+Format pills on Ideas were inconsistent with Category / Layer dropdowns.
+Prep “Other” column was unclear.
+
+### What (Marketing **0.12.84**)
+1. Idea **Format** is a dropdown (same control as Category / Layer)
+2. Prep holding lane renamed **No layer** (cards without a layer yet)
+3. Deploy when Jarvis asked
+
+### Safe for cards?
+Yes — UI only; `contentLayer` / `contentWhy` unchanged.
+
+---
+
 ## 2026-09-14 — Layers + Why in Marketing pipeline (Cursor Cloud)
 
 ### Why

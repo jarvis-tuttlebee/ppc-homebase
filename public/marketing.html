@@ -4816,7 +4816,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.83';
+const APP_VERSION = '0.12.84';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -10207,7 +10207,7 @@ function renderPreparationBody() {
   lanes.className = 'prep-lanes';
   PREP_LANES.forEach(lane => lanes.appendChild(renderPrepLane(lane)));
 
-  // Custom / orphan cards that don't fit the six columns.
+  // Cards with no Layer yet (or an unknown layer id) — holding lane until assigned.
   const orphans = sortPrepCardsNewestFirst(prepCards().filter(c => !prepLaneForCard(c)));
   if (orphans.length) {
     const el = document.createElement('div');
@@ -10215,7 +10215,8 @@ function renderPreparationBody() {
     el.dataset.prepLane = 'other';
     const title = document.createElement('div');
     title.className = 'prep-lane-title';
-    title.textContent = 'Other';
+    title.textContent = 'No layer';
+    title.title = 'Cards without Audience acquisition / Brand identity / Conversion yet';
     el.appendChild(title);
     const cardsWrap = document.createElement('div');
     cardsWrap.className = 'prep-lane-cards';
@@ -14957,38 +14958,6 @@ function updatePanelStrip(colorId, formatId) {
   }
 }
 
-function ideaFormatChipOptions(pillarId) {
-  return formatsForPillar(pillarId).map(f => ({
-    id: f.id,
-    label: f.label || f.id,
-    tone: formatColor(f.id, pillarId)
-  }));
-}
-
-function renderIdeaFormatChips(wrap, pillarId, selectedId, onPick) {
-  wrap.innerHTML = '';
-  wrap.className = 'idea-format-chips';
-  wrap.id = 'pIdeaFormatChips';
-  const formats = ideaFormatChipOptions(pillarId);
-  if (!formats.length) {
-    wrap.style.display = 'none';
-    return;
-  }
-  wrap.style.display = 'flex';
-  formats.forEach(f => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'idea-format-chip';
-    btn.dataset.formatId = f.id;
-    btn.textContent = f.label;
-    btn.title = f.label;
-    styleTypesChip(btn, f.tone, selectedId === f.id ? 'on' : 'off');
-    btn.addEventListener('click', () => {
-      onPick(selectedId === f.id ? '' : f.id);
-    });
-    wrap.appendChild(btn);
-  });
-}
 
 function buildIdeaPanelProps(idea) {
   const wrap = document.getElementById('panelProps');
@@ -15000,27 +14969,16 @@ function buildIdeaPanelProps(idea) {
     selectedFormat = '';
   }
 
-  const formatRow = document.createElement('div');
-  formatRow.className = 'prop-row';
-  formatRow.id = 'pIdeaFormatRow';
-  formatRow.style.alignItems = 'flex-start';
-  formatRow.innerHTML = '<span class="prop-label" style="padding-top:6px">Format</span><span class="prop-value"></span>';
-  const formatValue = formatRow.querySelector('.prop-value');
-  const hidden = document.createElement('input');
-  hidden.type = 'hidden';
-  hidden.id = 'pIdeaFormat';
-  hidden.value = selectedFormat || '';
-  formatValue.appendChild(hidden);
-  const chips = document.createElement('div');
-  formatValue.appendChild(chips);
-
   function liveApplyIdeaFormat(pick) {
     const live = DATA.ideas.find(i => i.id === activeIdeaId);
     if (!live) return;
     const catVal = (document.getElementById('pCat') || {}).value || '';
     live.cat = catVal || null;
     const pillar = (live.cat && pillarById(live.cat)) ? live.cat : 'organic';
-    live.format = (pick && formatsForPillar(pillar).some(f => f.id === pick)) ? pick : null;
+    const clean = (pick && pick !== ADD_FORMAT_ID && formatsForPillar(pillar).some(f => f.id === pick))
+      ? pick
+      : null;
+    live.format = clean;
     const cardEl = document.querySelector('.idea-card[data-idea-id="' + live.id + '"]');
     if (cardEl) {
       applyCardCategoryStyle(cardEl, live);
@@ -15050,18 +15008,18 @@ function buildIdeaPanelProps(idea) {
     scheduleSave();
   }
 
-  function refreshIdeaFormatChips() {
-    const catVal = (document.getElementById('pCat') || {}).value || '';
-    const p = (catVal && pillarById(catVal)) ? catVal : 'organic';
-    if (hidden.value && !formatsForPillar(p).some(f => f.id === hidden.value)) {
-      hidden.value = '';
-    }
-    renderIdeaFormatChips(chips, p, hidden.value, pick => {
-      hidden.value = pick;
-      liveApplyIdeaFormat(pick);
-      updatePanelStrip(catVal, pick);
-      refreshIdeaFormatChips();
+  function refreshIdeaFormatSelect(pillarId, value) {
+    const pillar = (pillarId && pillarById(pillarId)) ? pillarId : 'organic';
+    let next = value || '';
+    if (next && !formatsForPillar(pillar).some(f => f.id === next)) next = '';
+    updatePpcSelect('pIdeaFormat', {
+      options: formatSelectOptions(pillar),
+      value: next,
+      includeNone: true,
+      noneLabel: 'Pick format…'
     });
+    const hidden = document.getElementById('pIdeaFormat');
+    if (hidden) hidden.value = next;
   }
 
   const row = document.createElement('div');
@@ -15074,19 +15032,40 @@ function buildIdeaPanelProps(idea) {
     includeNone: true,
     colored: false,
     onChange: v => {
-      // Clear format when pillar no longer owns it, then refresh chips.
       const p = (v && pillarById(v)) ? v : 'organic';
-      if (hidden.value && !formatsForPillar(p).some(f => f.id === hidden.value)) {
-        hidden.value = '';
-      }
-      liveApplyIdeaFormat(hidden.value);
-      refreshIdeaFormatChips();
-      updatePanelStrip(v, hidden.value);
+      const cur = (document.getElementById('pIdeaFormat') || {}).value || '';
+      const keep = (cur && formatsForPillar(p).some(f => f.id === cur)) ? cur : '';
+      refreshIdeaFormatSelect(p, keep);
+      liveApplyIdeaFormat(keep);
+      updatePanelStrip(v, keep);
     }
   }));
+
+  const formatRow = document.createElement('div');
+  formatRow.className = 'prop-row';
+  formatRow.id = 'pIdeaFormatRow';
+  formatRow.innerHTML = '<span class="prop-label">Format</span><span class="prop-value"></span>';
+  const startCat = startPillar || 'organic';
+  formatRow.querySelector('.prop-value').appendChild(createPpcSelect({
+    id: 'pIdeaFormat',
+    options: formatSelectOptions(startCat),
+    value: selectedFormat || '',
+    includeNone: true,
+    noneLabel: 'Pick format…',
+    colored: false,
+    onChange: format => {
+      const catVal = (document.getElementById('pCat') || {}).value || '';
+      const pillar = (catVal && pillarById(catVal)) ? catVal : 'organic';
+      const prev = selectedFormat || '';
+      const next = handleFormatSelectChange(format, pillar, 'pIdeaFormat', prev);
+      selectedFormat = next === ADD_FORMAT_ID ? '' : (next || '');
+      liveApplyIdeaFormat(selectedFormat);
+      updatePanelStrip(catVal, selectedFormat);
+    }
+  }));
+
   wrap.appendChild(row);
   wrap.appendChild(formatRow);
-  refreshIdeaFormatChips();
   appendContentLayerProp(wrap, idea.contentLayer, {
     onChange: layer => {
       const live = DATA.ideas.find(i => i.id === activeIdeaId);
