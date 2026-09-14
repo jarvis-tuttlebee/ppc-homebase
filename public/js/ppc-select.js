@@ -74,6 +74,42 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   background: var(--opt-tint, rgba(0,0,0,0.04));
 }
+.ppc-select-option.is-selected::before {
+  content: none;
+}
+.ppc-select--multi .ppc-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ppc-select--multi .ppc-select-option .ppc-check {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #cfc8bc;
+  border-radius: 3px;
+  box-sizing: border-box;
+  background: #fff;
+}
+.ppc-select--multi .ppc-select-option.is-selected .ppc-check {
+  border-color: #2C2C2C;
+  background: #2C2C2C;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' d='M2.5 6.2L4.8 8.5 9.5 3.5'/%3E%3C/svg%3E");
+  background-size: 10px 10px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.ppc-select-group {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9a958d;
+  padding: 8px 10px 4px;
+  pointer-events: none;
+}
+.ppc-select-group:first-child { padding-top: 4px; }
 .ppc-select.ppc-select--bare .ppc-select-trigger {
   border: none;
   border-radius: 3px;
@@ -305,19 +341,37 @@ body.dark .ppc-datetime-time {
 
   function normalizeOptions(options, includeNone, noneLabel) {
     const all = [];
-    if (includeNone) all.push({ id: '', label: noneLabel || 'None', color: null });
+    if (includeNone) all.push({ id: '', label: noneLabel || 'None', color: null, group: null });
     (options || []).forEach(opt => {
       if (typeof opt === 'string') {
-        all.push({ id: opt, label: opt, color: null });
+        all.push({ id: opt, label: opt, color: null, group: null });
       } else {
         all.push({
           id: opt.id != null ? String(opt.id) : '',
           label: opt.label != null ? String(opt.label) : String(opt.id || ''),
-          color: opt.color || null
+          color: opt.color || null,
+          group: opt.group != null ? String(opt.group) : null
         });
       }
     });
     return all;
+  }
+
+  function parseMultiValues(raw) {
+    if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
+    const s = raw == null ? '' : String(raw).trim();
+    if (!s) return [];
+    if (s.charAt(0) === '[') {
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+      } catch (_) {}
+    }
+    return s.split(',').map(v => v.trim()).filter(Boolean);
+  }
+
+  function serializeMultiValues(vals) {
+    return JSON.stringify((vals || []).map(String).filter(Boolean));
   }
 
   function pad2(n) { return String(n).padStart(2, '0'); }
@@ -721,8 +775,11 @@ body.dark .ppc-datetime-time {
     id,
     options,
     value,
+    values,
+    multi,
     includeNone,
     noneLabel,
+    placeholder,
     onChange,
     onRename,
     renamable,
@@ -730,14 +787,20 @@ body.dark .ppc-datetime-time {
     bare
   }) {
     ensureStyles();
+    const isMulti = !!multi;
     const wrap = document.createElement('div');
-    wrap.className = 'ppc-select' + (bare ? ' ppc-select--bare' : '');
+    wrap.className = 'ppc-select' + (bare ? ' ppc-select--bare' : '') + (isMulti ? ' ppc-select--multi' : '');
     wrap.dataset.ppcSelectId = id || '';
+    if (isMulti) wrap.dataset.ppcMulti = '1';
 
     const hidden = document.createElement('input');
     hidden.type = 'hidden';
     if (id) hidden.id = id;
-    hidden.value = value != null ? String(value) : '';
+    let selected = isMulti
+      ? parseMultiValues(values != null ? values : value)
+      : [];
+    if (isMulti) hidden.value = serializeMultiValues(selected);
+    else hidden.value = value != null ? String(value) : '';
 
     const trigger = document.createElement('button');
     trigger.type = 'button';
@@ -756,10 +819,12 @@ body.dark .ppc-datetime-time {
     const menu = document.createElement('div');
     menu.className = 'ppc-select-menu';
     menu.setAttribute('role', 'listbox');
+    if (isMulti) menu.setAttribute('aria-multiselectable', 'true');
 
     let allOpts = normalizeOptions(options, includeNone, noneLabel);
     let renameFn = typeof onRename === 'function' ? onRename : null;
     let canRename = !!renamable || !!renameFn;
+    const emptyLabel = placeholder || noneLabel || (isMulti ? 'Pick format…' : 'None');
 
     function useColor(opt) {
       return !!(colored && opt && opt.color);
@@ -771,8 +836,46 @@ body.dark .ppc-datetime-time {
       return true;
     }
 
+    function selectedSet() {
+      return new Set(selected);
+    }
+
+    function emitChange() {
+      if (typeof onChange !== 'function') return;
+      if (isMulti) onChange(selected.slice());
+      else onChange(hidden.value);
+    }
+
     function syncUI() {
-      const cur = allOpts.find(o => o.id === hidden.value) || allOpts[0] || { label: noneLabel || 'None', color: null };
+      if (isMulti) {
+        const set = selectedSet();
+        const picked = allOpts.filter(o => o.id && set.has(o.id));
+        if (!picked.length) {
+          labelEl.textContent = emptyLabel;
+          labelEl.style.color = '';
+        } else if (picked.length === 1) {
+          labelEl.textContent = picked[0].label;
+          labelEl.style.color = useColor(picked[0]) ? picked[0].color : '';
+        } else {
+          labelEl.textContent = picked[0].label + ' +' + (picked.length - 1);
+          labelEl.style.color = useColor(picked[0]) ? picked[0].color : '';
+        }
+        menu.querySelectorAll('.ppc-select-option').forEach(el => {
+          const on = set.has(el.dataset.value);
+          el.classList.toggle('is-selected', on);
+          el.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        return;
+      }
+      if (!hidden.value) {
+        labelEl.textContent = emptyLabel;
+        labelEl.style.color = '';
+        menu.querySelectorAll('.ppc-select-option').forEach(el => {
+          el.classList.toggle('is-selected', false);
+        });
+        return;
+      }
+      const cur = allOpts.find(o => o.id === hidden.value) || allOpts[0] || { label: emptyLabel, color: null };
       labelEl.textContent = cur.label;
       labelEl.style.color = useColor(cur) ? cur.color : '';
       menu.querySelectorAll('.ppc-select-option').forEach(el => {
@@ -840,12 +943,30 @@ body.dark .ppc-datetime-time {
 
     function rebuildMenu() {
       menu.innerHTML = '';
+      let lastGroup = null;
       allOpts.forEach(opt => {
+        if (opt.group && opt.group !== lastGroup) {
+          lastGroup = opt.group;
+          const head = document.createElement('div');
+          head.className = 'ppc-select-group';
+          head.textContent = opt.group;
+          menu.appendChild(head);
+        }
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'ppc-select-option';
         btn.dataset.value = opt.id;
-        btn.textContent = opt.label;
+        if (isMulti && opt.id) {
+          const check = document.createElement('span');
+          check.className = 'ppc-check';
+          check.setAttribute('aria-hidden', 'true');
+          btn.appendChild(check);
+          const text = document.createElement('span');
+          text.textContent = opt.label;
+          btn.appendChild(text);
+        } else {
+          btn.textContent = opt.label;
+        }
         if (useColor(opt)) {
           btn.style.color = opt.color;
           btn.style.setProperty('--opt-tint', hexToRgba(opt.color, 0.12));
@@ -860,10 +981,23 @@ body.dark .ppc-datetime-time {
             return;
           }
           e.stopPropagation();
+          if (isMulti) {
+            if (!opt.id) {
+              selected = [];
+            } else {
+              const idx = selected.indexOf(opt.id);
+              if (idx >= 0) selected.splice(idx, 1);
+              else selected.push(opt.id);
+            }
+            hidden.value = serializeMultiValues(selected);
+            syncUI();
+            emitChange();
+            return;
+          }
           hidden.value = opt.id;
           syncUI();
           setOpen(false);
-          if (typeof onChange === 'function') onChange(hidden.value);
+          emitChange();
         });
         btn.addEventListener('dblclick', e => {
           if (!optionRenamable(opt)) return;
@@ -886,13 +1020,27 @@ body.dark .ppc-datetime-time {
     wrap.appendChild(menu);
     rebuildMenu();
 
-    wrap._ppcUpdate = function ({ options: nextOpts, value: nextVal, includeNone: nextNone, noneLabel: nextNoneLabel, colored: nextColored, onRename: nextRename, renamable: nextRenamable }) {
+    wrap._ppcGetValues = function () {
+      return isMulti ? selected.slice() : (hidden.value ? [hidden.value] : []);
+    };
+
+    wrap._ppcUpdate = function ({ options: nextOpts, value: nextVal, values: nextValues, includeNone: nextNone, noneLabel: nextNoneLabel, colored: nextColored, onRename: nextRename, renamable: nextRenamable, placeholder: nextPlaceholder }) {
       if (nextColored != null) colored = nextColored;
       if (nextRename !== undefined) renameFn = typeof nextRename === 'function' ? nextRename : null;
       if (nextRenamable != null) canRename = !!nextRenamable || !!renameFn;
       else canRename = !!renamable || !!renameFn;
+      if (nextPlaceholder != null) {
+        // placeholder captured via emptyLabel closure — rebuild label on sync
+      }
       if (nextOpts) allOpts = normalizeOptions(nextOpts, nextNone != null ? nextNone : includeNone, nextNoneLabel || noneLabel);
-      if (nextVal != null) hidden.value = String(nextVal);
+      if (isMulti) {
+        if (nextValues != null || nextVal != null) {
+          selected = parseMultiValues(nextValues != null ? nextValues : nextVal);
+          hidden.value = serializeMultiValues(selected);
+        }
+      } else if (nextVal != null) {
+        hidden.value = String(nextVal);
+      }
       rebuildMenu();
     };
 
@@ -910,6 +1058,14 @@ body.dark .ppc-datetime-time {
 
   function setPpcSelectValue(id, value) {
     return updatePpcSelect(id, { value: value != null ? String(value) : '' });
+  }
+
+  function getPpcSelectValues(id) {
+    const hidden = document.getElementById(id);
+    if (!hidden) return [];
+    const wrap = hidden.closest('.ppc-select');
+    if (wrap && typeof wrap._ppcGetValues === 'function') return wrap._ppcGetValues();
+    return parseMultiValues(hidden.value);
   }
 
   function replaceNativeSelect(selectEl, opts) {
@@ -952,6 +1108,7 @@ body.dark .ppc-datetime-time {
   global.createPpcDateTime = createPpcDateTime;
   global.updatePpcSelect = updatePpcSelect;
   global.setPpcSelectValue = setPpcSelectValue;
+  global.getPpcSelectValues = getPpcSelectValues;
   global.setPpcDateValue = setPpcDateValue;
   global.setPpcDateTimeValue = setPpcDateTimeValue;
   global.replaceNativeSelect = replaceNativeSelect;
