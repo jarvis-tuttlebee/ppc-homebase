@@ -5,6 +5,22 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-14 — Format dropdown multi-select; hide Category/Pillar (Cursor Cloud)
+
+### Why
+Format should stay a dropdown (not chips), still allow multi-select. Category (Ideas) and Pillar (Prep+) are redundant once Format implies pillar.
+
+### What (Marketing **0.12.88**, not deployed)
+1. Idea **Format** = multi-select dropdown (grouped by pillar); Save still fans out one card per format
+2. Removed **Category** from Idea panel; removed **Pillar** from Prep / Exec / Review / Calendar panels
+3. Pillar/`cat` set under the hood from the selected format (`pillar::format` keys)
+4. `ppc-select.js?v=9` — multi-select + group headers
+
+### Safe for cards?
+Yes — same fields; UI only. Hard-refresh after deploy.
+
+---
+
 ## 2026-09-14 — Deploy Marketing 0.12.87 (Cursor Cloud)
 
 ### What
