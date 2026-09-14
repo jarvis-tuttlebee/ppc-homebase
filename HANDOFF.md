@@ -5,6 +5,19 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-14 — Why/Intention spacing under Idea (Cursor Cloud)
+
+### Why
+Idea box sat too tight against the Why / Intention label.
+
+### What (Marketing **0.12.85**, not deployed)
+`#whyBlock { margin-top: 18px }` so the gap matches other panel section spacing.
+
+### Safe for cards?
+Yes — CSS only. Hard-refresh after deploy.
+
+---
+
 ## 2026-09-14 — Idea Format dropdown + No layer lane (Cursor Cloud)
 
 ### Why

@@ -789,6 +789,8 @@
     .panel.review-mode #descFmtBar,
     .panel.review-mode #pDesc { display: none !important; }
     .panel.review-mode #whyBlock { display: none !important; }
+    #whyBlock { margin-top: 18px; }
+    #whyBlock .panel-section-label { margin-bottom: 4px; }
     .panel-fields { min-width: 0; }
     .panel-apply-hint {
       width: 100%;
@@ -4816,7 +4818,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.84';
+const APP_VERSION = '0.12.85';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
