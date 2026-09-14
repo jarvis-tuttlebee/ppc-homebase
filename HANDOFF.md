@@ -5,6 +5,19 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-14 — Richer Prep layer info popovers (Cursor Cloud)
+
+### Why
+i buttons were too thin — needed who it’s for, examples, and easy mistakes.
+
+### What (Marketing **0.12.91**, not deployed)
+Each Prep layer popover now includes: job blurb, deck arrow, who it’s for, good examples, easy mistakes, and a short Why reminder.
+
+### Safe for cards?
+Yes — UI copy only. Hard-refresh after deploy.
+
+---
+
 ## 2026-09-14 — Prep layer info (i) buttons (Cursor Cloud)
 
 ### Why

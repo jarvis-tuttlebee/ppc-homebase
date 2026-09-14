@@ -1152,6 +1152,32 @@
       color: #7a756d;
       font-size: 10.5px;
     }
+    .prep-lane-info-pop {
+      max-height: min(340px, 55vh);
+      overflow-y: auto;
+    }
+    .prep-lane-info-section {
+      margin-top: 8px;
+      padding-top: 7px;
+      border-top: 1px solid #efebe4;
+    }
+    .prep-lane-info-section:first-of-type { margin-top: 8px; }
+    .prep-lane-info-kicker {
+      display: block;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8a847a;
+      margin-bottom: 3px;
+    }
+    .prep-lane-info-pop ul {
+      margin: 0;
+      padding-left: 1.1em;
+    }
+    .prep-lane-info-pop li {
+      margin: 0.15em 0;
+    }
     .prep-lane.is-empty .prep-lane-title {
       padding: 10px 8px 8px;
       font-size: 9px;
@@ -4904,7 +4930,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.90';
+const APP_VERSION = '0.12.91';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5246,7 +5272,18 @@ const CONTENT_LAYERS = [
     short: 'Acquisition',
     tone: '#3D5A80',
     blurb: 'Stop a stranger mid-scroll and introduce Press Play — new eyes only.',
-    deck: 'Brand discovery → Aesthetic recognition'
+    deck: 'Brand discovery → Aesthetic recognition',
+    audience: 'Cold scrollers who have never heard of Press Play (or barely).',
+    examples: [
+      'Motion / aesthetic that interrupts the feed',
+      'First-look atelier moments for strangers',
+      'Simple “what is this brand?” hooks'
+    ],
+    pitfalls: [
+      'Pretty posts with no intro job',
+      'Treating every branded visual as acquisition',
+      'Confusing acquisition with all marketing'
+    ]
   },
   {
     id: 'identity',
@@ -5254,7 +5291,18 @@ const CONTENT_LAYERS = [
     short: 'Identity',
     tone: '#6B5A4A',
     blurb: 'Prove craft and deepen the bond for people already watching.',
-    deck: 'Trust building → Cultural positioning'
+    deck: 'Trust building → Cultural positioning',
+    audience: 'People who already follow or recognise Press Play.',
+    examples: [
+      'Sew, pattern, studio, tools-as-props',
+      'Community / culture moments',
+      'Craft proof that builds trust before a drop'
+    ],
+    pitfalls: [
+      'World-building that quietly becomes a hard sell',
+      'Zero identity in release weeks',
+      'Assuming “looks branded” = identity (check who it’s for)'
+    ]
   },
   {
     id: 'conversion',
@@ -5262,15 +5310,36 @@ const CONTENT_LAYERS = [
     short: 'Conversion',
     tone: '#8B3A3A',
     blurb: 'Help someone decide to buy — product, fit, stock, drop.',
-    deck: 'Sale → Purchase activation'
+    deck: 'Sale → Purchase activation',
+    audience: 'Warm viewers close to buying (or deciding not to).',
+    examples: [
+      'Garment breakdown, fit check, fabric detail',
+      'Stock / drop / product-led lifestyle',
+      'Shop CTA only when the frame earns it'
+    ],
+    pitfalls: [
+      'Shop button on a pure aesthetic post with no extra thought',
+      'Conversion with no product/fit/stock clarity',
+      'Skipping identity so the feed feels like an ad reel'
+    ]
   }
 ];
+
 const CONTENT_LAYER_IDS = new Set(CONTENT_LAYERS.map(l => l.id));
 
 const NO_LAYER_INFO = {
   label: 'No layer',
-  blurb: 'Holding lane for cards that do not have a layer yet. Assign Audience acquisition, Brand identity, or Conversion before you treat them as ready prep.',
-  deck: ''
+  blurb: 'Holding lane for cards that do not have a layer yet.',
+  deck: '',
+  audience: 'Internal only — not a content type.',
+  examples: [
+    'Park ideas here until you know the job',
+    'Drag into Acquisition / Identity / Conversion when clear'
+  ],
+  pitfalls: [
+    'Leaving cards here and treating them as ready prep',
+    'Skipping Why / Intention because the layer is undecided'
+  ]
 };
 
 function contentLayerById(id) {
@@ -10398,18 +10467,55 @@ function attachPrepLaneInfo(titleEl, info) {
   pop.className = 'prep-lane-info-pop';
   pop.setAttribute('role', 'dialog');
   pop._infoBtn = btn;
+
+  function addSection(kicker, contentNode) {
+    const sec = document.createElement('div');
+    sec.className = 'prep-lane-info-section';
+    const k = document.createElement('span');
+    k.className = 'prep-lane-info-kicker';
+    k.textContent = kicker;
+    sec.appendChild(k);
+    sec.appendChild(contentNode);
+    pop.appendChild(sec);
+  }
+
+  function addList(kicker, items) {
+    if (!items || !items.length) return;
+    const ul = document.createElement('ul');
+    items.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      ul.appendChild(li);
+    });
+    addSection(kicker, ul);
+  }
+
   const head = document.createElement('strong');
   head.textContent = info.label || 'Layer';
   pop.appendChild(head);
-  const body = document.createElement('div');
-  body.textContent = info.blurb || '';
-  pop.appendChild(body);
+
+  if (info.blurb) {
+    const body = document.createElement('div');
+    body.textContent = info.blurb;
+    pop.appendChild(body);
+  }
   if (info.deck) {
     const deck = document.createElement('div');
     deck.className = 'prep-lane-info-deck';
     deck.textContent = info.deck;
     pop.appendChild(deck);
   }
+  if (info.audience) {
+    const aud = document.createElement('div');
+    aud.textContent = info.audience;
+    addSection('Who it’s for', aud);
+  }
+  addList('Good examples', info.examples);
+  addList('Easy mistakes', info.pitfalls);
+
+  const why = document.createElement('div');
+  why.textContent = 'Layer = the job category. Why / Intention on the card = this post’s specific job.';
+  addSection('With Why', why);
 
   btn.addEventListener('click', e => {
     e.preventDefault();
@@ -10424,6 +10530,7 @@ function attachPrepLaneInfo(titleEl, info) {
   titleEl.appendChild(btn);
   titleEl.appendChild(pop);
 }
+
 
 if (!window._prepLaneInfoClickBound) {
   window._prepLaneInfoClickBound = true;
