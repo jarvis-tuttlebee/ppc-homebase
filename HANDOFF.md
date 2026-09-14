@@ -5,6 +5,18 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-14 — Deploy Marketing 0.12.91 (Cursor Cloud)
+
+### What
+Deployed `cursor/content-layers-plan-d899` (Format multi-select dropdown, no Category/Pillar, richer Prep layer info).
+- Live: https://ppc-homebase.pressplaycollective.workers.dev
+- Version ID: `17a41481-27f8-4e53-98a5-f91857368b16`
+- Marketing **0.12.91** — **LIVE**
+
+Hard-refresh Marketing (Cmd/Ctrl+Shift+R).
+
+---
+
 ## 2026-09-14 — Richer Prep layer info popovers (Cursor Cloud)
 
 ### Why
