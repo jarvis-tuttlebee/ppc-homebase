@@ -1086,6 +1086,71 @@
       border-bottom: 1px solid #e8e5e0;
       background: rgba(255,255,255,0.55);
       text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      position: relative;
+    }
+    .prep-lane-title-text { min-width: 0; }
+    .prep-lane-info {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid currentColor;
+      background: transparent;
+      color: inherit;
+      opacity: 0.55;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      line-height: 1;
+      padding: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .prep-lane-info:hover,
+    .prep-lane-info[aria-expanded="true"] {
+      opacity: 1;
+      background: rgba(255,255,255,0.7);
+    }
+    .prep-lane-info-pop {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 8px;
+      right: 8px;
+      z-index: 40;
+      text-align: left;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 11.5px;
+      font-weight: 500;
+      line-height: 1.45;
+      color: #2C2C2C;
+      background: #fff;
+      border: 1px solid #e2ddd5;
+      border-radius: 8px;
+      box-shadow: 0 10px 24px rgba(44,44,44,0.12);
+      padding: 10px 11px;
+    }
+    .prep-lane-info-pop.is-open { display: block; }
+    .prep-lane-info-pop strong {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #6B7A8D;
+      margin-bottom: 4px;
+    }
+    .prep-lane-info-pop .prep-lane-info-deck {
+      margin-top: 6px;
+      color: #7a756d;
+      font-size: 10.5px;
     }
     .prep-lane.is-empty .prep-lane-title {
       padding: 10px 8px 8px;
@@ -4839,7 +4904,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.89';
+const APP_VERSION = '0.12.90';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5175,11 +5240,38 @@ const FORMAT_MIGRATE = {
 
 /** Content-layer Prep columns (platform stays on the card as Pillar + Format). */
 const CONTENT_LAYERS = [
-  { id: 'acquisition', label: 'Audience acquisition', short: 'Acquisition', tone: '#3D5A80' },
-  { id: 'identity', label: 'Brand identity', short: 'Identity', tone: '#6B5A4A' },
-  { id: 'conversion', label: 'Conversion', short: 'Conversion', tone: '#8B3A3A' }
+  {
+    id: 'acquisition',
+    label: 'Audience acquisition',
+    short: 'Acquisition',
+    tone: '#3D5A80',
+    blurb: 'Stop a stranger mid-scroll and introduce Press Play — new eyes only.',
+    deck: 'Brand discovery → Aesthetic recognition'
+  },
+  {
+    id: 'identity',
+    label: 'Brand identity',
+    short: 'Identity',
+    tone: '#6B5A4A',
+    blurb: 'Prove craft and deepen the bond for people already watching.',
+    deck: 'Trust building → Cultural positioning'
+  },
+  {
+    id: 'conversion',
+    label: 'Conversion',
+    short: 'Conversion',
+    tone: '#8B3A3A',
+    blurb: 'Help someone decide to buy — product, fit, stock, drop.',
+    deck: 'Sale → Purchase activation'
+  }
 ];
 const CONTENT_LAYER_IDS = new Set(CONTENT_LAYERS.map(l => l.id));
+
+const NO_LAYER_INFO = {
+  label: 'No layer',
+  blurb: 'Holding lane for cards that do not have a layer yet. Assign Audience acquisition, Brand identity, or Conversion before you treat them as ready prep.',
+  deck: ''
+};
 
 function contentLayerById(id) {
   return CONTENT_LAYERS.find(l => l.id === id) || null;
@@ -10278,6 +10370,70 @@ function setupLaneDrop(laneEl, laneId) {
   });
 }
 
+function closePrepLaneInfo(exceptPop) {
+  document.querySelectorAll('.prep-lane-info-pop.is-open').forEach(pop => {
+    if (exceptPop && pop === exceptPop) return;
+    pop.classList.remove('is-open');
+    const btn = pop._infoBtn;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  });
+}
+
+function attachPrepLaneInfo(titleEl, info) {
+  if (!titleEl || !info) return;
+  const label = document.createElement('span');
+  label.className = 'prep-lane-title-text';
+  label.textContent = info.label || titleEl.textContent || '';
+  titleEl.textContent = '';
+  titleEl.appendChild(label);
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'prep-lane-info';
+  btn.setAttribute('aria-label', 'About ' + (info.label || 'this layer'));
+  btn.setAttribute('aria-expanded', 'false');
+  btn.textContent = 'i';
+
+  const pop = document.createElement('div');
+  pop.className = 'prep-lane-info-pop';
+  pop.setAttribute('role', 'dialog');
+  pop._infoBtn = btn;
+  const head = document.createElement('strong');
+  head.textContent = info.label || 'Layer';
+  pop.appendChild(head);
+  const body = document.createElement('div');
+  body.textContent = info.blurb || '';
+  pop.appendChild(body);
+  if (info.deck) {
+    const deck = document.createElement('div');
+    deck.className = 'prep-lane-info-deck';
+    deck.textContent = info.deck;
+    pop.appendChild(deck);
+  }
+
+  btn.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const open = !pop.classList.contains('is-open');
+    closePrepLaneInfo(open ? pop : null);
+    pop.classList.toggle('is-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  pop.addEventListener('click', e => e.stopPropagation());
+
+  titleEl.appendChild(btn);
+  titleEl.appendChild(pop);
+}
+
+if (!window._prepLaneInfoClickBound) {
+  window._prepLaneInfoClickBound = true;
+  document.addEventListener('click', () => closePrepLaneInfo());
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closePrepLaneInfo();
+  });
+}
+
+
 function renderPrepLane(lane) {
   const cards = sortPrepCardsNewestFirst(prepCards().filter(c => lane.match(c)));
   const el = document.createElement('div');
@@ -10285,12 +10441,13 @@ function renderPrepLane(lane) {
   el.dataset.prepLane = lane.id;
   el.dataset.dropPrepLane = lane.id;
   const tone = typeof lane.toneOf === 'function' ? lane.toneOf() : '#564A5E';
+  const layer = contentLayerById(lane.id);
 
   const title = document.createElement('div');
   title.className = 'prep-lane-title';
-  title.textContent = lane.label;
   title.style.borderBottomColor = hexWash(tone, 0.35);
   title.style.color = accentTextColor(tone);
+  attachPrepLaneInfo(title, layer || { label: lane.label, blurb: '', deck: '' });
   el.appendChild(title);
 
   const cardsWrap = document.createElement('div');
@@ -10403,8 +10560,7 @@ function renderPreparationBody() {
     el.dataset.prepLane = 'other';
     const title = document.createElement('div');
     title.className = 'prep-lane-title';
-    title.textContent = 'No layer';
-    title.title = 'Cards without Audience acquisition / Brand identity / Conversion yet';
+    attachPrepLaneInfo(title, NO_LAYER_INFO);
     el.appendChild(title);
     const cardsWrap = document.createElement('div');
     cardsWrap.className = 'prep-lane-cards';
