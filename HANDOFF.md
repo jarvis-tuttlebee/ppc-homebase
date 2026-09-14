@@ -5,6 +5,21 @@ Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
 ---
 
+## 2026-09-14 — Prep layer info (i) buttons (Cursor Cloud)
+
+### Why
+Jarvis asked earlier for an info control on each Prep layer column explaining what that layer is for — it had not shipped yet.
+
+### What (Marketing **0.12.90**, not deployed)
+1. Each Prep lane title (Audience acquisition / Brand identity / Conversion / No layer) has an **i** button
+2. Click opens a short blurb from the branding deck (job + discovery→recognition etc.)
+3. Click outside or Escape closes
+
+### Safe for cards?
+Yes — UI only. Hard-refresh after deploy.
+
+---
+
 ## 2026-09-14 — Format dropdown multi-select; hide Category/Pillar (Cursor Cloud)
 
 ### Why
