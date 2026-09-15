@@ -70,6 +70,21 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
+## 2026-09-15 — Deployed mix chips 0.12.96 (Cursor)
+
+### Live
+- Worker Version ID: `e46f1178-da26-445b-925f-22e21e3248e2`
+- Marketing **`0.12.96`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
+- `origin/main` should match this tip after the post-deploy ff-only push
+
+### What
+Calendar mix chips live: Acquisition / Identity / Conversion (default **2 / 2 / 1**), cream 24px pills, month-only week wash. Make today / Post today gone.
+
+### Open / next
+Hard-refresh Marketing (Ctrl+Shift+R). Set **Layer** on dated cards so the chips fill.
+
+---
+
 ## 2026-09-15 — Smaller mix pills; week-view wash off (Cursor)
 
 ### Local (not deployed)
