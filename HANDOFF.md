@@ -3,6 +3,194 @@
 Update this at the end of every session touching this repo, whether that's
 Claude Code, Cowork, or Cursor. Keep entries short. Newest session at the top.
 
+Canonical clone (Proton Drive only):
+`C:\Users\jarvi\Proton Drive\jarvis.tuttlebee\My files\Coding Projects\ppc-homebase`
+
+Live: https://ppc-homebase.pressplaycollective.workers.dev
+Deploy only when Jarvis asks (`npx wrangler deploy`). Never deploy a folder whose
+page versions are **behind** live.
+
+---
+
+## Keep the clone current (agents: run this, do not ask Jarvis)
+
+Do this **at session start** (before other work) **and again when writing the
+HANDOFF entry**. The point is the Proton Drive folder cannot sit on an old
+branch while live moves on GitHub / the Worker.
+
+### 1. Fetch + read versions
+
+```bash
+git fetch origin
+```
+
+Then read `APP_VERSION` from live **and** this folder:
+
+- live `/marketing`, `/kanban`, `/planner`
+- local `public/marketing.html`, `public/kanban.html`, `public/planner.html`
+
+### 2. If local is behind live — switch this folder onto the live tip
+
+Find the `origin/*` branch whose `public/marketing.html` `APP_VERSION` matches
+**live** (often a `cursor/…` branch if `main` lagged). Prefer `origin/main`
+when it already matches live.
+
+If the working tree has unique uncommitted work, **park a copy** (e.g.
+`_backup-local-<version>/`) then restore tracked files and check out the live
+branch. Do not `reset --hard` over unparked work. Do not deploy the old tree.
+
+If `.git/index.lock` exists and no `git` process is running, it is a stale
+Proton Drive lock — delete it and retry.
+
+```bash
+git switch -C <live-branch> --track origin/<live-branch>
+```
+
+### 3. After a deploy (Mac/PC) — move `main` to that tip
+
+Merging git does **not** touch KV cards. Fast-forward only (no force-push):
+
+```bash
+git checkout main
+git merge --ff-only <deployed-branch>
+git push origin main
+git checkout <deployed-branch>
+```
+
+Record in the HANDOFF entry: live Version ID, page versions, **and** whether
+`origin/main` now matches live. If you cannot push, say so in **Open / next**.
+
+### 4. One Homebase line
+
+- New work branches off the live tip (`main` once it matches live).
+- Do not keep a second long-lived Marketing branch as the “real” product.
+- Cloud agents: start from latest `main` **after** confirming its Marketing
+  version equals live; if `main` is behind, check out the matching live branch
+  and flag “fast-forward `main`” in Open / next.
+
+---
+
+## 2026-09-15 — Smaller mix pills; week-view wash off (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.96`**
+- Live still **`0.12.91`**
+
+### What
+Target pills 24px (was 32). Sage week wash is **month only** — week view already is the focused week, so no row tint.
+
+### Open / next
+Deploy when asked
+
+---
+
+## 2026-09-15 — Mix chip target easier to tap (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.95`**
+- Live still **`0.12.91`**
+
+### What
+Whole Acquisition / Identity / Conversion chip opens the editor. Target is a cream pill (same family as Week/Month), sage focus, no underline / no blue highlight.
+
+### Open / next
+1. Smoke tap + type a target
+2. Deploy when asked
+
+---
+
+## 2026-09-15 — Mix chips replace Make/Post today (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.94`**
+- Live still **`0.12.91`**
+
+### What
+The week mix is the boxes above the calendar, not a caption on Sunday. **Make today / Post today** → **Acquisition n/2 · Identity n/2 · Conversion n/1** for the focused week. Default **2 / 2 / 1** every week until you edit that week (click the number after `/`). No percentages. Month: click a week row to focus it. Needs · 7d stays.
+
+### Open / next
+1. Smoke Calendar week + month; edit a target
+2. Deploy when asked
+
+---
+
+### Local (not deployed)
+- Marketing **`0.12.93`**
+- Live still **`0.12.91`**
+
+### What
+Replaced Stories/Post-Reel scoreboard. Each week: **Acquisition · Identity · Conversion** as `have/target`. Default **2 / 2 / 1**. Click the target to edit that week. Dated layered cards count (Needs included); Reel+TikTok deduped.
+
+### Open / next
+1. Smoke Calendar; click a target number
+2. Deploy when asked
+
+---
+
+## 2026-09-15 — Week targets: layers primary, formats as how (Cursor)
+
+### What
+Planning pass. Stories/Post/Reel strip (0.12.92) is a stub. Next build: **editable layer counts** on each calendar week.
+
+1. **Primary:** Acquisition / Identity / Conversion — click to change this week. Steady default **2 / 2 / 0**. Conversion you raise on sell weeks. Never zero Identity on a drop week.
+2. **Counts, not typed %** — % is just the mix of those three numbers
+3. **What counts:** dated cards with a layer (including stories). Same Reel+TikTok = one piece
+4. **How (later):** Story vs Post vs Reel on the card. Quiet “one Post/Reel if you can” — not the headline quota
+
+### Open / next
+1. Jarvis confirm 2 / 2 / 0 default (or different numbers)
+2. Rebuild week strip as editable layers; drop frozen Stories/Post-Reel as the scoreboard
+
+---
+
+## 2026-09-15 — Calendar week cadence strip (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.92`** on `cursor/content-layers-plan-d899`
+- Live still **`0.12.91`** — do not deploy over live until asked
+
+### What
+Each calendar week shows locked cadence: **Stories n/4** (floor 2) and **Post/Reel n/1** (must-hit). Layer short name appears when a Post/Reel is filled. Empty Needs and TikTok-only do not fill the make. Same-file Reel+TikTok still counts as one make.
+
+### Open / next
+1. Smoke `/marketing` Calendar month + week
+2. Deploy when asked; then ff-only `main` to this tip
+
+---
+
+## 2026-09-15 — Weekly cadence: 1 IG Post or Reel must-hit (Cursor)
+
+### What
+Updated lock in `CONTENT-LAYERS-PLAN.md`. IG Post/Reel stays on the board; easier execution (not skipping IG) is how 6h/week works. TikTok is usually the **same Reel**.
+
+1. **Must-hit:** **1 IG Post or Reel every week** (aim = floor)
+2. **Stories:** aim 4 (content days); floor 2
+3. **TikTok:** cross-post the Reel when it is a Reel — not a second shoot. Unique TikTok = stretch
+4. **Layers:** rotate Identity / Acquisition on that one make. Conversion only when selling
+5. Time-out: never drop the Post/Reel → then TikTok cross-post → then stories to 2
+
+### Open / next
+1. Make execution easier so the weekly Post/Reel is survivable (templates / shorter edits / one file two platforms)
+2. Phase B UI: Stories n/4 + one make slot (Post or Reel); same-file TikTok ≠ second layer hit
+
+---
+
+## 2026-09-15 — Proton Drive clone synced to live 0.12.91 (Cursor)
+
+### What
+Canonical Proton Drive folder was still on `cursor/calendar-clear-miro-nav-8504` with **local** Marketing **0.12.48** (Add Photo, never deployed). Live is **0.12.91**. Checked out `cursor/content-layers-plan-d899` so this clone matches live. Did **not** deploy.
+
+Standing **Keep the clone current** block is now at the top of this file (also `.cursor/rules/handoff.mdc` + `AGENTS.md`): agents `git fetch`, match live `APP_VERSION`, check out the live tip, and after deploy ff-only push `main`. Jarvis should not have to remember this.
+
+### Now
+- Branch: `cursor/content-layers-plan-d899`
+- Marketing **`0.12.91`**, Task Board **`1.10.17`**, Planner **`2.10.16`**, `ppc-homebase.js?v=18`
+- Parked the old local marketing.html at `_backup-local-0.12.48-add-photo/` (Add Photo is **not** on live)
+
+### Open / next
+1. Work from this branch — do not deploy the old 0.12.48 tree
+2. Optional: delete Proton conflict HTML in `public/` and dump/backup folders
+
 ---
 
 ## 2026-09-14 — Deploy Marketing 0.12.91 (Cursor Cloud)

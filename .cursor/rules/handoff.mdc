@@ -9,9 +9,16 @@ alwaysApply: true
   `C:\Users\jarvi\Proton Drive\jarvis.tuttlebee\My files\Coding Projects\ppc-homebase`
   (do not edit the Desktop `Press Play Collective\ppc-homebase` copy).
 - Read `HANDOFF.md` fully (newest entries first) before other work.
-- Treat it as source of truth for live versions, open follow-ups, deploy rules, and file layout.
+- **Run the “Keep the clone current” block at the top of `HANDOFF.md`** at
+  session start and again when writing the HANDOFF entry: `git fetch`, compare
+  live vs local `APP_VERSION`, check out the live tip if this folder is behind,
+  and after a deploy fast-forward + push `origin/main` (ff-only, no force).
+  Do not wait for Jarvis to remember this.
+- Treat HANDOFF as source of truth for live versions, open follow-ups, deploy rules, and file layout.
 - Prefer local `wrangler dev` on `:8787`; deploy only when asked (`npx wrangler deploy`).
-- Do not commit or push unless asked.
+  Never deploy if local page versions are behind live.
+- Do not commit or push unless asked, **except** the post-deploy `main`
+  fast-forward in the HANDOFF sync block.
 - Update `HANDOFF.md` at the end of meaningful work (short entry, newest on top).
 - After absorbing context, briefly confirm what's live / what's open and wait unless the user already gave a task.
 - Live site: https://ppc-homebase.pressplaycollective.workers.dev

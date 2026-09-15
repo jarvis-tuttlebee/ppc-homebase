@@ -1,8 +1,8 @@
 # Content layers + intentional pipeline — plan
 
-Status: **building** — taxonomy locked 2026-09-14; Marketing UI in progress (Prep columns by layer + Layer prop + Why under Idea). Branding PDF is a starting point; its fixed 4-week volume table is outdated. Cadence will get more complex (near-daily posting). Build only inside existing Marketing (calendar + pipeline) — no side pages.
+Status: **building** — taxonomy locked 2026-09-14; **weekly cadence locked 2026-09-15**. Mix chips live on the calendar (Marketing **0.12.94** local). Branding PDF volume table is outdated. Build only inside existing Marketing (calendar + pipeline) — no side pages.
 
-Live baseline: Marketing **0.12.82** → local **0.12.83** (pending deploy).
+Live baseline: Marketing **0.12.91**.
 
 ---
 
@@ -38,6 +38,55 @@ Confirmed with Jarvis. Adjust later if needed; do not invent parallel names in t
 
 ---
 
+## Weekly targets (planning 2026-09-15)
+
+Capacity still: **Mon/Tue/Thu/Fri × ~1.5h**, IG + TikTok, 1 considered Post/Reel is realistic. Those are **how**. The week scoreboard is **why** (layers). Numbers are **editable per week** — not frozen constants.
+
+### Primary — layer mix (the week’s job)
+
+Each week has three **counts**, not typed percentages. % is just what the counts add up to.
+
+| | Acquisition | Identity | Conversion |
+|---|---|---|---|
+| **Steady default** | **2** | **2** | **1** |
+| **Selling / drop week** | 1–2 | 1–2 (never 0) | **1–2** (you raise this) |
+
+Steady ≈ 40% Acquisition / 40% Identity / 20% Conversion. We do **not** type percentages in the UI — they are just what 2 / 2 / 1 add up to.
+
+**UI (calendar, above the grid)**  
+Replace Make today / Post today with three chips for the **focused week**:
+
+`This week · 14–20 Sep`  `[Acquisition 0/2]` `[Identity 0/2]` `[Conversion 0/1]`  `[Needs · 7d]`
+
+- Default every week: **2 / 2 / 1** until you edit that week.
+- Click the **target** (the number after `/`) to change this week only.
+- Week view: chips follow Prev/Next.
+- Month view: click a week row (empty space) to focus it; that week gets a light highlight so you know which mix you are editing.
+- No % on the chips. The work is: make pieces that actually meet each layer (Layer + Why on the card).
+
+**What fills a layer**
+- Any **dated** calendar card with that layer (Story, Post, Reel, TikTok)
+- Empty Need with a layer counts as **planned**
+- No layer → counts toward nothing (that’s the leftover to assign)
+- Same video as Reel + TikTok = **one** piece (don’t double the mix)
+
+Stories have to carry layer. One Post/Reel cannot be 50/50/20 on its own.
+
+### Secondary — how (formats) — not the scoreboard
+
+Decide **after** the mix is set, per card: Story vs Post vs Reel (TikTok = usually the Reel file).
+
+Quiet constraint to keep (not the headline): **at least one Post or Reel** in the week if you can — that’s the considered piece. Stories do the volume. We’ll add format hints later so the strip doesn’t become Stories/Post/Reel quotas again.
+
+### Time-out
+1. Assign layers so the three counts are honest  
+2. Keep one Post or Reel if you can  
+3. Cut stories toward 2 before you drop the mix to blank
+
+---
+
+---
+
 ## Product decisions (agreed direction)
 
 ### 1. Idea + Why (coexist)
@@ -63,30 +112,19 @@ Confirmed with Jarvis. Adjust later if needed; do not invent parallel names in t
 Open design detail when building:
 - Where do Email / Ads / Website cards live if Prep is layer-first? Options: (a) still tag format+pillar on the card and filter; (b) keep a thin “Other channels” area; (c) layer columns only for Organic feed/stories work first. Prefer (a) unless it gets noisy.
 
-### 4. Weekly layer targets (settings above calendar)
-- Per week: set **how many pieces needed per layer** (editable).
-- Default steady-state mix (starting point, not law):
+### 5. Weekly layer targets (settings above calendar)
+- Per week: editable **Acquisition / Identity / Conversion** counts in the triage chips (where Make today / Post today were). See **Weekly targets** above.
+- Format (Story / Post / Reel) is how, not the scoreboard. Do not bring back Stories/Post-Reel quotas as the headline.
 
-| Layer | Share of feed posts | Example ~7 feed pieces/week |
-|---|---|---|
-| Identity | ~45% | ~3 |
-| Acquisition | ~35% | ~2–3 |
-| Conversion | ~20% | ~1–2 |
-
-- **Release / event weeks:** raise Conversion, keep Acquisition steady, **never zero Identity**.
-- Stories / light daily presence can lean Identity + Acquisition, with Conversion near drops.
-- UI: week strip or settings box — counts + progress (“Identity 1/3 · Acquisition 2/2 · Conversion 0/1”).
-- Optional later: week **phase** preset (Release / Post-release / Culture / Pre-launch) that loads a suggested mix from the deck’s priority table, then user tweaks.
-
-### 5. Idea-finding guided by deficit
+### 6. Idea-finding guided by deficit
 - Discover / Ideas workflow: surface **what this week is short on**.
 - Short Acquisition → visual/motion/aesthetic that introduces cold.
 - Short Identity → fabric, sew, pattern, studio, community.
 - Short Conversion → garment breakdown, fit, stock, product-led lifestyle.
 
-### 6. Two clocks (don’t conflate)
-- **Near-daily presence** (stories / light) vs **feed pieces** (reels/carousels) — targets should primarily count feed (or count separately if we need both).
-- Existing format cadence (Mon/Thu grid, etc.) stays as *when/how often by format*; layers answer *why*.
+### 7. Two clocks (don’t conflate)
+- Stories = presence on content days. Feed make = **1 IG Post or Reel** (TikTok = same Reel when possible).
+- Existing Mon/Thu grid days can host the Post/Reel; stories on Mon/Tue/Thu/Fri. Layers answer *why* for that make only.
 
 ---
 
@@ -98,9 +136,9 @@ Open design detail when building:
 3. Show layer on calendar chips / prep cards (subtle badge or colour — keep existing format colour language).
 
 ### Phase B — Week targets
-1. Persist `weekLayerTargets` (or extend `weekGoals`) per week key.
-2. Calendar header: set Acquisition / Identity / Conversion counts; show filled vs needed.
-3. Defaults from steady mix; presets for release/event weeks.
+1. Editable per-week layer counts (Acquisition / Identity / Conversion), inherit steady 2 / 2 / 1.
+2. Count dated layered cards (stories included); Reel+TikTok deduped.
+3. Format quotas later. Mix lives in the chips above the calendar, not a per-week caption in the grid.
 
 ### Phase C — Prep board by layer
 1. Re-column Preparation to layers.
@@ -125,16 +163,16 @@ Open design detail when building:
 ## Open questions (resolve when building)
 1. Exact label: **Intention** vs **Why**?
 2. Layer short names on chips: Acquisition / Identity / Conversion — or longer deck names?
-3. Do week targets count **scheduled feed posts only**, or prep cards too?
+3. Week targets count **one make** (IG Post or Reel). Same-file TikTok is not a second layer hit. Stories separate. Locked 2026-09-15.
 4. Prep-by-layer vs Email/Ads/Website (see §3).
 5. Should event/release anchors **auto-suggest** week mixes when lead-up is active?
 
 ---
 
-## Starting defaults to try in real life (before/while building)
+## Starting defaults (locked 2026-09-15)
 
-**Steady week:** Identity-heavy, Acquisition regular, Conversion light.  
-**Release week:** Conversion up; Identity floor maintained.  
-**Feed rhythm example:** `A → I → A → I → C → I → A` (swap freely; don’t start from blank).
-
-Rest, then pick Phase A when ready to implement.
+**Must-hit every week:** 1 IG Post **or** Reel. If it’s a Reel, post the same file to TikTok.  
+**Steady week:** 4 IG stories (Mon/Tue/Thu/Fri) + that 1 Post/Reel. Layer rotates Identity / Acquisition. Conversion off unless selling.  
+**Struggling week:** 2 stories + still the 1 Post/Reel (do not skip IG feed).  
+**Stretch week:** 4 stories + Post/Reel + a second unique piece.  
+**Release week:** pick up later — not the current default.

@@ -2586,7 +2586,67 @@
     }
     .btn-danger:hover { background: rgba(196,92,92,0.08); }
     .btn-danger[hidden] { display: none; }
-    .cal-week-block { margin-bottom: 4px; }
+    .cal-week-block {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      margin-bottom: 8px;
+      border-radius: 8px;
+    }
+    .cal-week-block.is-focused {
+      background: rgba(78, 110, 108, 0.05);
+    }
+    .cal-wrap--week .cal-week-block.is-focused {
+      background: transparent;
+    }
+    .cal-cadence-target,
+    .cal-cadence-edit {
+      appearance: none;
+      -moz-appearance: textfield;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      min-height: 24px;
+      margin: -4px -2px -4px 2px;
+      padding: 0 6px;
+      border: 1px solid #E2DDD5;
+      border-radius: 12px;
+      background: #F7F5F2;
+      color: #2C2C2C;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .cal-cadence-target::-webkit-outer-spin-button,
+    .cal-cadence-target::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .cal-cadence-edit:hover,
+    .cal-triage-chip--mix:hover .cal-cadence-edit {
+      border-color: #2C2C2C;
+      background: #fff;
+      color: #2C2C2C;
+    }
+    .cal-cadence-target {
+      cursor: text;
+      width: 24px;
+      outline: none;
+      border-color: #4E6E6C;
+      background: #fff;
+      box-shadow: 0 0 0 2px rgba(78, 110, 108, 0.18);
+    }
+    .cal-cadence-target::selection {
+      background: rgba(78, 110, 108, 0.22);
+      color: #2C2C2C;
+    }
     .cal-week-section + .cal-week-section { border-top: 1px solid #E2DDD5; }
     .cal-week-earlier-body > * + * { border-top: 1px solid #E2DDD5; }
     .cal-week-label {
@@ -4295,6 +4355,31 @@
     .cal-triage-chip:hover { border-color: #2C2C2C; }
     .cal-triage-chip.is-empty { color: #8a8580; font-weight: 500; cursor: default; }
     .cal-triage-chip strong { font-variant-numeric: tabular-nums; }
+    .cal-triage-week {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8a8580;
+      margin-right: 2px;
+    }
+    .cal-triage-chip--mix {
+      cursor: pointer;
+      padding-right: 8px;
+    }
+    .cal-triage-chip--mix:hover { border-color: #2C2C2C; }
+    .cal-triage-have {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+    .cal-triage-chip--mix.is-short .cal-triage-have { color: #8B3A3A; }
+    .cal-triage-chip--mix.is-met .cal-triage-have { color: #4E6E6C; }
+    .cal-triage-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
     .cal-triage-meta {
       margin-left: auto;
       font-size: 10px;
@@ -4930,7 +5015,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.91';
+const APP_VERSION = '0.12.96';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5327,6 +5412,13 @@ const CONTENT_LAYERS = [
 
 const CONTENT_LAYER_IDS = new Set(CONTENT_LAYERS.map(l => l.id));
 
+const WEEK_LAYER_DEFAULTS = {
+  acquisition: 2,
+  identity: 2,
+  conversion: 1
+};
+const MAKE_FORMATS = new Set(['ig-post', 'ig-reel', 'tiktok']);
+
 const NO_LAYER_INFO = {
   label: 'No layer',
   blurb: 'Holding lane for cards that do not have a layer yet.',
@@ -5344,6 +5436,108 @@ const NO_LAYER_INFO = {
 
 function contentLayerById(id) {
   return CONTENT_LAYERS.find(l => l.id === id) || null;
+}
+
+function scheduleBareFormat(card) {
+  if (!card) return '';
+  const parsed = typeof parseFormatPickKey === 'function' ? parseFormatPickKey(card.format) : null;
+  if (parsed && parsed.format) return parsed.format;
+  return String(card.format || '').trim();
+}
+
+function weekBandKey(band) {
+  const d = band && band.days && band.days[0] && band.days[0].date;
+  return d ? dateKey(d) : '';
+}
+
+function getWeekLayerTargets(band) {
+  const key = weekBandKey(band);
+  if (!DATA.weekGoals) DATA.weekGoals = {};
+  const stored = (key && DATA.weekGoals[key]) || {};
+  const out = {};
+  CONTENT_LAYERS.forEach(layer => {
+    const n = stored[layer.id];
+    out[layer.id] = n != null && Number.isFinite(Number(n)) ? Math.max(0, Number(n)) : WEEK_LAYER_DEFAULTS[layer.id];
+  });
+  return out;
+}
+
+function setWeekLayerTarget(band, layerId, value) {
+  if (!CONTENT_LAYER_IDS.has(layerId)) return;
+  const key = weekBandKey(band);
+  if (!key) return;
+  if (!DATA.weekGoals) DATA.weekGoals = {};
+  const mix = getWeekLayerTargets(band);
+  const n = parseInt(value, 10);
+  mix[layerId] = Number.isFinite(n) && n >= 0 ? Math.min(9, n) : WEEK_LAYER_DEFAULTS[layerId];
+  DATA.weekGoals[key] = { ...(DATA.weekGoals[key] || {}), ...mix };
+  scheduleSave();
+}
+
+function focusedWeekBand() {
+  return marketingWeekBandFromStart(scheduleViewWeekStart);
+}
+
+function shortWeekRange(start, end) {
+  const a = MONTH_NAMES[start.getMonth()].slice(0, 3);
+  const b = MONTH_NAMES[end.getMonth()].slice(0, 3);
+  if (start.getMonth() === end.getMonth()) return start.getDate() + '–' + end.getDate() + ' ' + a;
+  return start.getDate() + ' ' + a + ' – ' + end.getDate() + ' ' + b;
+}
+
+function focusedWeekMixLabel(band) {
+  const start = band.days[0].date;
+  const end = band.days[6].date;
+  const range = shortWeekRange(start, end);
+  const todaySun = weekStartSunday(todayDateOnly());
+  if (dateKey(todaySun) === dateKey(start)) return 'This week · ' + range;
+  return range;
+}
+
+function beginWeekLayerTargetEdit(band, layerId, want, editEl) {
+  if (!editEl || editEl.tagName === 'INPUT') return;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.inputMode = 'numeric';
+  input.pattern = '[0-9]';
+  input.maxLength = 1;
+  input.setAttribute('aria-label', 'Target for this week');
+  input.className = 'cal-cadence-target';
+  input.value = String(want);
+  input.addEventListener('click', ev => ev.stopPropagation());
+  const commit = () => {
+    setWeekLayerTarget(band, layerId, input.value);
+    renderBoard();
+  };
+  input.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+    if (ev.key === 'Escape') { ev.preventDefault(); renderBoard(); }
+  });
+  input.addEventListener('blur', commit);
+  editEl.replaceWith(input);
+  input.focus();
+  input.select();
+}
+
+function weekLayerCounts(band) {
+  const keys = new Set((band.days || []).map(cell => dateKey(cell.date)));
+  const counts = { acquisition: 0, identity: 0, conversion: 0 };
+  const seen = new Set();
+  scheduleCards().forEach(card => {
+    if (!card.scheduledAt) return;
+    const sd = new Date(card.scheduledAt);
+    if (Number.isNaN(sd.getTime()) || !keys.has(dateKey(sd))) return;
+    const layer = normalizeContentLayer(card.contentLayer);
+    if (!layer || counts[layer] == null) return;
+    const fmt = scheduleBareFormat(card);
+    const makeKey = MAKE_FORMATS.has(fmt)
+      ? 'make:' + (card.sourceIdeaId || card.clonedFromIdeaId || card.id)
+      : 'card:' + card.id;
+    if (seen.has(makeKey)) return;
+    seen.add(makeKey);
+    counts[layer] += 1;
+  });
+  return counts;
 }
 
 function contentLayerLabel(id, opts) {
@@ -11364,43 +11558,71 @@ function formatLastSavedLabel() {
 function buildCalendarTriageStrip() {
   const strip = document.createElement('div');
   strip.className = 'cal-triage';
-  const { makes, posts, needs } = marketingActionCounts();
+  const { needs } = marketingActionCounts();
+  const band = focusedWeekBand();
+  const targets = getWeekLayerTargets(band);
+  const have = weekLayerCounts(band);
 
-  const addChip = (label, count, onClick) => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'cal-triage-chip' + (count ? '' : ' is-empty');
-    chip.innerHTML = label + ' <strong>' + count + '</strong>';
-    if (count && onClick) chip.addEventListener('click', e => { e.stopPropagation(); onClick(); });
-    else chip.disabled = !count;
+  const weekLabel = document.createElement('span');
+  weekLabel.className = 'cal-triage-week';
+  weekLabel.textContent = focusedWeekMixLabel(band);
+  weekLabel.title = 'Default mix is 2 Acquisition, 2 Identity, 1 Conversion. Click a chip to change this week only.';
+  strip.appendChild(weekLabel);
+
+  CONTENT_LAYERS.forEach(layer => {
+    const want = targets[layer.id] || 0;
+    const got = have[layer.id] || 0;
+    const chip = document.createElement('div');
+    chip.className = 'cal-triage-chip cal-triage-chip--mix';
+    if (want <= 0 || got >= want) chip.classList.add('is-met');
+    else chip.classList.add('is-short');
+    chip.title = layer.blurb + ' Click to change this week’s target.';
+    chip.setAttribute('role', 'group');
+    chip.setAttribute('aria-label', layer.short + ' ' + got + ' of ' + want + ' this week. Click to change the target.');
+
+    const dot = document.createElement('span');
+    dot.className = 'cal-triage-dot';
+    dot.style.background = layer.tone;
+    chip.appendChild(dot);
+
+    const name = document.createElement('span');
+    name.textContent = layer.short;
+    chip.appendChild(name);
+
+    const haveEl = document.createElement('span');
+    haveEl.className = 'cal-triage-have';
+    haveEl.textContent = String(got);
+    chip.appendChild(haveEl);
+
+    const slash = document.createElement('span');
+    slash.setAttribute('aria-hidden', 'true');
+    slash.textContent = '/';
+    slash.style.color = '#cfc8bc';
+    chip.appendChild(slash);
+
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'cal-cadence-edit';
+    edit.textContent = String(want);
+    edit.title = 'Change ' + layer.short + ' target for this week';
+    const startEdit = e => {
+      e.stopPropagation();
+      const live = chip.querySelector('.cal-cadence-edit, .cal-cadence-target');
+      beginWeekLayerTargetEdit(band, layer.id, want, live);
+    };
+    edit.addEventListener('click', startEdit);
+    chip.addEventListener('click', startEdit);
+    chip.appendChild(edit);
     strip.appendChild(chip);
-  };
+  });
 
-  addChip('Make today', makes.length, () => {
-    const first = makes[0];
-    if (first && first.scheduledAt) jumpScheduleToDate(new Date(first.scheduledAt));
-    requestAnimationFrame(() => {
-      const el = document.querySelector('.cal-slot[data-schedule-id="' + first.id + '"]');
-      if (el) {
-        el.classList.add('cal-slot--flash');
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        setTimeout(() => el.classList.remove('cal-slot--flash'), 1600);
-      }
-    });
-  });
-  addChip('Post today', posts.length, () => {
-    const first = posts[0];
-    if (first && first.scheduledAt) jumpScheduleToDate(new Date(first.scheduledAt));
-    requestAnimationFrame(() => {
-      const el = document.querySelector('.cal-slot[data-schedule-id="' + first.id + '"]');
-      if (el) {
-        el.classList.add('cal-slot--flash');
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        setTimeout(() => el.classList.remove('cal-slot--flash'), 1600);
-      }
-    });
-  });
-  addChip('Needs · 7d', needs.length, () => focusActionableNeeds(needs));
+  const needChip = document.createElement('button');
+  needChip.type = 'button';
+  needChip.className = 'cal-triage-chip' + (needs.length ? '' : ' is-empty');
+  needChip.innerHTML = 'Needs · 7d <strong>' + needs.length + '</strong>';
+  if (needs.length) needChip.addEventListener('click', e => { e.stopPropagation(); focusActionableNeeds(needs); });
+  else needChip.disabled = true;
+  strip.appendChild(needChip);
 
   const meta = document.createElement('div');
   meta.className = 'cal-triage-meta';
@@ -11499,7 +11721,7 @@ function renderScheduleBody() {
     const band = marketingWeekBandFromStart(scheduleViewWeekStart);
     const weekSec = document.createElement('div');
     weekSec.className = 'cal-week-section';
-    weekSec.appendChild(buildMarketingWeekRow(band, cardsByDay, leadUpByDay, prepByDay, today));
+    weekSec.appendChild(buildMarketingWeekBlock(band, cardsByDay, leadUpByDay, prepByDay, today));
     body.appendChild(weekSec);
   } else {
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -11542,7 +11764,7 @@ function renderScheduleBody() {
       earlierBody.className = 'cal-week-earlier-body';
       if (!expanded) earlierBody.style.display = 'none';
       pastBands.forEach(band => {
-        earlierBody.appendChild(buildMarketingWeekRow(band, cardsByDay, leadUpByDay, prepByDay, today));
+        earlierBody.appendChild(buildMarketingWeekBlock(band, cardsByDay, leadUpByDay, prepByDay, today));
       });
       weekSec.appendChild(earlierBody);
       wLabel.addEventListener('click', e => {
@@ -11557,7 +11779,7 @@ function renderScheduleBody() {
     liveBands.forEach(band => {
       const weekSec = document.createElement('div');
       weekSec.className = 'cal-week-section';
-      weekSec.appendChild(buildMarketingWeekRow(band, cardsByDay, leadUpByDay, prepByDay, today));
+      weekSec.appendChild(buildMarketingWeekBlock(band, cardsByDay, leadUpByDay, prepByDay, today));
       body.appendChild(weekSec);
     });
   }
@@ -11924,6 +12146,26 @@ function marketingMonthWeekBands(year, month) {
 function weekBandEndsBefore(band, todayStart) {
   const end = new Date(band.endDate.getFullYear(), band.endDate.getMonth(), band.endDate.getDate());
   return end < todayStart;
+}
+
+function buildMarketingWeekBlock(band, cardsByDay, leadUpByDay, prepByDay, today) {
+  const wrap = document.createElement('div');
+  wrap.className = 'cal-week-block';
+  const key = weekBandKey(band);
+  wrap.setAttribute('data-week-key', key);
+  if (scheduleCalRange === 'month' && key && key === dateKey(scheduleViewWeekStart)) wrap.classList.add('is-focused');
+  wrap.addEventListener('click', e => {
+    if (scheduleCalRange !== 'month') return;
+    if (e.target.closest('.cal-slot, .cal-day-add, button, input, textarea, a, select')) return;
+    const sun = band.days && band.days[0] && band.days[0].date;
+    if (!sun) return;
+    const next = weekStartSunday(sun);
+    if (dateKey(next) === dateKey(scheduleViewWeekStart)) return;
+    scheduleViewWeekStart = next;
+    renderBoard();
+  });
+  wrap.appendChild(buildMarketingWeekRow(band, cardsByDay, leadUpByDay, prepByDay, today));
+  return wrap;
 }
 
 function buildMarketingWeekRow(band, cardsByDay, leadUpByDay, prepByDay, today) {
@@ -13881,6 +14123,17 @@ function shiftScheduleMonth(delta) {
   } else if (scheduleViewMonth > 11) {
     scheduleViewMonth = 0;
     scheduleViewYear++;
+  }
+  const monthStart = new Date(scheduleViewYear, scheduleViewMonth, 1);
+  const monthEnd = new Date(scheduleViewYear, scheduleViewMonth + 1, 0);
+  const focusEnd = addCalendarDays(scheduleViewWeekStart, 6);
+  if (focusEnd < monthStart || scheduleViewWeekStart > monthEnd) {
+    const today = todayDateOnly();
+    if (today.getFullYear() === scheduleViewYear && today.getMonth() === scheduleViewMonth) {
+      scheduleViewWeekStart = weekStartSunday(today);
+    } else {
+      scheduleViewWeekStart = weekStartSunday(monthStart);
+    }
   }
   renderBoard();
 }
