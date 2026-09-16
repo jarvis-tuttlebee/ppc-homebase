@@ -90,8 +90,6 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
-<<<<<<< Updated upstream
-=======
 ## 2026-09-16 — Deployed Event on pipeline + Execution retirement 0.12.101 (Cursor)
 
 ### Live
@@ -100,14 +98,13 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 - `origin/main` matches this tip (ff-only from `cursor/pipeline-event-and-restructure-a3fe`)
 
 ### What
-Ideas + Prep **Event** field (same anchors as calendar). Execution retired from Pipeline when empty; leftover Exec → Prep on load; Prep Execute button removed.
+Ideas + Prep **Event** field (same anchors as calendar). Execution retired from Pipeline when empty; leftover Exec → Prep on load; Prep Execute button removed. North star: Calendar-first; Review later = post-Posted opt-in (B) → Complete.
 
 ### Open / next
-Hard-refresh Marketing. Smoke Event on Ideas/Prep → calendar. Next: post-Posted Review (opt-in B).
+Hard-refresh Marketing. Smoke Event on Ideas/Prep → calendar.
 
 ---
 
->>>>>>> Stashed changes
 ## 2026-09-16 — Pipeline Event field + Execution retirement (phase 1) (Cursor)
 
 ### Local (not deployed)
