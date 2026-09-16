@@ -90,6 +90,21 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
+## 2026-09-16 — Deployed calendar × deletes card 0.12.100 (Cursor)
+
+### Live
+- Worker Version ID: `cda8bf7d-9a32-4d19-ab88-fab34431780f`
+- Marketing **`0.12.100`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
+- `origin/main` matches this tip (ff-only from `cursor/unscheduled-delete-card-a3fe`, includes live 0.12.99 week mix)
+
+### What
+Filled calendar/Unscheduled **×** deletes the card (no blank Need leftover). Panel Clear content unchanged.
+
+### Open / next
+Hard-refresh Marketing (Ctrl+Shift+R). Smoke Unscheduled ×.
+
+---
+
 ## 2026-09-16 — Calendar × deletes card (not blank Need) (Cursor)
 
 ### Local (not deployed)
