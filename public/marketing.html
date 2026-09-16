@@ -1082,17 +1082,29 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: #2C2C2C;
-      padding: 10px 10px 8px;
+      padding: 8px 8px;
+      /* Fixed header height so the rule under every layer title stays level
+         across wrapping vs one-line labels and empty vs filled lanes. */
+      height: 52px;
+      min-height: 52px;
+      box-sizing: border-box;
       border-bottom: 1px solid #e8e5e0;
       background: rgba(255,255,255,0.55);
       text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 4px;
       position: relative;
+      line-height: 1.25;
     }
-    .prep-lane-title-text { min-width: 0; }
+    .prep-lane-title-text {
+      min-width: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
     .prep-lane-info {
       flex-shrink: 0;
       width: 16px;
@@ -1179,10 +1191,8 @@
       margin: 0.15em 0;
     }
     .prep-lane.is-empty .prep-lane-title {
-      padding: 10px 8px 8px;
-      font-size: 9px;
+      /* Same height / type size as filled lanes — only tighten tracking. */
       letter-spacing: 0.04em;
-      line-height: 1.25;
       word-break: break-word;
     }
     .prep-lane-cards {
@@ -4492,6 +4502,38 @@
       .btn-add, .btn-secondary, .btn-primary { min-height: 40px; }
       .ideas-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
 
+      /* Prep layer info: break out of the narrow column so copy is readable. */
+      .prep-lane-info-pop {
+        font-size: 13.5px;
+        line-height: 1.5;
+        padding: 14px 16px;
+        border-radius: 10px;
+        max-height: min(420px, 70vh);
+        box-shadow: 0 12px 32px rgba(44,44,44,0.18);
+      }
+      .prep-lane-info-pop.is-open.prep-lane-info-pop--mobile {
+        /* left / top / width set in JS from the info button */
+        position: fixed;
+        right: auto;
+        z-index: 80;
+      }
+      .prep-lane-info-pop strong {
+        font-size: 11px;
+        margin-bottom: 6px;
+      }
+      .prep-lane-info-pop .prep-lane-info-deck {
+        font-size: 12.5px;
+        margin-top: 8px;
+      }
+      .prep-lane-info-kicker {
+        font-size: 10.5px;
+        margin-bottom: 4px;
+      }
+      .prep-lane-info-section {
+        margin-top: 10px;
+        padding-top: 9px;
+      }
+
       /* Calendar header: date on its own row; tools + jump stay compact. */
       .cal-nav {
         flex-direction: column;
@@ -5015,7 +5057,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.96';
+const APP_VERSION = '0.12.97';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -10637,8 +10679,56 @@ function closePrepLaneInfo(exceptPop) {
   document.querySelectorAll('.prep-lane-info-pop.is-open').forEach(pop => {
     if (exceptPop && pop === exceptPop) return;
     pop.classList.remove('is-open');
+    pop.classList.remove('prep-lane-info-pop--mobile');
+    clearPrepLaneInfoPopLayout(pop);
     const btn = pop._infoBtn;
     if (btn) btn.setAttribute('aria-expanded', 'false');
+  });
+}
+
+function clearPrepLaneInfoPopLayout(pop) {
+  if (!pop) return;
+  pop.style.position = '';
+  pop.style.left = '';
+  pop.style.right = '';
+  pop.style.top = '';
+  pop.style.width = '';
+  pop.style.maxWidth = '';
+  pop.style.transform = '';
+}
+
+function layoutPrepLaneInfoPop(pop, btn) {
+  if (!pop || !btn) return;
+  const mobile = window.matchMedia('(max-width: 700px)').matches;
+  if (!mobile) {
+    pop.classList.remove('prep-lane-info-pop--mobile');
+    clearPrepLaneInfoPopLayout(pop);
+    return;
+  }
+  pop.classList.add('prep-lane-info-pop--mobile');
+  const margin = 16;
+  const maxW = Math.min(320, window.innerWidth - margin * 2);
+  const titleEl = btn.closest('.prep-lane-title');
+  const anchor = titleEl ? titleEl.getBoundingClientRect() : btn.getBoundingClientRect();
+  let left = Math.round((window.innerWidth - maxW) / 2);
+  left = Math.max(margin, Math.min(left, window.innerWidth - margin - maxW));
+  const maxH = Math.min(420, window.innerHeight * 0.7);
+  let top = Math.round(anchor.bottom + 8);
+  if (top + Math.min(maxH, 220) > window.innerHeight - 12) {
+    top = Math.max(12, Math.round(anchor.top - maxH - 8));
+  }
+  pop.style.position = 'fixed';
+  pop.style.left = left + 'px';
+  pop.style.right = 'auto';
+  pop.style.top = top + 'px';
+  pop.style.width = maxW + 'px';
+  pop.style.maxWidth = maxW + 'px';
+  pop.style.transform = 'none';
+}
+
+function syncOpenPrepLaneInfoPops() {
+  document.querySelectorAll('.prep-lane-info-pop.is-open').forEach(pop => {
+    if (pop._infoBtn) layoutPrepLaneInfoPop(pop, pop._infoBtn);
   });
 }
 
@@ -10718,6 +10808,11 @@ function attachPrepLaneInfo(titleEl, info) {
     closePrepLaneInfo(open ? pop : null);
     pop.classList.toggle('is-open', open);
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) layoutPrepLaneInfoPop(pop, btn);
+    else {
+      pop.classList.remove('prep-lane-info-pop--mobile');
+      clearPrepLaneInfoPopLayout(pop);
+    }
   });
   pop.addEventListener('click', e => e.stopPropagation());
 
@@ -10732,6 +10827,8 @@ if (!window._prepLaneInfoClickBound) {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closePrepLaneInfo();
   });
+  window.addEventListener('resize', syncOpenPrepLaneInfoPops);
+  document.addEventListener('scroll', syncOpenPrepLaneInfoPops, true);
 }
 
 
