@@ -5057,7 +5057,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.97';
+const APP_VERSION = '0.12.98';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6160,6 +6160,29 @@ function cloneIdeaForFormat(source, pillar, format) {
     y: pos.y,
     createdAt: new Date().toISOString(),
     clonedFromIdeaId: source.id || null
+  };
+}
+
+/** Reverse of Prepare — rebuild an Ideas card from a Prep card. */
+function pipelineCardToIdea(card) {
+  const size = ideaCardSize((DATA.ideas || []).length + 1);
+  const pos = placeNearMostRecent(size);
+  let ideaId = card.sourceIdeaId || newId();
+  if ((DATA.ideas || []).some(i => i && i.id === ideaId)) ideaId = newId();
+  return {
+    id: ideaId,
+    body: card.body || '',
+    cat: (card.pillar && pillarById(card.pillar)) ? card.pillar : 'organic',
+    format: card.format || null,
+    contentLayer: normalizeContentLayer(card.contentLayer),
+    contentWhy: card.contentWhy || '',
+    imageData: card.imageData || null,
+    imageW: card.imageW,
+    imageH: card.imageH,
+    linkedScheduleId: card.linkedScheduleId || '',
+    x: pos.x,
+    y: pos.y,
+    createdAt: card.createdAt || new Date().toISOString()
   };
 }
 
@@ -10310,6 +10333,33 @@ function moveExecToPreparation(id) {
   saveData();
   renderBoard();
   openPrepPanel(card.id);
+}
+
+function movePrepToIdeas(id) {
+  const card = prepCards().find(c => c.id === id);
+  if (!card) return;
+  // Remove from Prep first so pruneIdeasAlreadyInPipeline does not drop the restored idea.
+  DATA.sections.preparation = prepCards().filter(c => c.id !== id);
+  const idea = pipelineCardToIdea(card);
+  if (!Array.isArray(DATA.ideas)) DATA.ideas = [];
+  DATA.ideas.push(idea);
+  if (idea.linkedScheduleId) {
+    syncLinkedSchedulePreview(idea, 'ideas');
+    const slot = scheduleCards().find(c => c.id === idea.linkedScheduleId);
+    if (slot) {
+      slot.sourceIdeaId = idea.id;
+      slot.linkedPipelineId = '';
+      slot.linkedPipelineStage = 'ideas';
+    }
+  }
+  expandedSections.add('ideas');
+  executeArmed = false;
+  closePanel();
+  clearTimeout(saveTimer);
+  saveData();
+  renderBoard();
+  openPanel(idea.id);
+  if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Returned to Ideas');
 }
 
 function moveReviewToExecution(id) {
@@ -16091,6 +16141,17 @@ function buildPrepActions(card) {
   actions.appendChild(execBtn);
 
   appendAddToCalendarAction(actions, card, 'prep');
+
+  const backBtn = document.createElement('button');
+  backBtn.type = 'button';
+  backBtn.className = 'btn-secondary';
+  backBtn.textContent = 'Back to Ideas';
+  backBtn.addEventListener('click', () => {
+    if (!confirm('Return this card to Ideas? It will leave Preparation.')) return;
+    savePanel(true);
+    movePrepToIdeas(card.id);
+  });
+  actions.appendChild(backBtn);
 
   const del = document.createElement('button');
   del.type = 'button';
