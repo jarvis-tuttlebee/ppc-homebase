@@ -90,6 +90,27 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
+## 2026-09-16 — Pipeline Event field + Execution retirement (phase 1) (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.101`** on `cursor/pipeline-event-and-restructure-a3fe`
+- Live still **`0.12.100`**
+
+### Direction (north star)
+Calendar-first Marketing. Pipeline slim: **Ideas → Prep → (Calendar) → Review (post-Posted, opt-in) → Complete**. Drop Execution as a board stage (planning lives on calendar). Horizontal calendar↔ideas swipe is a later polish idea only.
+
+### What (this slice)
+1. **Event** on Ideas + Prep panels (same anchors as calendar; calendar label Campaign → Event).
+2. Event carries through Prepare, calendar place, and bi-directional sync.
+3. **Execution** retired from Pipeline UI when empty; leftover Exec cards migrate into Prep on load. Prep **Execute** button removed.
+
+### Open / next
+1. Smoke Event on Ideas/Prep → Add to calendar shows Event
+2. Review rethink (option B: opt-in after Posted → lessons → Complete)
+3. Deploy when asked
+
+---
+
 ## 2026-09-16 — Deployed calendar × deletes card 0.12.100 (Cursor)
 
 ### Live

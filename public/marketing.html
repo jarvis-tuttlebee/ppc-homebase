@@ -4648,7 +4648,7 @@
         <div id="prepExtraFields" style="display:none">
           <hr class="panel-divider">
           <div class="panel-section-label">Production plan</div>
-          <div class="panel-field-hint" id="pPlanHint" style="display:none">Add a short production plan before sending to Execution.</div>
+          <div class="panel-field-hint" id="pPlanHint" style="display:none">Add a short production plan before placing on the calendar.</div>
           <div class="fmt-bar">
             <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pPlan','bold')"><b>B</b></button>
             <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pPlan','italic')"><i>I</i></button>
@@ -4791,7 +4791,7 @@
                 </div>
               </div>
               <div class="schedule-campaign-field">
-                <div class="panel-section-label">Campaign</div>
+                <div class="panel-section-label">Event</div>
                 <div id="pScheduleAnchorWrap" style="margin-top:2px"></div>
               </div>
               <div class="schedule-pipeline-notes">
@@ -5057,7 +5057,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.100';
+const APP_VERSION = '0.12.101';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6156,6 +6156,7 @@ function cloneIdeaForFormat(source, pillar, format) {
     format,
     contentWhy: source.contentWhy || '',
     contentLayer: normalizeContentLayer(source.contentLayer),
+    anchorId: source.anchorId || '',
     imageData: source.imageData || null,
     imageW: source.imageW,
     imageH: source.imageH,
@@ -6179,6 +6180,7 @@ function pipelineCardToIdea(card) {
     format: card.format || null,
     contentLayer: normalizeContentLayer(card.contentLayer),
     contentWhy: card.contentWhy || '',
+    anchorId: card.anchorId || '',
     imageData: card.imageData || null,
     imageW: card.imageW,
     imageH: card.imageH,
@@ -6223,6 +6225,7 @@ function buildPrepCardFromIdea(idea, pillar, format, opts) {
     format,
     contentLayer: normalizeContentLayer(idea.contentLayer),
     contentWhy: idea.contentWhy || '',
+    anchorId: idea.anchorId || '',
     productionPlan: '',
     placementNote: '',
     linkedScheduleId: linkedScheduleId || '',
@@ -6240,6 +6243,7 @@ function buildPrepCardFromIdea(idea, pillar, format, opts) {
       if (!prepCard.contentLayer && slot.contentLayer) {
         prepCard.contentLayer = normalizeContentLayer(slot.contentLayer);
       }
+      if (!prepCard.anchorId && slot.anchorId) prepCard.anchorId = slot.anchorId;
     }
   }
   return prepCard;
@@ -6759,7 +6763,9 @@ const SECTIONS = [
   { id: 'schedule', name: 'Content Calendar', swatch: '#2C2C2C', built: true },
   { id: 'ideas', name: 'Content Ideas', swatch: '#564A5E', built: true },
   { id: 'preparation', name: 'Content Preparation', swatch: '#4E6E6C', built: true },
-  { id: 'execution', name: 'Content Execution', swatch: '#C29A3B', built: true },
+  // Execution retired (phase 1) — planning lives on calendar cards; leftover cards migrate to Prep.
+  { id: 'execution', name: 'Content Execution', swatch: '#C29A3B', built: true, retired: true },
+  // Review will become post-Posted lessons (opt-in) → Complete; keep board for now.
   { id: 'review', name: 'Content Review', swatch: '#6B7A8D', built: true },
   // Posted archive — keeps history after calendar status is Posted.
   { id: 'complete', name: 'Content Complete', swatch: '#5A6B5A', built: true }
@@ -7191,6 +7197,7 @@ function migrateIdea(idea) {
   }
   idea.contentLayer = normalizeContentLayer(idea.contentLayer);
   if (idea.contentWhy == null) idea.contentWhy = '';
+  if (idea.anchorId == null) idea.anchorId = '';
   return idea;
 }
 
@@ -7215,6 +7222,7 @@ function migratePrep(card) {
   delete card.fitNote;
   card.contentLayer = normalizeContentLayer(card.contentLayer);
   if (card.contentWhy == null) card.contentWhy = '';
+  if (card.anchorId == null) card.anchorId = '';
   return card;
 }
 
@@ -8576,6 +8584,26 @@ function normalizeLoaded(data) {
   let review = Array.isArray(sections.review) ? sections.review.map(migrateReview) : [];
   let schedule = Array.isArray(sections.schedule) ? sections.schedule.map(migrateSchedule) : [];
   let complete = Array.isArray(sections.complete) ? sections.complete.map(migrateComplete) : [];
+
+  // Phase 1 restructure: Execution board is retired — fold leftover cards into Prep.
+  if (execution.length) {
+    execution.forEach(card => {
+      if (!card || !card.id) return;
+      if (preparation.some(p => p && p.id === card.id)) return;
+      card.movedAt = new Date().toISOString();
+      if (!card.productionPlan && card.executionHowTo) {
+        card.productionPlan = card.executionHowTo;
+      }
+      preparation.push(migratePrep(card));
+      if (card.linkedScheduleId) {
+        const slot = schedule.find(c => c && c.id === card.linkedScheduleId);
+        if (slot && slot.linkedPipelineId === card.id) {
+          slot.linkedPipelineStage = 'prep';
+        }
+      }
+    });
+    execution = [];
+  }
   let loadedAnchors = Array.isArray(data.anchors) ? data.anchors.map(migrateAnchor).filter(Boolean) : [];
   const cadence = data.cadence && typeof data.cadence === 'object'
     ? cloneCadence({ ...DEFAULT_CADENCE, ...data.cadence, publishDays: data.cadence.publishDays || DEFAULT_PUBLISH_DAYS })
@@ -9547,6 +9575,7 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts)
   if (existing) {
     existing.scheduledAt = iso;
     existing.scheduleAt = iso;
+    if (card.anchorId) existing.anchorId = card.anchorId;
     applyPrepByFromUi(existing, prepDateValue || '');
     clearTimeout(saveTimer);
     saveData();
@@ -9576,13 +9605,14 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts)
       scheduledAt: iso,
       scheduleAt: iso,
       contentLayer: '',
-      anchorId: '',
+      anchorId: card.anchorId || '',
       createdAt: new Date().toISOString()
     });
     scheduleCards().push(slot);
   } else {
     slot.scheduledAt = iso;
     slot.scheduleAt = iso;
+    if (card.anchorId) slot.anchorId = card.anchorId;
   }
   applyPrepByFromUi(slot, prepDateValue || '');
 
@@ -11283,6 +11313,7 @@ function syncLinkedSchedulePreview(card, stage) {
     contentWhy: (card.contentWhy != null && String(card.contentWhy).trim())
       ? card.contentWhy
       : (slot.contentWhy || ''),
+    anchorId: card.anchorId || slot.anchorId || '',
     sourceIdeaId: (stage === 'ideas' ? card.id : null) || card.sourceIdeaId || slot.sourceIdeaId || null,
     productionPlan: (stage === 'prep' || stage === 'ideas')
       ? keep(card.productionPlan, slot.productionPlan)
@@ -11334,6 +11365,7 @@ function syncLinkedPipelineFromSchedule(slot) {
       if (slot.format) idea.format = slot.format;
       if (slot.contentLayer != null) idea.contentLayer = normalizeContentLayer(slot.contentLayer);
       if (slot.contentWhy != null) idea.contentWhy = slot.contentWhy;
+      if (slot.anchorId != null) idea.anchorId = slot.anchorId || '';
       if (slot.imageData) {
         idea.imageData = slot.imageData;
         idea.imageW = slot.imageW != null ? slot.imageW : idea.imageW;
@@ -11394,6 +11426,7 @@ function syncLinkedPipelineFromSchedule(slot) {
   if (slot.format) target.format = slot.format;
   if (slot.contentLayer != null) target.contentLayer = normalizeContentLayer(slot.contentLayer);
   if (slot.contentWhy != null) target.contentWhy = slot.contentWhy;
+  if (slot.anchorId != null) target.anchorId = slot.anchorId || '';
   if (slot.productionPlan != null) target.productionPlan = slot.productionPlan;
   if (slot.executionHowTo != null) target.executionHowTo = slot.executionHowTo;
   if (slot.productsUsed != null) target.productsUsed = slot.productsUsed;
@@ -15381,6 +15414,36 @@ function populateScheduleAnchorSelect(selectedId) {
   }));
 }
 
+/** Event / campaign picker shared by Ideas + Prep (and legacy Exec / Review). */
+function appendEventProp(wrap, selectedId, opts) {
+  opts = opts || {};
+  if (!wrap) return null;
+  const existing = document.getElementById('pEventRow');
+  if (existing) existing.remove();
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  row.id = 'pEventRow';
+  row.innerHTML = '<span class="prop-label">Event</span><span class="prop-value"></span>';
+  const value = row.querySelector('.prop-value');
+  value.appendChild(createPpcSelect({
+    id: 'pEventAnchor',
+    options: anchors().map(a => ({ id: a.id, label: a.title })),
+    value: selectedId || '',
+    includeNone: true,
+    noneLabel: '— None —',
+    onChange: val => {
+      if (typeof opts.onChange === 'function') opts.onChange(val || '');
+    }
+  }));
+  wrap.appendChild(row);
+  return row;
+}
+
+function readEventAnchorInput() {
+  const el = document.getElementById('pEventAnchor');
+  return el ? String(el.value || '') : '';
+}
+
 function renderScheduleCard(card) {
   const el = document.createElement('div');
   el.className = 'schedule-card';
@@ -15549,6 +15612,10 @@ function renderBoard() {
   pipePane.className = 'board-pipe-pane';
 
   SECTIONS.forEach(section => {
+    if (section.retired) {
+      // Hide retired stages unless they still hold cards (legacy escape hatch).
+      if (section.id === 'execution' && !execCards().length) return;
+    }
     const open = expandedSections.has(section.id);
     const wrap = document.createElement('div');
     wrap.className = 'board-section' + (open ? ' open' : '');
@@ -15563,7 +15630,9 @@ function renderBoard() {
 
     const title = document.createElement('span');
     title.className = 'section-title';
-    title.textContent = section.name;
+    title.textContent = section.retired
+      ? (section.name + ' (legacy)')
+      : section.name;
 
     const trailing = document.createElement('div');
     trailing.className = 'section-trailing';
@@ -15931,6 +16000,14 @@ function buildIdeaPanelProps(idea) {
       scheduleSave();
     }
   });
+  appendEventProp(wrap, idea.anchorId || '', {
+    onChange: anchorId => {
+      const live = DATA.ideas.find(i => i.id === activeIdeaId);
+      if (!live) return;
+      live.anchorId = anchorId || '';
+      scheduleSave();
+    }
+  });
 }
 
 function buildPrepPanelProps(card) {
@@ -16030,6 +16107,39 @@ function buildPrepPanelProps(card) {
         const live = reviewCards().find(c => c.id === activeReviewId);
         if (live) {
           live.contentLayer = layer;
+          syncLinkedSchedulePreview(live, 'review');
+          scheduleSave();
+        }
+      }
+    }
+  });
+  // Schedule panel already has a dedicated Event field (pScheduleAnchor).
+  if (panelMode === 'schedule') return;
+  appendEventProp(wrap, card.anchorId || '', {
+    onChange: anchorId => {
+      const next = anchorId || '';
+      if (panelMode === 'prep' && activePrepId) {
+        const live = prepCards().find(c => c.id === activePrepId);
+        if (live) {
+          live.anchorId = next;
+          syncLinkedSchedulePreview(live, 'prep');
+          scheduleSave();
+        }
+        return;
+      }
+      if (panelMode === 'exec' && activeExecId) {
+        const live = execCards().find(c => c.id === activeExecId);
+        if (live) {
+          live.anchorId = next;
+          syncLinkedSchedulePreview(live, 'execution');
+          scheduleSave();
+        }
+        return;
+      }
+      if (panelMode === 'review' && activeReviewId) {
+        const live = reviewCards().find(c => c.id === activeReviewId);
+        if (live) {
+          live.anchorId = next;
           syncLinkedSchedulePreview(live, 'review');
           scheduleSave();
         }
@@ -16141,18 +16251,6 @@ function buildPrepActions(card) {
   reviewArmed = false;
   scheduleArmed = false;
   updateIdeaSaveBtn();
-
-  const execBtn = document.createElement('button');
-  execBtn.type = 'button';
-  execBtn.className = 'btn-secondary';
-  execBtn.id = 'executeToggle';
-  execBtn.textContent = 'Execute';
-  execBtn.addEventListener('click', () => {
-    executeArmed = !executeArmed;
-    execBtn.classList.toggle('active', executeArmed);
-    updateIdeaSaveBtn();
-  });
-  actions.appendChild(execBtn);
 
   appendAddToCalendarAction(actions, card, 'prep');
 
@@ -17505,6 +17603,7 @@ function savePanel(silent) {
     idea.body = sanitizeHtml(document.getElementById('pDesc').innerHTML).trim();
     idea.contentWhy = readContentWhyInput();
     idea.contentLayer = readContentLayerInput();
+    idea.anchorId = readEventAnchorInput();
 
     if (prepareExpanded && !silent) {
       if (!idea.contentLayer) {
@@ -17558,14 +17657,18 @@ function savePanel(silent) {
     card.pillar = pick.pillar;
     card.format = pick.format;
     card.contentLayer = readContentLayerInput();
+    card.anchorId = readEventAnchorInput();
     card.body = sanitizeHtml(document.getElementById('pDesc').innerHTML).trim();
     card.contentWhy = readContentWhyInput();
     card.productionPlan = sanitizeHtml(document.getElementById('pPlan').innerHTML).trim();
     setPlanHintVisible(!stripHtml(card.productionPlan || ''));
 
     if (executeArmed && !silent) {
-      sendPrepToExecution(card.id);
-      return;
+      // Execution stage is retiring — keep card in Prep and nudge toward calendar.
+      executeArmed = false;
+      if (typeof PPC !== 'undefined' && PPC.showToast) {
+        PPC.showToast('Execution is retiring — use Add to calendar / production plan here');
+      }
     }
 
     syncLinkedSchedulePreview(card, 'prep');
@@ -18100,6 +18203,7 @@ function moveIdeaToPrep(idea, pillar, format) {
   const existingPrep = prepCards().find(c => c && c.sourceIdeaId === idea.id);
   if (existingPrep) {
     DATA.ideas = DATA.ideas.filter(i => i.id !== idea.id);
+    if (idea.anchorId && !existingPrep.anchorId) existingPrep.anchorId = idea.anchorId;
     if (linkedScheduleId) {
       existingPrep.linkedScheduleId = linkedScheduleId;
       syncLinkedSchedulePreview(existingPrep, 'prep');
@@ -18131,6 +18235,7 @@ function moveIdeaToPrep(idea, pillar, format) {
     format,
     contentLayer: normalizeContentLayer(idea.contentLayer),
     contentWhy: idea.contentWhy || '',
+    anchorId: idea.anchorId || '',
     productionPlan: '',
     placementNote: '',
     linkedScheduleId,
@@ -18150,6 +18255,7 @@ function moveIdeaToPrep(idea, pillar, format) {
       if (!prepCard.contentLayer && slot.contentLayer) {
         prepCard.contentLayer = normalizeContentLayer(slot.contentLayer);
       }
+      if (!prepCard.anchorId && slot.anchorId) prepCard.anchorId = slot.anchorId;
     }
   }
 
