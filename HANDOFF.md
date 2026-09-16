@@ -70,6 +70,22 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
+## 2026-09-16 — Calendar × deletes card (not blank Need) (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.100`** on `cursor/unscheduled-delete-card-a3fe`
+- Live still **`0.12.98`**
+- Skipped **0.12.99** — owned by `cursor/week-mix-scheduled-posted-d899` (week mix Scheduled/Posted only)
+
+### What
+Filled calendar/Unscheduled **×** now **deletes** the card (was “Clear content (keep Need slot)” → blank Need leftover). Panel **Clear content** still keeps an empty Need when wanted. Undo toast on delete.
+
+### Open / next
+1. Smoke Unscheduled × + panel Clear content
+2. Deploy when asked (coordinate with week-mix 0.12.99 if that merges first)
+
+---
+
 ## 2026-09-16 — Deployed Prep Back to Ideas + mobile fixes 0.12.98 (Cursor)
 
 ### Live
