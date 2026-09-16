@@ -18,6 +18,7 @@ page versions are **behind** live.
 - Worker Version ID: `7d9715c1-f6af-405a-8d38-f4dfda15c139`
 - Marketing **`0.12.99`** · Kanban / Planner unchanged
 - Deployed from `cursor/week-mix-scheduled-posted-d899`
+- `origin/main` matches this tip (ff-only); PR #18 merged
 
 ### What
 Week mix left count fills only **Scheduled** or **Posted** (Need / Editing / Preparing do not).
