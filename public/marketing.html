@@ -5057,7 +5057,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.98';
+const APP_VERSION = '0.12.100';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -10126,11 +10126,12 @@ async function removeReviewCard(id) {
 
 async function removeScheduleCard(id) {
   const card = scheduleCards().find(c => c.id === id);
+  const snapshot = card ? JSON.parse(JSON.stringify(card)) : null;
   if (card) {
     try {
       await PPC.archivePush({
         source: 'marketing',
-        item: JSON.parse(JSON.stringify(card)),
+        item: snapshot,
         restoreMeta: { kind: 'schedule', pillar: card.pillar, format: card.format },
         label: stripHtml(card.body || '') || card.needLabel || 'Scheduled content'
       });
@@ -10138,10 +10139,20 @@ async function removeScheduleCard(id) {
   }
   clearPipelineLinkForSchedule(id);
   DATA.sections.schedule = scheduleCards().filter(c => c.id !== id);
+  if (activeScheduleId === id) closePanel();
   clearTimeout(saveTimer);
   // Force: dropping one filled card used to look like a catastrophic wipe.
   saveData({ force: true });
   renderBoard();
+  if (snapshot && typeof PPC !== 'undefined' && PPC.showUndoToast) {
+    PPC.showUndoToast('Calendar card deleted', () => {
+      if (scheduleCards().some(c => c.id === snapshot.id)) return;
+      DATA.sections.schedule.push(migrateSchedule(snapshot));
+      scheduleSave();
+      renderBoard();
+      if (PPC.showToast) PPC.showToast('Calendar card restored');
+    });
+  }
 }
 
 /** Soft-delete schedule cards to Archive before removing them from the board. */
@@ -15102,7 +15113,7 @@ function renderCalSlot(card) {
     ? (quiet
       ? 'Planned for later · fill closer to the date · drag to a day or Unscheduled'
       : 'Click type to change · drag to a day or Unscheduled · × to remove')
-    : 'Drag to another day or Unscheduled · click View details to open';
+    : 'Drag to another day or Unscheduled · click View details · × to delete';
   const formatTone = formatColor(card.format, card.pillar);
   el.style.borderColor = '#E2DDD5';
   if (!isPosted) {
@@ -15304,15 +15315,15 @@ function renderCalSlot(card) {
     const clearBtn = document.createElement('button');
     clearBtn.type = 'button';
     clearBtn.className = 'cal-slot-del';
-    clearBtn.setAttribute('aria-label', 'Clear scheduled content');
-    clearBtn.title = 'Clear content (keep Need slot)';
+    clearBtn.setAttribute('aria-label', 'Delete calendar card');
+    clearBtn.title = 'Delete card';
     clearBtn.textContent = '\u00d7';
     clearBtn.style.color = formatTone;
     clearBtn.addEventListener('click', e => {
       e.stopPropagation();
       if (calSlotDragMoved) return;
-      if (!confirm('Clear scheduled content from this Need? The slot stays empty so you can pick a new idea.')) return;
-      clearScheduledContent(card.id);
+      if (!confirm('Delete this calendar card? It will be removed (not left as an empty Need).')) return;
+      removeScheduleCard(card.id);
     });
     el.appendChild(clearBtn);
   }
