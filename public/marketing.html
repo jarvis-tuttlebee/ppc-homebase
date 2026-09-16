@@ -123,14 +123,8 @@
     .nav-settings-btn:hover { background: transparent; color: #2C2C2C; }
 
     .view-modes {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-      gap: 6px 18px;
-      padding: 10px 24px 0;
-      max-width: 1680px;
-      margin: 0 auto;
+      /* Unified Marketing page — Calendar + Pipeline in one scroll. Tabs retired. */
+      display: none !important;
     }
     .view-mode-btn {
       font-family: 'DM Sans', sans-serif;
@@ -165,11 +159,14 @@
     .board-cal-pane,
     .board-pipe-pane {
       min-width: 0;
+      display: block;
+      width: 100%;
     }
     .board-cal-pane .board-section,
     .board-pipe-pane .board-section:first-child {
       border-top: 1px solid #E2DDD5;
     }
+    /* Old split modes kept for safety — unified page never applies them. */
     .board.board--calendar-only .board-pipe-pane,
     .board.board--pipeline-only .board-cal-pane {
       display: none;
@@ -182,6 +179,7 @@
       flex: 1 1 auto !important;
       flex-basis: auto !important;
     }
+    .pipeline-footer { display: none !important; }
     .board-section { border-bottom: 1px solid #E2DDD5; }
     .board-section:first-child { border-top: 1px solid #E2DDD5; }
     .section-row {
@@ -5057,7 +5055,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.101';
+const APP_VERSION = '0.12.102';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5129,7 +5127,15 @@ let marketingViewMode = loadViewMode();
 let marketingMoodH = readLocalMoodHeight();
 if (marketingMoodH == null) marketingMoodH = MOOD_H_DEFAULT;
 
+function applyBoardViewMode() {
+  const board = document.getElementById('board');
+  if (!board) return;
+  // Unified page: Calendar + Ideas + Prep always share one scroll.
+  board.classList.remove('board--calendar-only', 'board--pipeline-only');
+}
+
 function setMarketingViewMode(mode) {
+  // Mode tabs retired — keep localStorage write for old keys, always render unified.
   if (mode !== 'calendar' && mode !== 'pipeline') mode = 'calendar';
   marketingViewMode = mode;
   try { localStorage.setItem(VIEW_MODE_KEY, mode); } catch (_) {}
@@ -5233,17 +5239,6 @@ function bindMoodResizeGutter(gutter, viewport) {
   });
 
   if (viewport) applyMoodHeight(marketingMoodH);
-}
-
-function applyBoardViewMode() {
-  const board = document.getElementById('board');
-  if (!board) return;
-  board.classList.remove('board--calendar-only', 'board--pipeline-only');
-  if (marketingViewMode === 'calendar') {
-    board.classList.add('board--calendar-only');
-  } else if (marketingViewMode === 'pipeline') {
-    board.classList.add('board--pipeline-only');
-  }
 }
 
 document.getElementById('viewModes').addEventListener('click', e => {
@@ -11237,7 +11232,6 @@ function renderReviewBody() {
 
 function goToCalendarView() {
   expandedSections.add('schedule');
-  setMarketingViewMode('calendar');
   renderBoard();
   requestAnimationFrame(() => {
     const target = document.querySelector('.board-section[data-section-id="schedule"]');
@@ -15677,19 +15671,8 @@ function renderBoard() {
     else pipePane.appendChild(wrap);
   });
 
-  const pipeFooter = document.createElement('div');
-  pipeFooter.className = 'pipeline-footer';
-  const goCalendarBtn = document.createElement('button');
-  goCalendarBtn.type = 'button';
-  goCalendarBtn.className = 'btn-secondary';
-  goCalendarBtn.textContent = 'Go to Calendar';
-  goCalendarBtn.addEventListener('click', goToCalendarView);
-  pipeFooter.appendChild(goCalendarBtn);
-  pipePane.appendChild(pipeFooter);
-
   board.appendChild(calPane);
   board.appendChild(pipePane);
-  // Re-apply after remount so Calendar/Pipeline-only modes still hide the other pane.
   applyBoardViewMode();
   applyMoodHeight(marketingMoodH);
 }
