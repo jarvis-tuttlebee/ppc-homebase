@@ -12,6 +12,26 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-16 — Deployed week mix Scheduled/Posted 0.12.99 (Cursor Cloud)
+
+### Live
+- Worker Version ID: `7d9715c1-f6af-405a-8d38-f4dfda15c139`
+- Marketing **`0.12.99`** · Kanban / Planner unchanged
+- Deployed from `cursor/week-mix-scheduled-posted-d899`
+- `origin/main` matches this tip (ff-only); PR #18 merged
+
+### What
+Week mix left count fills only **Scheduled** or **Posted** (Need / Editing / Preparing do not).
+
+### Safe for cards?
+Yes — display only. Hard-refresh Marketing (Cmd/Ctrl+Shift+R).
+
+### Open / next
+Confirm Identity ~2/2 on 13–19 Sep after hard-refresh.
+
+---
+
+
 ## Keep the clone current (agents: run this, do not ask Jarvis)
 
 Do this **at session start** (before other work) **and again when writing the
