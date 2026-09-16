@@ -90,6 +90,21 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
+## 2026-09-16 — Deployed unified Marketing page 0.12.102 (Cursor)
+
+### Live
+- Worker Version ID: `bb2a1669-2ded-46e7-9f4f-4733c0675ce7`
+- Marketing **`0.12.102`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
+- `origin/main` matches this tip (ff-only from `cursor/unified-marketing-page-a3fe`)
+
+### What
+One Marketing scroll: Calendar (top) → Ideas → Prep → Review → Complete. Calendar/Pipeline tabs removed. Sticky section headers.
+
+### Open / next
+Hard-refresh Marketing. Try collapsing Calendar to reach Ideas/Prep. Next: post-Posted Review (opt-in B).
+
+---
+
 ## 2026-09-16 — Unified Marketing page preview (Cursor)
 
 ### Local (not deployed)
