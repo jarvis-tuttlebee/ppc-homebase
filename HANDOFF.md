@@ -70,6 +70,22 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
+## 2026-09-16 — Prep mobile: level column rules + wider info pop (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.97`**
+- Live still **`0.12.96`**
+- `origin/main` matches live
+
+### What
+Prep board mobile: fixed-height layer headers so the rule under each column title stays level (wrapping vs empty Conversion). Layer (i) pop on ≤700px opens as a ~320px fixed panel with larger type — no more thin vertical strip inside the column.
+
+### Open / next
+1. Smoke Pipeline → Content Preparation on phone width
+2. Deploy when asked
+
+---
+
 ## 2026-09-15 — Deployed mix chips 0.12.96 (Cursor)
 
 ### Live
