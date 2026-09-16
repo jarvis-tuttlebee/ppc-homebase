@@ -90,6 +90,21 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
+## 2026-09-16 — Unified Marketing page preview (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.102`** on `cursor/unified-marketing-page-a3fe`
+- Live still **`0.12.101`**
+
+### What
+One Marketing scroll: **Content Calendar** (top, sticky header) → Ideas → Prep → Review → Complete. Calendar/Pipeline tabs hidden. Jump helpers expand+scroll Calendar instead of switching modes.
+
+### Open / next
+1. Preview with Jarvis before deploy
+2. Deploy when approved
+
+---
+
 ## 2026-09-16 — Deployed Event on pipeline + Execution retirement 0.12.101 (Cursor)
 
 ### Live
