@@ -70,6 +70,21 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
+## 2026-09-16 — Deployed Prep Back to Ideas + mobile fixes 0.12.98 (Cursor)
+
+### Live
+- Worker Version ID: `4bae6cd3-065d-4256-b72c-8099af2224ae`
+- Marketing **`0.12.98`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
+- `origin/main` matches this tip (ff-only from `cursor/prep-mobile-info-a3fe`)
+
+### What
+Prep **Back to Ideas** button. Mobile prep board: level column title rules + wider layer info pop.
+
+### Open / next
+Hard-refresh Marketing (Ctrl+Shift+R). Smoke Prep → Back to Ideas on phone + desktop.
+
+---
+
 ## 2026-09-16 — Prep Back to Ideas + mobile info pop (Cursor)
 
 ### Local (not deployed)
