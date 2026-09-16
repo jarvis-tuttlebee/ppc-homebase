@@ -90,6 +90,24 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
+<<<<<<< Updated upstream
+=======
+## 2026-09-16 — Deployed Event on pipeline + Execution retirement 0.12.101 (Cursor)
+
+### Live
+- Worker Version ID: `d47b8d21-1c8b-41bf-abd9-e7aee02ab771`
+- Marketing **`0.12.101`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
+- `origin/main` matches this tip (ff-only from `cursor/pipeline-event-and-restructure-a3fe`)
+
+### What
+Ideas + Prep **Event** field (same anchors as calendar). Execution retired from Pipeline when empty; leftover Exec → Prep on load; Prep Execute button removed.
+
+### Open / next
+Hard-refresh Marketing. Smoke Event on Ideas/Prep → calendar. Next: post-Posted Review (opt-in B).
+
+---
+
+>>>>>>> Stashed changes
 ## 2026-09-16 — Pipeline Event field + Execution retirement (phase 1) (Cursor)
 
 ### Local (not deployed)
