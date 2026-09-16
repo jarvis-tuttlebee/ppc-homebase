@@ -12,27 +12,24 @@ page versions are **behind** live.
 
 ---
 
-## 2026-09-16 — Week mix fills only Scheduled/Posted (Cursor Cloud)
+## 2026-09-16 — Deployed week mix Scheduled/Posted 0.12.99 (Cursor Cloud)
 
-### Local (not deployed)
-- Marketing **`0.12.99`** on `cursor/week-mix-scheduled-posted-d899`
-- Live still **`0.12.98`**
-- Branch tip is `origin/main` + this fix
-
-### Why
-Week mix left count (e.g. Identity **6/2**) was counting every dated card — Need / Editing / Preparing too. Jarvis expected only Scheduled or Posted to fill.
+### Live
+- Worker Version ID: `7d9715c1-f6af-405a-8d38-f4dfda15c139`
+- Marketing **`0.12.99`** · Kanban / Planner unchanged
+- Deployed from `cursor/week-mix-scheduled-posted-d899`
 
 ### What
-`weekLayerCounts` now counts only `publishStatus` **scheduled** or **posted**. Chip tooltips say so.
+Week mix left count fills only **Scheduled** or **Posted** (Need / Editing / Preparing do not).
 
 ### Safe for cards?
-Yes — display only. Hard-refresh after deploy.
+Yes — display only. Hard-refresh Marketing (Cmd/Ctrl+Shift+R).
 
 ### Open / next
-1. Smoke Calendar week strip with live data (Identity should be ~2/2 for 13–19 Sep if both Tue pieces are Posted)
-2. Deploy when asked
+Confirm Identity ~2/2 on 13–19 Sep after hard-refresh.
 
 ---
+
 
 ## Keep the clone current (agents: run this, do not ask Jarvis)
 
