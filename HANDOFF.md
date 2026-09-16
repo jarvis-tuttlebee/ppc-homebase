@@ -70,6 +70,23 @@ Record in the HANDOFF entry: live Version ID, page versions, **and** whether
 
 ---
 
+## 2026-09-16 — Prep Back to Ideas + mobile info pop (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.98`**
+- Live still **`0.12.96`**
+- `origin/main` matches live
+
+### What
+1. Prep panel **Back to Ideas** — returns a prep card to the Ideas board (reuses `sourceIdeaId`, calendar slot rewired to `ideas` stage).
+2. Prep mobile: fixed-height layer headers + wider info pop on ≤700px (from earlier this session).
+
+### Open / next
+1. Smoke Prep → Back to Ideas + calendar-linked card
+2. Deploy when asked
+
+---
+
 ## 2026-09-16 — Prep mobile: level column rules + wider info pop (Cursor)
 
 ### Local (not deployed)
