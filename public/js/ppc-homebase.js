@@ -480,7 +480,31 @@ body.dark .ppc-pin-card input{background:#141d2e;border-color:#2e3a55;color:#f0e
 }
 .ppc-type-row {
   display: flex; align-items: center; gap: 6px; padding: 4px 0;
+  border-radius: 6px;
 }
+.ppc-type-row.is-dragging { opacity: 0.42; }
+.ppc-type-row.is-drop-before { box-shadow: inset 0 2px 0 #6B7A8D; }
+.ppc-type-row.is-drop-after { box-shadow: inset 0 -2px 0 #6B7A8D; }
+.ppc-type-grip {
+  flex-shrink: 0; width: 16px; height: 24px; padding: 0; border: none;
+  border-radius: 4px; background: transparent; color: #c4bfb6;
+  font-size: 14px; line-height: 1; letter-spacing: -1px; cursor: grab;
+  display: flex; align-items: center; justify-content: center;
+}
+.ppc-type-grip:hover { color: #6B7A8D; background: #faf9f7; }
+.ppc-type-grip:active { cursor: grabbing; }
+.ppc-type-moves {
+  display: flex; flex-direction: column; flex-shrink: 0; width: 18px;
+}
+.ppc-type-move {
+  width: 18px; height: 12px; padding: 0; border: none;
+  border-radius: 3px; background: transparent; color: #b5b0a8;
+  font-size: 8px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.ppc-type-move:hover { color: #2C2C2C; background: #f0ede8; }
+.ppc-type-move:disabled { opacity: 0.28; cursor: default; background: transparent; }
+.ppc-type-add.is-drop-target { border-color: #6B7A8D; background: #f0ede8; }
 .ppc-type-input {
   flex: 1; min-width: 0; box-sizing: border-box;
   font: inherit; font-size: 12px; font-weight: 600; color: #2C2C2C;
@@ -584,6 +608,12 @@ body.dark .ppc-type-input:hover { background: #1a2233; border-color: #2e3a55; }
 body.dark .ppc-type-input:focus { background: #141d2e; border-color: #6B7A8D; }
 body.dark .ppc-type-del { color: #8a8580; }
 body.dark .ppc-type-del:hover { color: #d48a8a; background: rgba(212, 138, 138, 0.12); }
+body.dark .ppc-type-grip { color: #5a6478; }
+body.dark .ppc-type-grip:hover { color: #8a8580; background: #1a2233; }
+body.dark .ppc-type-move:hover { color: #f0ede8; background: #1a2233; }
+body.dark .ppc-type-row.is-drop-before { box-shadow: inset 0 2px 0 #8a8580; }
+body.dark .ppc-type-row.is-drop-after { box-shadow: inset 0 -2px 0 #8a8580; }
+body.dark .ppc-type-add.is-drop-target { border-color: #6B7A8D; background: #1a2233; }
 body.dark .ppc-type-add { border-color: #2e3a55; color: #8a8580; }
 body.dark .ppc-type-add:hover { border-color: #6B7A8D; color: #f0ede8; background: #1a2233; }
 body.dark .ppc-type-add-form .ppc-type-input { background: #141d2e; border-color: #2e3a55; }

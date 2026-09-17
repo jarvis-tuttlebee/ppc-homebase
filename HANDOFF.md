@@ -12,6 +12,23 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-16 — Reorder Marketing card types 0.12.103 (Cursor Cloud)
+
+### Local (not deployed)
+- Marketing **`0.12.103`** on `cursor/reorder-card-types-f0e6`
+- Live still **`0.12.102`** (Kanban `1.10.17` · Planner `2.10.16`)
+- `origin/main` still matches live 0.12.102 — do not ff until this ships
+
+### What
+Settings → **Card types**: rearrange formats per pillar (up/down, drag grip, Alt/⌘+arrows).
+Order persists as `formatOrder` in KV. New custom types still append; move them up after adding.
+
+### Open / next
+1. Preview on `:8787` before deploy
+2. Hard-refresh Marketing after deploy
+
+---
+
 ## 2026-09-16 — Deployed week mix Scheduled/Posted 0.12.99 (Cursor Cloud)
 
 ### Live

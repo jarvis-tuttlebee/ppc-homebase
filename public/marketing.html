@@ -5050,12 +5050,12 @@
 </div>
 
 <script src="/js/ppc-select.js?v=9"></script>
-<script src="/js/ppc-homebase.js?v=18"></script>
+<script src="/js/ppc-homebase.js?v=19"></script>
 <script>
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.102';
+const APP_VERSION = '0.12.103';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5743,6 +5743,7 @@ const BRAND_COLOUR_PALETTE = [
 
 let colourSettingsOpen = false;
 let cardTypesSettingsOpen = false;
+let draggingFormat = null;
 const colourSectionOpen = {
   eventTypes: true,
   organic: false,
@@ -6071,6 +6072,7 @@ function deleteCustomPillar(id) {
   reassignPillarRefs(id, 'organic');
   DATA.customFormats = customFormats().filter(f => f.pillar !== id);
   DATA.customPillars = customPillars().filter(p => p.id !== id);
+  if (formatOrderMap()[id]) delete formatOrderMap()[id];
   expandedPillars.delete(id);
   if (pillarLabels()[id]) delete pillarLabels()[id];
   closePanel();
@@ -6081,7 +6083,15 @@ function deleteCustomPillar(id) {
   return true;
 }
 
-function formatsForPillar(pillarId) {
+function formatOrderMap() {
+  if (!DATA.formatOrder || typeof DATA.formatOrder !== 'object' || Array.isArray(DATA.formatOrder)) {
+    DATA.formatOrder = {};
+  }
+  return DATA.formatOrder;
+}
+
+/** Built-ins first, then customs — used when a pillar has no saved order. */
+function unorderedFormatsForPillar(pillarId) {
   const removed = removedFormatSet();
   const base = (FORMATS[pillarId] || [])
     .filter(f => !removed.has(formatColorKey(pillarId, f.id)))
@@ -6096,6 +6106,82 @@ function formatsForPillar(pillarId) {
       label: formatLabelOverride(pillarId, f.id) || f.label || f.id
     }));
   return base.concat(custom);
+}
+
+function formatsForPillar(pillarId) {
+  const list = unorderedFormatsForPillar(pillarId);
+  const raw = formatOrderMap()[pillarId];
+  if (!Array.isArray(raw) || !raw.length) return list;
+  const byId = new Map(list.map(f => [f.id, f]));
+  const out = [];
+  const seen = new Set();
+  raw.forEach(id => {
+    const key = String(id || '');
+    if (!key || seen.has(key) || !byId.has(key)) return;
+    out.push(byId.get(key));
+    seen.add(key);
+  });
+  list.forEach(f => {
+    if (!seen.has(f.id)) out.push(f);
+  });
+  return out;
+}
+
+/** Persist a pillar’s visible card-type order. Unknown / missing ids are dropped or appended. */
+function rememberFormatOrder(pillarId, ids) {
+  const known = unorderedFormatsForPillar(pillarId).map(f => f.id);
+  const knownSet = new Set(known);
+  const out = [];
+  const seen = new Set();
+  (ids || []).forEach(id => {
+    const key = String(id || '');
+    if (!key || seen.has(key) || !knownSet.has(key)) return;
+    out.push(key);
+    seen.add(key);
+  });
+  known.forEach(id => {
+    if (!seen.has(id)) out.push(id);
+  });
+  formatOrderMap()[pillarId] = out;
+  return out;
+}
+
+/**
+ * Rearrange card types in a pillar.
+ * `formatId` moves in front of `beforeId`, or to the end when `beforeId` is omitted/null.
+ * Returns the new ordered ids, or null if the move is invalid.
+ */
+function reorderFormat(pillarId, formatId, beforeId) {
+  const ids = formatsForPillar(pillarId).map(f => f.id);
+  const from = ids.indexOf(formatId);
+  if (from < 0) return null;
+  let targetIndex = ids.length;
+  if (beforeId) {
+    const idx = ids.indexOf(beforeId);
+    if (idx >= 0) targetIndex = idx;
+  }
+  // Already in that slot (including “drop after the previous neighbour”).
+  if (from === targetIndex || from + 1 === targetIndex) return ids;
+  ids.splice(from, 1);
+  const insertAt = from < targetIndex ? targetIndex - 1 : targetIndex;
+  ids.splice(insertAt, 0, formatId);
+  rememberFormatOrder(pillarId, ids);
+  scheduleSave();
+  return ids;
+}
+
+/** Move a card type up (−1) or down (+1) within its pillar. */
+function moveFormat(pillarId, formatId, delta) {
+  const ids = formatsForPillar(pillarId).map(f => f.id);
+  const from = ids.indexOf(formatId);
+  if (from < 0) return null;
+  const to = from + Number(delta);
+  if (!Number.isInteger(to) || to < 0 || to >= ids.length || to === from) return null;
+  ids.splice(from, 1);
+  ids.splice(to, 0, formatId);
+  rememberFormatOrder(pillarId, ids);
+  scheduleSave();
+  return ids;
 }
 
 function allFormatOptions() {
@@ -6400,6 +6486,10 @@ function deleteFormat(pillarId, formatId) {
   if (!confirm(msg)) return false;
 
   reassignFormatRefs(pillarId, formatId, fallback);
+  const order = formatOrderMap()[pillarId];
+  if (Array.isArray(order)) {
+    formatOrderMap()[pillarId] = order.filter(id => id !== formatId);
+  }
   const key = formatColorKey(pillarId, formatId);
   if (isBuiltinFormat(pillarId, formatId)) {
     const set = removedFormatSet();
@@ -6924,7 +7014,7 @@ function statusOptionsForCard(card) {
 const DEFAULT_STAFF = ['Jarvis', 'Louis', 'Gregor'];
 const ADD_STAFF_ID = '__add_staff__';
 
-let DATA = { ideas: [], sections: { preparation: [], execution: [], review: [], schedule: [], complete: [] }, anchors: [], cadence: cloneCadence(), weekGoals: {}, dayMarks: {}, leadUpRules: DEFAULT_LEAD_UP_RULES.map(r => ({ ...r })), customAnchorTypes: [], customPillars: [], customFormats: [], pillarLabels: {}, formatLabels: {}, removedFormats: [], staff: DEFAULT_STAFF.slice(), scheduleModeLabels: {}, colourPrefs: { formats: {}, eventTypes: {} }, layoutPrefs: null };
+let DATA = { ideas: [], sections: { preparation: [], execution: [], review: [], schedule: [], complete: [] }, anchors: [], cadence: cloneCadence(), weekGoals: {}, dayMarks: {}, leadUpRules: DEFAULT_LEAD_UP_RULES.map(r => ({ ...r })), customAnchorTypes: [], customPillars: [], customFormats: [], pillarLabels: {}, formatLabels: {}, formatOrder: {}, removedFormats: [], staff: DEFAULT_STAFF.slice(), scheduleModeLabels: {}, colourPrefs: { formats: {}, eventTypes: {} }, layoutPrefs: null };
 const expandedSections = new Set(['schedule']);
 const expandedPillars = new Set(PILLARS.filter(p => p.defaultOpen).map(p => p.id));
 let saveTimer = null;
@@ -8347,6 +8437,7 @@ function defaultData() {
     customFormats: [],
     pillarLabels: {},
     formatLabels: {},
+    formatOrder: {},
     removedFormats: [],
     staff: DEFAULT_STAFF.slice(),
     scheduleModeLabels: {},
@@ -8466,6 +8557,14 @@ function buildMarketingPayload() {
     customFormats: customFormats().map(f => ({ id: f.id, label: f.label, pillar: f.pillar })),
     pillarLabels: { ...pillarLabels() },
     formatLabels: { ...formatLabels() },
+    formatOrder: (() => {
+      const src = formatOrderMap();
+      const out = {};
+      Object.keys(src).forEach(k => {
+        if (Array.isArray(src[k]) && src[k].length) out[k] = src[k].slice();
+      });
+      return out;
+    })(),
     removedFormats: Array.from(removedFormatSet()),
     staff: marketingStaff().slice(),
     scheduleModeLabels: { ...scheduleModeLabels() },
@@ -8570,6 +8669,7 @@ function normalizeLoaded(data) {
   DATA.customFormats = parseCustomFormats(data);
   DATA.pillarLabels = parsePillarLabels(data);
   DATA.formatLabels = parseFormatLabels(data);
+  DATA.formatOrder = parseFormatOrder(data);
   DATA.removedFormats = parseRemovedFormats(data);
   DATA.staff = parseMarketingStaff(data);
 
@@ -8675,6 +8775,14 @@ function normalizeLoaded(data) {
     customFormats: DATA.customFormats.slice(),
     pillarLabels: { ...DATA.pillarLabels },
     formatLabels: { ...DATA.formatLabels },
+    formatOrder: DATA.formatOrder && typeof DATA.formatOrder === 'object' && !Array.isArray(DATA.formatOrder)
+      ? Object.keys(DATA.formatOrder).reduce((out, k) => {
+          if (Array.isArray(DATA.formatOrder[k]) && DATA.formatOrder[k].length) {
+            out[k] = DATA.formatOrder[k].slice();
+          }
+          return out;
+        }, {})
+      : {},
     removedFormats: Array.isArray(DATA.removedFormats) ? DATA.removedFormats.slice() : [],
     staff: DATA.staff.slice(),
     scheduleModeLabels: (() => {
@@ -8730,6 +8838,27 @@ function parseFormatLabels(data) {
   Object.keys(src).forEach(key => {
     const lab = String(src[key] || '').trim().slice(0, 40);
     if (lab && key.indexOf('::') > 0) out[key] = lab;
+  });
+  return out;
+}
+
+function parseFormatOrder(data) {
+  const src = data && data.formatOrder && typeof data.formatOrder === 'object' && !Array.isArray(data.formatOrder)
+    ? data.formatOrder
+    : {};
+  const out = {};
+  Object.keys(src).forEach(pillarId => {
+    const raw = src[pillarId];
+    if (!Array.isArray(raw)) return;
+    const ids = [];
+    const seen = new Set();
+    raw.forEach(id => {
+      const key = String(id || '').trim();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      ids.push(key);
+    });
+    if (ids.length) out[pillarId] = ids;
   });
   return out;
 }
@@ -13489,6 +13618,10 @@ function createCustomFormat(pillarId, rawLabel, opts) {
   }
   const entry = { id: finalId, label, pillar };
   customFormats().push(entry);
+  const order = formatOrderMap()[pillar];
+  if (Array.isArray(order) && order.length && !order.includes(finalId)) {
+    order.push(finalId);
+  }
   if (!options.silent) {
     scheduleSave();
     PPC.showToast('Format "' + label + '" added');
@@ -18446,7 +18579,7 @@ PPC.mountSettings({
       if (typeof PPC.openSettings === 'function') PPC.openSettings();
     };
 
-    // ── Card types (formats): add / rename / remove ──
+    // ── Card types (formats): add / rename / reorder / remove ──
     const typesToggle = document.createElement('button');
     typesToggle.type = 'button';
     typesToggle.className = 'ppc-colour-toggle';
@@ -18465,9 +18598,28 @@ PPC.mountSettings({
 
     allPillars().forEach(p => {
       typesBody.appendChild(makeColourSection('types-' + p.id, p.label, body => {
-        formatsForPillar(p.id).forEach(f => {
+        const formats = formatsForPillar(p.id);
+        const clearFormatDragHints = () => {
+          typesBody.querySelectorAll('.ppc-type-row.is-dragging, .ppc-type-row.is-drop-before, .ppc-type-row.is-drop-after').forEach(el => {
+            el.classList.remove('is-dragging', 'is-drop-before', 'is-drop-after');
+          });
+          typesBody.querySelectorAll('.ppc-type-add.is-drop-target').forEach(el => {
+            el.classList.remove('is-drop-target');
+          });
+        };
+        formats.forEach((f, idx) => {
           const row = document.createElement('div');
           row.className = 'ppc-type-row';
+          row.dataset.formatId = f.id;
+
+          const grip = document.createElement('button');
+          grip.type = 'button';
+          grip.className = 'ppc-type-grip';
+          grip.title = 'Drag to reorder';
+          grip.setAttribute('aria-label', 'Drag to reorder ' + (f.label || f.id));
+          grip.textContent = '\u22EE';
+          grip.addEventListener('click', e => e.stopPropagation());
+
           const input = document.createElement('input');
           input.type = 'text';
           input.className = 'ppc-type-input';
@@ -18497,10 +18649,49 @@ PPC.mountSettings({
               e.preventDefault();
               input.value = f.label || f.id;
               input.blur();
+            } else if ((e.altKey || e.metaKey) && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+              e.preventDefault();
+              if (moveFormat(p.id, f.id, e.key === 'ArrowUp' ? -1 : 1)) {
+                renderBoard();
+                refreshSettings();
+              }
             }
           });
           input.addEventListener('blur', commitRename);
           input.addEventListener('click', e => e.stopPropagation());
+
+          const moves = document.createElement('div');
+          moves.className = 'ppc-type-moves';
+          const up = document.createElement('button');
+          up.type = 'button';
+          up.className = 'ppc-type-move';
+          up.setAttribute('aria-label', 'Move ' + (f.label || f.id) + ' up');
+          up.title = idx === 0 ? 'Already at the top' : 'Move up';
+          up.textContent = '\u25B2';
+          up.disabled = idx === 0;
+          up.addEventListener('click', e => {
+            e.stopPropagation();
+            if (moveFormat(p.id, f.id, -1)) {
+              renderBoard();
+              refreshSettings();
+            }
+          });
+          const down = document.createElement('button');
+          down.type = 'button';
+          down.className = 'ppc-type-move';
+          down.setAttribute('aria-label', 'Move ' + (f.label || f.id) + ' down');
+          down.title = idx === formats.length - 1 ? 'Already at the bottom' : 'Move down';
+          down.textContent = '\u25BC';
+          down.disabled = idx === formats.length - 1;
+          down.addEventListener('click', e => {
+            e.stopPropagation();
+            if (moveFormat(p.id, f.id, 1)) {
+              renderBoard();
+              refreshSettings();
+            }
+          });
+          moves.appendChild(up);
+          moves.appendChild(down);
 
           const del = document.createElement('button');
           del.type = 'button';
@@ -18513,7 +18704,51 @@ PPC.mountSettings({
             if (deleteFormat(p.id, f.id)) refreshSettings();
           });
 
+          row.draggable = true;
+          row.addEventListener('dragstart', e => {
+            if (!e.target.closest('.ppc-type-grip')) {
+              e.preventDefault();
+              return;
+            }
+            draggingFormat = { pillarId: p.id, formatId: f.id };
+            e.dataTransfer.setData('text/plain', f.id);
+            e.dataTransfer.effectAllowed = 'move';
+            row.classList.add('is-dragging');
+          });
+          row.addEventListener('dragend', () => {
+            draggingFormat = null;
+            clearFormatDragHints();
+          });
+          row.addEventListener('dragover', e => {
+            if (!draggingFormat || draggingFormat.pillarId !== p.id || draggingFormat.formatId === f.id) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const rect = row.getBoundingClientRect();
+            const before = e.clientY < rect.top + rect.height / 2;
+            row.classList.toggle('is-drop-before', before);
+            row.classList.toggle('is-drop-after', !before);
+          });
+          row.addEventListener('dragleave', () => {
+            row.classList.remove('is-drop-before', 'is-drop-after');
+          });
+          row.addEventListener('drop', e => {
+            e.preventDefault();
+            const draggedId = (draggingFormat && draggingFormat.pillarId === p.id && draggingFormat.formatId)
+              || e.dataTransfer.getData('text/plain');
+            row.classList.remove('is-drop-before', 'is-drop-after');
+            if (!draggedId || draggedId === f.id) return;
+            const rect = row.getBoundingClientRect();
+            const before = e.clientY < rect.top + rect.height / 2;
+            const beforeId = before ? f.id : (formats[idx + 1] ? formats[idx + 1].id : null);
+            if (reorderFormat(p.id, draggedId, beforeId)) {
+              renderBoard();
+              refreshSettings();
+            }
+          });
+
+          row.appendChild(grip);
           row.appendChild(input);
+          row.appendChild(moves);
           row.appendChild(del);
           body.appendChild(row);
         });
@@ -18578,6 +18813,22 @@ PPC.mountSettings({
           addBtn.hidden = true;
           addBtn.insertAdjacentElement('afterend', wrap);
           inp.focus();
+        });
+        addBtn.addEventListener('dragover', e => {
+          if (!draggingFormat || draggingFormat.pillarId !== p.id) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          addBtn.classList.add('is-drop-target');
+        });
+        addBtn.addEventListener('dragleave', () => addBtn.classList.remove('is-drop-target'));
+        addBtn.addEventListener('drop', e => {
+          if (!draggingFormat || draggingFormat.pillarId !== p.id) return;
+          e.preventDefault();
+          addBtn.classList.remove('is-drop-target');
+          if (reorderFormat(p.id, draggingFormat.formatId, null)) {
+            renderBoard();
+            refreshSettings();
+          }
         });
         body.appendChild(addBtn);
       }));
