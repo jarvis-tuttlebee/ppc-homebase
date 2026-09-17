@@ -12,6 +12,25 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-17 — Multi-format one card + Unscheduled extras 0.12.105 (Cursor Cloud)
+
+### Local (not deployed)
+- Marketing **`0.12.105`** on `cursor/reorder-card-types-f0e6`
+- Live still **`0.12.102`** (Kanban `1.10.17` · Planner `2.10.16`)
+- `origin/main` still matches live 0.12.102 — do not ff until this ships
+- Also includes card-type reorder (0.12.103) and idea multi-photo (0.12.104)
+
+### What
+Choosing several formats on an Idea or Prep card keeps **one card**. Titles sit next to each other (e.g. `IG Post · IG Reel`). Add to calendar places the first format on the date and parks the rest as filled cards in **Unscheduled**, so they do not have to be added one-by-one from Prep.
+
+### Safe for cards?
+Yes — extra formats are stored on the same idea/prep card (`extraFormats`). Calendar extras are new Unscheduled slots with copied body/photos; existing dated cards are unchanged.
+
+### Open / next
+Preview on `:8787`. Deploy not requested.
+
+---
+
 ## 2026-09-17 — Idea multi-photo carousel 0.12.104 (Cursor Cloud)
 
 ### Local (not deployed)
