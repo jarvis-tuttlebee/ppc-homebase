@@ -16642,6 +16642,15 @@ function buildIdeaPanelProps(idea) {
       const tone = ideaFormatTone(live);
       const cat = live.cat ? catById(live.cat) : null;
       const fmtLabel = formatTitlesLine(live) || (live.format ? formatLabel(pillar, live.format) : '');
+      const gridCat = document.querySelector('.ideas-grid-card[data-idea-id="' + live.id + '"] .ideas-grid-cat');
+      if (gridCat) {
+        if (fmtLabel || cat) {
+          gridCat.textContent = fmtLabel || cat.label;
+          gridCat.style.color = accentTextColor(tone || (cat && cat.bg) || '#564A5E');
+        } else {
+          gridCat.remove();
+        }
+      }
       if (fmtLabel || cat) {
         if (labelEl) {
           labelEl.textContent = fmtLabel || cat.label;
