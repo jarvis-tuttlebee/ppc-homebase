@@ -12,6 +12,28 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-17 — Compact mobile calendar chrome 0.12.107 (Cursor Cloud)
+
+### Local (not deployed)
+- Marketing **`0.12.107`** on `cursor/mobile-cal-chrome-f0e6`
+- Live still **`0.12.106`** (Kanban `1.10.17` · Planner `2.10.16`)
+- `origin/main` still matches live 0.12.106 — do not ff until this ships
+
+### What
+Calendar chrome above the day columns is shorter on phones (`max-width: 700px`):
+date range + ‹ Today › share one row; Week/Month, Types, People, and Events sit
+on the next. Mix chips use Acq / Id / Conv; Needs drops the “7d” label; the
+week-range label and “Saved just now” hide. Desktop also folds Events into the
+tools row so it is not a third bar.
+
+### Safe for cards?
+Yes — display / layout only. No KV shape change.
+
+### Open / next
+Preview on `:8787` at ~390px. Deploy not requested.
+
+---
+
 ## 2026-09-17 — Deployed Marketing 0.12.106 (Cursor Cloud)
 
 ### Live

@@ -2637,6 +2637,20 @@
       gap: 6px;
       flex-wrap: wrap;
     }
+    .cal-nav-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+    }
+    .cal-nav-top .cal-nav-title { flex: 1 1 auto; min-width: 0; }
+    .cal-nav-top .cal-nav-jump { flex: 0 0 auto; }
+    .cal-nav-tools .cal-events-menu {
+      left: auto;
+      right: 0;
+    }
     .cal-events-chips {
       display: none;
     }
@@ -4539,7 +4553,7 @@
       .nav-settings-btn { right: 12px; width: 40px; height: 40px; }
       .view-modes { gap: 8px; padding: 10px 16px; }
       .view-mode-btn { padding: 8px 14px; min-height: 36px; }
-      .board { padding: 20px 16px 40px; }
+      .board { padding: 12px 12px 32px; }
       .section-head { padding: 12px 4px; min-height: 44px; }
       .mood-viewport { height: var(--mood-h, 300px); }
       .mood-tool-btn { padding: 8px 12px; min-height: 36px; }
@@ -4623,54 +4637,88 @@
         padding-top: 9px;
       }
 
-      /* Calendar header: date on its own row; tools + jump stay compact. */
+      /* Calendar chrome: date + jump on one row; tools on the next; mix chips tight. */
+      .board-cal-pane .section-row {
+        padding: 8px 2px;
+        gap: 8px;
+        min-height: 0;
+      }
+      .board-cal-pane .section-title { font-size: 14px; }
+      .board-cal-pane .section-count { font-size: 10.5px; }
+      .board-cal-pane .section-body.cal-wrap { padding: 0 0 14px; }
       .cal-nav {
         flex-direction: column;
         align-items: stretch;
-        gap: 8px;
-        padding: 4px 8px 8px;
+        gap: 6px;
+        padding: 6px 4px 4px;
       }
       .cal-nav-title {
-        font-size: 15px;
+        font-size: 13.5px;
         line-height: 1.2;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
+      .cal-nav-top { gap: 6px; }
       .cal-nav-btns {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: nowrap;
       }
       .cal-nav-tools {
-        flex: 1 1 auto;
+        width: 100%;
         min-width: 0;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
+        gap: 5px;
       }
+      .cal-nav-tools > * { flex: 0 0 auto; }
       .cal-nav-jump {
         flex: 0 0 auto;
         flex-wrap: nowrap;
+        gap: 4px;
       }
       .cal-nav-jump .cal-nav-btn {
-        padding: 6px 9px;
-        min-height: 34px;
+        padding: 5px 8px;
+        min-height: 32px;
       }
       .cal-nav-jump .cal-nav-btn--icon {
-        min-width: 34px;
-        padding-left: 8px;
-        padding-right: 8px;
+        min-width: 32px;
+        padding-left: 7px;
+        padding-right: 7px;
       }
       .cal-range-toggle .cal-nav-btn {
-        padding: 6px 9px;
-        min-height: 34px;
+        padding: 5px 8px;
+        min-height: 32px;
       }
-      .cal-events-bar {
-        padding: 0 8px 10px;
+      .cal-nav-btn {
+        padding: 5px 9px;
+        min-height: 32px;
       }
+      .cal-events-bar { display: none; }
       .cal-events-menu {
-        left: 0;
-        right: auto;
-        max-width: calc(100vw - 32px);
+        max-width: calc(100vw - 24px);
       }
+      .cal-triage {
+        gap: 5px;
+        padding: 2px 4px 8px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .cal-triage-week,
+      .cal-triage-meta { display: none; }
+      .cal-triage-chip {
+        font-size: 10.5px;
+        padding: 5px 8px;
+        gap: 4px;
+        border-radius: 999px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+      .cal-triage-chip--mix { padding-right: 7px; }
     }
   </style>
 </head>
@@ -5149,7 +5197,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.106';
+const APP_VERSION = '0.12.107';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5614,6 +5662,21 @@ function shortWeekRange(start, end) {
   const b = MONTH_NAMES[end.getMonth()].slice(0, 3);
   if (start.getMonth() === end.getMonth()) return start.getDate() + '–' + end.getDate() + ' ' + a;
   return start.getDate() + ' ' + a + ' – ' + end.getDate() + ' ' + b;
+}
+
+function isCompactCalChrome() {
+  try {
+    return !!(window.matchMedia && window.matchMedia('(max-width: 700px)').matches);
+  } catch (_) {
+    return false;
+  }
+}
+
+function calMonthLabel(monthIndex, year) {
+  const compact = isCompactCalChrome();
+  const name = compact ? MONTH_NAMES[monthIndex].slice(0, 3) : MONTH_NAMES[monthIndex];
+  if (compact && year === new Date().getFullYear()) return name;
+  return name + ' ' + year;
 }
 
 function focusedWeekMixLabel(band) {
@@ -12421,7 +12484,10 @@ function buildCalendarTriageStrip() {
     chip.appendChild(dot);
 
     const name = document.createElement('span');
-    name.textContent = layer.short;
+    const compactShort = { acquisition: 'Acq', identity: 'Id', conversion: 'Conv' };
+    name.textContent = isCompactCalChrome()
+      ? (compactShort[layer.id] || layer.short)
+      : layer.short;
     chip.appendChild(name);
 
     const haveEl = document.createElement('span');
@@ -12454,7 +12520,10 @@ function buildCalendarTriageStrip() {
   const needChip = document.createElement('button');
   needChip.type = 'button';
   needChip.className = 'cal-triage-chip' + (needs.length ? '' : ' is-empty');
-  needChip.innerHTML = 'Needs · 7d <strong>' + needs.length + '</strong>';
+  needChip.innerHTML = isCompactCalChrome()
+    ? ('Needs <strong>' + needs.length + '</strong>')
+    : ('Needs · 7d <strong>' + needs.length + '</strong>');
+  needChip.title = 'Needs in the next 7 days';
   if (needs.length) needChip.addEventListener('click', e => { e.stopPropagation(); focusActionableNeeds(needs); });
   else needChip.disabled = true;
   strip.appendChild(needChip);
@@ -12514,7 +12583,7 @@ function renderScheduleBody() {
     e.stopPropagation();
     jumpScheduleToDate(new Date());
   });
-  const compactCalChrome = !!(window.matchMedia && window.matchMedia('(max-width: 700px)').matches);
+  const compactCalChrome = isCompactCalChrome();
   if (compactCalChrome) {
     prev.classList.add('cal-nav-btn--icon');
     prev.textContent = '‹';
@@ -12534,17 +12603,26 @@ function renderScheduleBody() {
   tools.appendChild(rangeToggle);
   tools.appendChild(buildTypesFilterControl());
   tools.appendChild(buildAssigneeFilterControl());
+  tools.appendChild(buildEventsControl());
   const jump = document.createElement('div');
   jump.className = 'cal-nav-jump';
   jump.appendChild(prev);
   jump.appendChild(todayBtn);
   jump.appendChild(next);
-  btns.appendChild(tools);
-  btns.appendChild(jump);
-  nav.appendChild(title);
-  nav.appendChild(btns);
+  if (compactCalChrome) {
+    const top = document.createElement('div');
+    top.className = 'cal-nav-top';
+    top.appendChild(title);
+    top.appendChild(jump);
+    nav.appendChild(top);
+    nav.appendChild(tools);
+  } else {
+    btns.appendChild(tools);
+    btns.appendChild(jump);
+    nav.appendChild(title);
+    nav.appendChild(btns);
+  }
   body.appendChild(nav);
-  body.appendChild(buildEventsBar());
   body.appendChild(buildCalendarTriageStrip());
 
   const cardsByDay = groupScheduleByDay();
@@ -12680,11 +12758,12 @@ function scheduleNavTitle() {
     const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
     const sameMonth = start.getMonth() === end.getMonth();
     if (sameMonth) {
-      return start.getDate() + '–' + end.getDate() + ' ' + MONTH_NAMES[start.getMonth()] + ' ' + start.getFullYear();
+      return start.getDate() + '–' + end.getDate() + ' ' + calMonthLabel(start.getMonth(), start.getFullYear());
     }
-    return formatShortDate(start) + ' – ' + formatShortDate(end) + ' ' + end.getFullYear();
+    return formatShortDate(start) + ' – ' + formatShortDate(end)
+      + (isCompactCalChrome() && end.getFullYear() === new Date().getFullYear() ? '' : (' ' + end.getFullYear()));
   }
-  return MONTH_NAMES[scheduleViewMonth] + ' ' + scheduleViewYear;
+  return calMonthLabel(scheduleViewMonth, scheduleViewYear);
 }
 
 function setScheduleCalRange(mode) {
@@ -12733,10 +12812,13 @@ function formatWeekRangeTitle(start, end) {
   const sameMonth = start.getMonth() === end.getMonth();
   const sameYear = start.getFullYear() === end.getFullYear();
   if (sameMonth) {
-    return start.getDate() + '–' + end.getDate() + ' ' + MONTH_NAMES[start.getMonth()] + ' ' + start.getFullYear();
+    return start.getDate() + '–' + end.getDate() + ' ' + calMonthLabel(start.getMonth(), start.getFullYear());
   }
   if (sameYear) {
-    return formatShortDate(start) + ' – ' + formatShortDate(end) + ' ' + end.getFullYear();
+    const yearBit = isCompactCalChrome() && end.getFullYear() === new Date().getFullYear()
+      ? ''
+      : (' ' + end.getFullYear());
+    return formatShortDate(start) + ' – ' + formatShortDate(end) + yearBit;
   }
   return formatShortDate(start) + ' ' + start.getFullYear() + ' – ' + formatShortDate(end) + ' ' + end.getFullYear();
 }
@@ -12865,10 +12947,7 @@ function marketingWeekBandFromStart(sunStart) {
   return { days, endDate: days[6].date };
 }
 
-function buildEventsBar() {
-  const bar = document.createElement('div');
-  bar.className = 'cal-events-bar';
-
+function buildEventsControl() {
   const wrap = document.createElement('div');
   wrap.className = 'cal-events-wrap';
 
@@ -12878,7 +12957,11 @@ function buildEventsBar() {
   btn.className = 'cal-nav-btn' + (eventsMenuOpen ? ' is-toggled' : '');
   btn.setAttribute('aria-haspopup', 'true');
   btn.setAttribute('aria-expanded', eventsMenuOpen ? 'true' : 'false');
-  btn.textContent = list.length ? ('Events · ' + list.length) : 'Events';
+  if (isCompactCalChrome()) {
+    btn.textContent = list.length ? ('Events ' + list.length) : 'Events';
+  } else {
+    btn.textContent = list.length ? ('Events · ' + list.length) : 'Events';
+  }
   btn.title = 'Active events and campaigns';
   btn.addEventListener('click', e => {
     e.stopPropagation();
@@ -12952,8 +13035,7 @@ function buildEventsBar() {
   menu.appendChild(addBtn);
 
   wrap.appendChild(menu);
-  bar.appendChild(wrap);
-  return bar;
+  return wrap;
 }
 
 function marketingMonthWeekBands(year, month) {
@@ -19198,6 +19280,13 @@ document.addEventListener('paste', async e => {
     await applyImageToPipelineCard('execution', activeExecId, imageFile);
   }
 });
+
+try {
+  const calChromeMq = window.matchMedia('(max-width: 700px)');
+  const onCalChromeChange = () => { if (typeof renderBoard === 'function') renderBoard(); };
+  if (calChromeMq.addEventListener) calChromeMq.addEventListener('change', onCalChromeChange);
+  else if (calChromeMq.addListener) calChromeMq.addListener(onCalChromeChange);
+} catch (_) {}
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
