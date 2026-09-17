@@ -4701,19 +4701,22 @@
       .cal-events-menu {
         max-width: calc(100vw - 24px);
       }
+      .cal-types-menu {
+        left: 0;
+        right: auto;
+        max-width: calc(100vw - 24px);
+      }
       .cal-triage {
         gap: 5px;
         padding: 2px 4px 8px;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        flex-wrap: wrap;
       }
       .cal-triage-week,
       .cal-triage-meta { display: none; }
       .cal-triage-chip {
-        font-size: 10.5px;
-        padding: 5px 8px;
-        gap: 4px;
+        font-size: 10px;
+        padding: 4px 7px;
+        gap: 3px;
         border-radius: 999px;
         flex: 0 0 auto;
         white-space: nowrap;
