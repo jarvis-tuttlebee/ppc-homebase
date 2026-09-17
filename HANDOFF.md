@@ -12,6 +12,25 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-17 — Deployed Marketing 0.12.106 (Cursor Cloud)
+
+### Live
+- Worker Version ID: `e01e5e92-36cf-4efd-b79c-e96e3863c322`
+- Marketing **`0.12.106`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
+- Deployed from `cursor/reorder-card-types-f0e6`
+- `origin/main` matches this tip (ff-only) after this entry
+
+### What
+Card-type reorder, idea multi-photo, multi-format one card (Idea + Prep), extras park in Unscheduled on Add to calendar.
+
+### Safe for cards?
+Yes — extra formats are stored on the same idea/prep card (`extraFormats`). Calendar extras are new Unscheduled slots; existing dated cards are unchanged.
+
+### Open / next
+Hard-refresh Marketing (Cmd/Ctrl+Shift+R) so the version label shows **v0.12.106**.
+
+---
+
 ## 2026-09-17 — Prep format multi-select 0.12.106 (Cursor Cloud)
 
 ### Local (not deployed)
