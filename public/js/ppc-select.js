@@ -849,7 +849,9 @@ body.dark .ppc-datetime-time {
     function syncUI() {
       if (isMulti) {
         const set = selectedSet();
-        const picked = allOpts.filter(o => o.id && set.has(o.id));
+        const picked = selected
+          .map(id => allOpts.find(o => o.id === id))
+          .filter(Boolean);
         if (!picked.length) {
           labelEl.textContent = emptyLabel;
           labelEl.style.color = '';
