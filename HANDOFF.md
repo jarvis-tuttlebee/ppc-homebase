@@ -12,6 +12,21 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-17 — Idea multi-photo carousel 0.12.104 (Cursor Cloud)
+
+### Local (not deployed)
+- Marketing **`0.12.104`** on `cursor/reorder-card-types-f0e6`
+- Live still **`0.12.102`**
+- Also includes card-type reorder from 0.12.103
+
+### What
+Ideas can hold up to 10 photos (`images[]`). Add another / drop / paste appends. Left/right arrows (and ←/→) page through them on the idea panel, grid thumbs, and board wells. Cover `imageData` stays in sync so Prep/calendar still show a photo.
+
+### Open / next
+Preview on `:8787`. Deploy not requested.
+
+---
+
 ## 2026-09-16 — Reorder Marketing card types 0.12.103 (Cursor Cloud)
 
 ### Local (not deployed)

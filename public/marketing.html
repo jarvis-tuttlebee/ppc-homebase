@@ -908,6 +908,9 @@
       display: block;
       margin: 4px 0 18px;
     }
+    .photo-stage {
+      position: relative;
+    }
     .panel-image-wrap img {
       width: 100%;
       max-height: 360px;
@@ -935,6 +938,71 @@
     }
     .panel-image-wrap.empty .panel-image-empty { display: flex; }
     .panel-image-wrap.empty img { display: none; }
+    .photo-pager-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 3;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: rgba(44, 44, 44, 0.55);
+      color: #fff;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .photo-pager-nav.prev { left: 6px; }
+    .photo-pager-nav.next { right: 6px; }
+    .photo-pager-nav:hover { background: rgba(44, 44, 44, 0.78); }
+    .photo-pager-count {
+      position: absolute;
+      left: 50%;
+      bottom: 6px;
+      transform: translateX(-50%);
+      z-index: 3;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #fff;
+      background: rgba(44, 44, 44, 0.55);
+      border-radius: 10px;
+      padding: 2px 7px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .photo-pager-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .photo-pager-actions[hidden] { display: none !important; }
+    .photo-pager-actions button {
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6B7A8D;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .photo-pager-actions button:hover { color: #2C2C2C; }
+    .ideas-grid-thumb { position: relative; }
+    .ideas-grid-thumb .photo-pager-nav {
+      width: 24px;
+      height: 24px;
+      font-size: 16px;
+    }
+    .image-well.has-image { position: relative; }
     .panel-save-row {
       display: flex;
       justify-content: flex-end;
@@ -4623,8 +4691,11 @@
     <div class="panel-exec-layout" id="panelExecLayout">
       <div class="panel-image-wrap" id="pImageWrap">
         <div class="panel-section-label" id="pImageSectionLabel">Photo</div>
-        <img id="pImage" alt="">
-        <div class="panel-image-empty" id="pImageEmpty">Photo optional — tap, drop, or paste</div>
+        <div class="photo-stage" id="pImageStage">
+          <img id="pImage" alt="">
+          <div class="panel-image-empty" id="pImageEmpty">Photos optional — tap, drop, or paste. Carousels can hold several.</div>
+        </div>
+        <div class="photo-pager-actions" id="pImagePagerActions" hidden></div>
       </div>
       <div class="panel-fields">
         <div class="panel-props" id="panelProps"></div>
@@ -5055,7 +5126,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.103';
+const APP_VERSION = '0.12.104';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6241,6 +6312,8 @@ function cloneIdeaForFormat(source, pillar, format) {
     imageData: source.imageData || null,
     imageW: source.imageW,
     imageH: source.imageH,
+    images: cloneCardImages(source),
+    imageIndex: Number(source.imageIndex) || 0,
     x: pos.x,
     y: pos.y,
     createdAt: new Date().toISOString(),
@@ -6265,6 +6338,8 @@ function pipelineCardToIdea(card) {
     imageData: card.imageData || null,
     imageW: card.imageW,
     imageH: card.imageH,
+    images: cloneCardImages(card),
+    imageIndex: Number(card.imageIndex) || 0,
     linkedScheduleId: card.linkedScheduleId || '',
     x: pos.x,
     y: pos.y,
@@ -6302,6 +6377,8 @@ function buildPrepCardFromIdea(idea, pillar, format, opts) {
     imageData: idea.imageData || null,
     imageW: idea.imageW,
     imageH: idea.imageH,
+    images: cloneCardImages(idea),
+    imageIndex: Number(idea.imageIndex) || 0,
     pillar,
     format,
     contentLayer: normalizeContentLayer(idea.contentLayer),
@@ -7216,6 +7293,7 @@ function resetIdeasViewAfterReshuffle() {
 /** Max long-edge for embedded previews (Ideas / Prep / Discover). Compressed JPEG before R2 upload. */
 const IMAGE_MAX_EDGE = 720;
 const IMAGE_JPEG_QUALITY = 0.72;
+const IDEA_IMAGE_MAX = 10;
 
 function isStoredMediaRef(v) {
   return typeof v === 'string' && v.length > 0 && (
@@ -7283,6 +7361,7 @@ function migrateIdea(idea) {
   idea.contentLayer = normalizeContentLayer(idea.contentLayer);
   if (idea.contentWhy == null) idea.contentWhy = '';
   if (idea.anchorId == null) idea.anchorId = '';
+  ensureCardImages(idea);
   return idea;
 }
 
@@ -7308,6 +7387,7 @@ function migratePrep(card) {
   card.contentLayer = normalizeContentLayer(card.contentLayer);
   if (card.contentWhy == null) card.contentWhy = '';
   if (card.anchorId == null) card.anchorId = '';
+  ensureCardImages(card);
   return card;
 }
 
@@ -7928,6 +8008,8 @@ function restoreIdeaRefsFromSchedule() {
       imageData: src.imageData || slot.imageData || null,
       imageW: src.imageW || slot.imageW || null,
       imageH: src.imageH || slot.imageH || null,
+      images: cloneCardImages(src).length ? cloneCardImages(src) : cloneCardImages(slot),
+      imageIndex: Number(src.imageIndex != null ? src.imageIndex : slot.imageIndex) || 0,
       linkedScheduleId: slot.id,
       x: pos.x,
       y: pos.y,
@@ -9219,20 +9301,189 @@ async function processImageFile(file) {
   return result;
 }
 
-async function applyImageToIdea(ideaId, file) {
-  if (!isImageFile(file)) return;
-  try {
-    const result = await processImageFile(file);
-    const idea = DATA.ideas.find(i => i.id === ideaId);
-    if (idea) {
-      idea.imageData = result.imageData;
-      idea.imageW = result.imageW;
-      idea.imageH = result.imageH;
-      scheduleSave();
-      renderBoard();
-      focusWell(ideaId);
-      if (panelMode === 'idea' && activeIdeaId === ideaId) setPanelImage(idea.imageData);
+function cloneCardImages(card) {
+  return cardImages(card).map(img => ({
+    imageData: img.imageData,
+    imageW: img.imageW,
+    imageH: img.imageH
+  }));
+}
+
+function cardImages(card) {
+  if (!card) return [];
+  if (Array.isArray(card.images) && card.images.length) {
+    return card.images.filter(img => img && img.imageData);
+  }
+  if (card.imageData) {
+    return [{ imageData: card.imageData, imageW: card.imageW, imageH: card.imageH }];
+  }
+  return [];
+}
+
+function ensureCardImages(card) {
+  if (!card) return [];
+  card.images = cardImages(card).slice(0, IDEA_IMAGE_MAX);
+  syncCardCoverImage(card);
+  return card.images;
+}
+
+function syncCardCoverImage(card) {
+  if (!card) return;
+  const imgs = Array.isArray(card.images)
+    ? card.images.filter(img => img && img.imageData).slice(0, IDEA_IMAGE_MAX)
+    : [];
+  card.images = imgs;
+  let idx = Number(card.imageIndex);
+  if (!Number.isInteger(idx) || idx < 0) idx = 0;
+  if (idx >= imgs.length) idx = Math.max(0, imgs.length - 1);
+  card.imageIndex = imgs.length ? idx : 0;
+  const cur = imgs[card.imageIndex];
+  if (cur) {
+    card.imageData = cur.imageData;
+    card.imageW = cur.imageW;
+    card.imageH = cur.imageH;
+  } else {
+    card.imageData = null;
+    card.imageW = null;
+    card.imageH = null;
+    card.imageIndex = 0;
+  }
+}
+
+function copyCardMedia(from, to) {
+  if (!to) return to;
+  const images = cloneCardImages(from);
+  to.images = images;
+  to.imageIndex = Number(from && from.imageIndex) || 0;
+  syncCardCoverImage(to);
+  return to;
+}
+
+function addCardImage(card, result) {
+  if (!card || !result || !result.imageData) return false;
+  const imgs = ensureCardImages(card);
+  if (imgs.length >= IDEA_IMAGE_MAX) {
+    if (typeof PPC !== 'undefined' && PPC.showToast) {
+      PPC.showToast('Up to ' + IDEA_IMAGE_MAX + ' photos on an idea');
     }
+    return false;
+  }
+  imgs.push({
+    imageData: result.imageData,
+    imageW: result.imageW,
+    imageH: result.imageH
+  });
+  card.imageIndex = imgs.length - 1;
+  syncCardCoverImage(card);
+  return true;
+}
+
+function stepCardImage(card, delta) {
+  const imgs = ensureCardImages(card);
+  if (imgs.length < 2) return false;
+  const n = imgs.length;
+  card.imageIndex = ((Number(card.imageIndex) || 0) + Number(delta) + n) % n;
+  syncCardCoverImage(card);
+  return true;
+}
+
+function removeCurrentCardImage(card) {
+  const imgs = ensureCardImages(card);
+  if (!imgs.length) return false;
+  imgs.splice(Number(card.imageIndex) || 0, 1);
+  syncCardCoverImage(card);
+  return true;
+}
+
+function filesFromImageInput(fileOrFiles, evt) {
+  if (Array.isArray(fileOrFiles)) return fileOrFiles.filter(isImageFile);
+  const dropped = evt && evt.dataTransfer && evt.dataTransfer.files
+    ? Array.from(evt.dataTransfer.files)
+    : [];
+  if (dropped.length) return dropped.filter(isImageFile);
+  return isImageFile(fileOrFiles) ? [fileOrFiles] : [];
+}
+
+function mountPhotoPager(stageEl, card, opts) {
+  if (!stageEl || !card) return;
+  const options = opts || {};
+  stageEl.querySelectorAll('.photo-pager-nav, .photo-pager-count').forEach(el => el.remove());
+  const imgs = cardImages(card);
+  if (imgs.length < 2) return;
+  const idx = Number(card.imageIndex) || 0;
+  const makeNav = (dir, label, text) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'photo-pager-nav ' + (dir < 0 ? 'prev' : 'next');
+    btn.setAttribute('aria-label', label);
+    btn.textContent = text;
+    const go = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (stepCardImage(card, dir)) {
+        scheduleSave();
+        if (typeof options.onChange === 'function') options.onChange(card);
+      }
+    };
+    btn.addEventListener('click', go);
+    btn.addEventListener('mousedown', e => e.stopPropagation());
+    btn.addEventListener('pointerdown', e => e.stopPropagation());
+    return btn;
+  };
+  const count = document.createElement('div');
+  count.className = 'photo-pager-count';
+  count.textContent = (idx + 1) + ' / ' + imgs.length;
+  stageEl.appendChild(makeNav(-1, 'Previous photo', '\u2039'));
+  stageEl.appendChild(makeNav(1, 'Next photo', '\u203A'));
+  stageEl.appendChild(count);
+}
+
+function refreshIdeaPhotoSurfaces(idea) {
+  if (!idea) return;
+  const src = mediaSrc(idea.imageData);
+  const n = cardImages(idea).length;
+  const idx = (Number(idea.imageIndex) || 0) + 1;
+  document.querySelectorAll('.ideas-grid-card[data-idea-id="' + idea.id + '"] .ideas-grid-thumb img').forEach(img => {
+    if (src) img.src = src;
+  });
+  document.querySelectorAll('.ideas-grid-card[data-idea-id="' + idea.id + '"] .photo-pager-count').forEach(el => {
+    el.textContent = idx + ' / ' + n;
+  });
+  const wellImg = document.querySelector('.image-well[data-idea-id="' + idea.id + '"] img');
+  if (wellImg && src) wellImg.src = src;
+  const well = document.querySelector('.image-well[data-idea-id="' + idea.id + '"]');
+  if (well) {
+    mountPhotoPager(well, idea, { onChange: refreshIdeaPhotoSurfaces });
+    if (idea.imageW && idea.imageH) {
+      const cardSize = ideaCardSize((DATA.ideas || []).length);
+      const innerW = Math.max(64, cardSize - 14);
+      let desiredH = Math.round((idea.imageH / idea.imageW) * innerW);
+      desiredH = Math.max(56, Math.min(desiredH, Math.round(cardSize * 2.4)));
+      well.style.height = desiredH + 'px';
+    }
+  }
+  if (panelMode === 'idea' && activeIdeaId === idea.id) {
+    setPanelImage(idea.imageData);
+  }
+}
+
+async function applyImageToIdea(ideaId, fileOrFiles, evt) {
+  const files = filesFromImageInput(fileOrFiles, evt);
+  if (!files.length) return;
+  const idea = DATA.ideas.find(i => i.id === ideaId);
+  if (!idea) return;
+  try {
+    let added = 0;
+    for (let i = 0; i < files.length; i++) {
+      const result = await processImageFile(files[i]);
+      if (addCardImage(idea, result)) added += 1;
+      else break;
+    }
+    if (!added) return;
+    scheduleSave();
+    renderBoard();
+    focusWell(ideaId);
+    if (panelMode === 'idea' && activeIdeaId === ideaId) setPanelImage(idea.imageData);
   } catch (err) { console.warn('Image load failed:', err); }
 }
 
@@ -9368,6 +9619,7 @@ function renderIdeaCard(idea, cardSize) {
     img.draggable = false;
     img.addEventListener('dragstart', e => e.preventDefault());
     well.appendChild(img);
+    mountPhotoPager(well, idea, { onChange: refreshIdeaPhotoSurfaces });
   } else {
     const ph = document.createElement('div');
     ph.className = 'placeholder';
@@ -9379,7 +9631,7 @@ function renderIdeaCard(idea, cardSize) {
   card.appendChild(well);
   // Whole card accepts drops (not only the image well) so drops on the
   // preview text still land on this idea instead of spawning a new card.
-  setupDropZone(card, file => applyImageToIdea(idea.id, file));
+  setupDropZone(card, (file, e) => applyImageToIdea(idea.id, file, e));
 
   const preview = document.createElement('div');
   preview.className = 'card-preview';
@@ -9959,6 +10211,8 @@ function clearScheduledContent(scheduleId) {
     imageData: null,
     imageW: null,
     imageH: null,
+    images: [],
+    imageIndex: 0,
     needLabel: '',
     needContent: true,
     publishStatus: 'need',
@@ -10027,17 +10281,20 @@ function ideaBrowseMeta(idea) {
 }
 
 
-function pickImageFile() {
+function pickImageFile(opts) {
   return new Promise(resolve => {
+    const multiple = !!(opts && opts.multiple);
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    if (multiple) input.multiple = true;
     input.setAttribute('aria-hidden', 'true');
     input.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;opacity:0';
     input.addEventListener('change', () => {
-      const file = input.files && input.files[0] ? input.files[0] : null;
+      const list = input.files ? Array.from(input.files) : [];
       if (input.parentNode) input.parentNode.removeChild(input);
-      resolve(file);
+      if (multiple) resolve(list);
+      else resolve(list[0] || null);
     });
     document.body.appendChild(input);
     input.click();
@@ -10045,18 +10302,18 @@ function pickImageFile() {
 }
 
 async function pickAndApplyIdeaImage(ideaId) {
-  const file = await pickImageFile();
-  if (!file) return;
-  await applyImageToIdea(ideaId, file);
+  const files = await pickImageFile({ multiple: true });
+  if (!files || (Array.isArray(files) && !files.length)) return;
+  await applyImageToIdea(ideaId, files);
 }
 
-function appendIdeasAddPhotoControl(host, ideaId) {
+function appendIdeasAddPhotoControl(host, ideaId, hasPhoto) {
   const btn = document.createElement('span');
   btn.className = 'ideas-add-photo';
   btn.setAttribute('role', 'button');
   btn.tabIndex = 0;
-  btn.textContent = 'Add photo';
-  btn.title = 'Attach a reference photo';
+  btn.textContent = hasPhoto ? 'Add another' : 'Add photo';
+  btn.title = hasPhoto ? 'Add another reference photo' : 'Attach a reference photo';
   const activate = e => {
     e.stopPropagation();
     e.preventDefault();
@@ -10074,7 +10331,7 @@ function renderIdeasGridView(body) {
   const grid = document.createElement('div');
   grid.className = 'ideas-grid';
   sortedIdeasForBrowse().forEach(idea => {
-    const hasPhoto = Boolean(idea.imageData);
+    const hasPhoto = cardImages(idea).length > 0;
     const info = ideaBrowseMeta(idea);
     const card = document.createElement('button');
     card.type = 'button';
@@ -10108,6 +10365,7 @@ function renderIdeasGridView(body) {
       img.loading = 'lazy';
       img.decoding = 'async';
       thumb.appendChild(img);
+      mountPhotoPager(thumb, idea, { onChange: refreshIdeaPhotoSurfaces });
       card.appendChild(thumb);
     }
 
@@ -10125,12 +10383,10 @@ function renderIdeasGridView(body) {
     title.className = 'ideas-grid-title' + (plain ? '' : ' empty');
     title.textContent = ideaBrowseTitle(idea);
     bodyEl.appendChild(title);
-    if (!hasPhoto) {
-      const meta = document.createElement('div');
-      meta.className = 'ideas-list-meta';
-      appendIdeasAddPhotoControl(meta, idea.id);
-      bodyEl.appendChild(meta);
-    }
+    const meta = document.createElement('div');
+    meta.className = 'ideas-list-meta';
+    appendIdeasAddPhotoControl(meta, idea.id, hasPhoto);
+    bodyEl.appendChild(meta);
     card.appendChild(bodyEl);
 
     card.addEventListener('click', () => openPanel(idea.id));
@@ -11428,6 +11684,8 @@ function syncLinkedSchedulePreview(card, stage) {
     imageData: card.imageData || slot.imageData || null,
     imageW: card.imageW != null ? card.imageW : slot.imageW,
     imageH: card.imageH != null ? card.imageH : slot.imageH,
+    images: cloneCardImages(card).length ? cloneCardImages(card) : cloneCardImages(slot),
+    imageIndex: Number(card.imageIndex != null ? card.imageIndex : slot.imageIndex) || 0,
     pillar: (stage === 'ideas'
       ? ((card.cat && pillarById(card.cat)) ? card.cat : (slot.pillar || 'organic'))
       : (card.pillar || slot.pillar || 'organic')),
@@ -15995,6 +16253,68 @@ function setPanelImage(imageData) {
     imgEl.removeAttribute('src');
     imgWrap.classList.add('empty');
   }
+  refreshPanelImagePager();
+}
+
+function activePanelMediaCard() {
+  if (panelMode === 'idea' && activeIdeaId) {
+    return (DATA.ideas || []).find(i => i.id === activeIdeaId) || null;
+  }
+  if (panelMode === 'prep' && activePrepId) {
+    return prepCards().find(c => c.id === activePrepId) || null;
+  }
+  if (panelMode === 'exec' && activeExecId) {
+    return execCards().find(c => c.id === activeExecId) || null;
+  }
+  return null;
+}
+
+function refreshPanelImagePager() {
+  const stage = document.getElementById('pImageStage');
+  const actions = document.getElementById('pImagePagerActions');
+  const card = activePanelMediaCard();
+  if (stage) {
+    if (card) mountPhotoPager(stage, card, {
+      onChange: next => {
+        setPanelImage(next.imageData);
+        if (panelMode === 'idea') refreshIdeaPhotoSurfaces(next);
+        else renderBoard();
+      }
+    });
+    else stage.querySelectorAll('.photo-pager-nav, .photo-pager-count').forEach(el => el.remove());
+  }
+  if (!actions) return;
+  actions.innerHTML = '';
+  const canEdit = panelMode === 'idea' && card;
+  const imgs = cardImages(card);
+  if (!canEdit || !imgs.length) {
+    actions.hidden = true;
+    return;
+  }
+  actions.hidden = false;
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.textContent = '+ Add photo';
+  add.title = 'Add another photo to this idea';
+  add.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    pickAndApplyIdeaImage(card.id);
+  });
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.textContent = 'Remove photo';
+  remove.title = 'Remove this photo';
+  remove.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!removeCurrentCardImage(card)) return;
+    scheduleSave();
+    renderBoard();
+    setPanelImage(card.imageData);
+  });
+  actions.appendChild(add);
+  actions.appendChild(remove);
 }
 
 function updatePanelStrip(colorId, formatId) {
@@ -18135,8 +18455,9 @@ function setSchedulePostDetailsOpen(open) {
   const wrap = document.getElementById('pImageWrap');
   if (!wrap) return;
   wrap.tabIndex = 0;
-  wrap.title = 'Tap to choose a photo, or drop / paste an image';
-  wrap.addEventListener('click', async () => {
+  wrap.title = 'Tap to choose photos, or drop / paste. Use arrows when there is more than one.';
+  wrap.addEventListener('click', async e => {
+    if (e.target.closest('.photo-pager-nav, .photo-pager-actions, .photo-pager-count')) return;
     if (panelMode === 'idea' && activeIdeaId) {
       focusedWellId = activeIdeaId;
       wrap.classList.add('drop-target');
@@ -18154,9 +18475,9 @@ function setSchedulePostDetailsOpen(open) {
       else if (panelMode === 'exec' && activeExecId) await applyImageToPipelineCard('execution', activeExecId, file);
     }
   });
-  setupDropZone(wrap, async file => {
+  setupDropZone(wrap, async (file, e) => {
     if (panelMode === 'idea' && activeIdeaId) {
-      await applyImageToIdea(activeIdeaId, file);
+      await applyImageToIdea(activeIdeaId, file, e);
       return;
     }
     if (panelMode === 'prep' && activePrepId) {
@@ -18184,6 +18505,26 @@ function setSchedulePostDetailsOpen(open) {
   });
 })();
 
+document.addEventListener('keydown', e => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const box = document.getElementById('mediaLightbox');
+  if (box && box.classList.contains('open')) return;
+  const t = e.target;
+  const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || (t && t.isContentEditable)) return;
+  const panel = document.getElementById('panel');
+  if (!panel || !panel.classList.contains('open')) return;
+  const card = activePanelMediaCard();
+  if (!card || cardImages(card).length < 2) return;
+  e.preventDefault();
+  if (stepCardImage(card, e.key === 'ArrowLeft' ? -1 : 1)) {
+    scheduleSave();
+    setPanelImage(card.imageData);
+    if (panelMode === 'idea') refreshIdeaPhotoSurfaces(card);
+    else renderBoard();
+  }
+});
+
 async function applyImageToPipelineCard(sectionKey, cardId, file) {
   if (!isImageFile(file)) return;
   const list = (DATA.sections && DATA.sections[sectionKey]) || [];
@@ -18191,9 +18532,7 @@ async function applyImageToPipelineCard(sectionKey, cardId, file) {
   if (!card) return;
   try {
     const result = await processImageFile(file);
-    card.imageData = result.imageData;
-    card.imageW = result.imageW;
-    card.imageH = result.imageH;
+    if (!addCardImage(card, result)) return;
     scheduleSave();
     renderBoard();
     setPanelImage(card.imageData);
@@ -18347,6 +18686,8 @@ function moveIdeaToPrep(idea, pillar, format) {
     imageData: idea.imageData || null,
     imageW: idea.imageW,
     imageH: idea.imageH,
+    images: cloneCardImages(idea),
+    imageIndex: Number(idea.imageIndex) || 0,
     pillar,
     format,
     contentLayer: normalizeContentLayer(idea.contentLayer),
