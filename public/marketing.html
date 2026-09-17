@@ -674,6 +674,28 @@
       line-height: 1.35;
       margin: 0 0 8px;
     }
+    .prop-row--stack { align-items: flex-start; }
+    .prop-row--stack .prop-label { padding-top: 10px; }
+    .format-pick-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .format-pick-chip {
+      font: inherit;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border: 1.5px solid #d5d0c8;
+      border-radius: 999px;
+      background: #f3f1ee;
+      color: #2C2C2C;
+      padding: 3px 8px;
+      cursor: pointer;
+      line-height: 1.2;
+    }
+    .format-pick-chip:hover { filter: brightness(0.97); }
     .idea-format-groups { display: flex; flex-direction: column; gap: 10px; width: 100%; }
     .idea-format-group-label {
       font-size: 9.5px;
@@ -5121,13 +5143,13 @@
   <div class="ctx-item" data-action="duplicate-slot">Duplicate</div>
 </div>
 
-<script src="/js/ppc-select.js?v=10"></script>
+<script src="/js/ppc-select.js?v=11"></script>
 <script src="/js/ppc-homebase.js?v=19"></script>
 <script>
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.105';
+const APP_VERSION = '0.12.106';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6393,6 +6415,79 @@ function layerAndFormatsLine(card) {
     : '';
   const formats = formatTitlesLine(card);
   return [layerShort, formats].filter(Boolean).join(' · ');
+}
+
+function renderFormatPickChips(host, picks, onRemove) {
+  if (!host) return;
+  host.innerHTML = '';
+  (picks || []).forEach(p => {
+    if (!p || !p.format) return;
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'format-pick-chip';
+    const lab = formatLabel(p.pillar, p.format) || p.format;
+    chip.textContent = lab;
+    chip.title = 'Remove ' + lab;
+    const tone = typeof formatColor === 'function' ? formatColor(p.format, p.pillar) : '';
+    if (tone) {
+      chip.style.borderColor = tone;
+      chip.style.color = typeof accentTextColor === 'function' ? accentTextColor(tone) : '#2C2C2C';
+      chip.style.background = typeof hexWash === 'function' ? hexWash(tone, 0.14) : '#f3f1ee';
+    }
+    chip.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof onRemove === 'function') onRemove(p);
+    });
+    host.appendChild(chip);
+  });
+  host.hidden = !host.childNodes.length;
+}
+
+function appendFormatMultiSelect(formatValue, opts) {
+  opts = opts || {};
+  const selectId = opts.id;
+  const selectedKeys = formatPickKeysForCard(opts.card);
+  const row = formatValue && formatValue.closest ? formatValue.closest('.prop-row') : null;
+  if (row) row.classList.add('prop-row--stack');
+
+  const hint = document.createElement('div');
+  hint.className = 'idea-format-hint';
+  hint.textContent = 'Tick every format this piece should run as — they stay on this card.';
+  formatValue.appendChild(hint);
+
+  const chips = document.createElement('div');
+  chips.className = 'format-pick-chips';
+
+  function picksFromKeys(keys) {
+    return (keys || []).map(parseFormatPickKey).filter(Boolean);
+  }
+
+  function removePick(pick) {
+    const key = formatPickKey(pick.pillar, pick.format);
+    const nextKeys = (typeof getPpcSelectValues === 'function' ? getPpcSelectValues(selectId) : [])
+      .filter(k => k !== key);
+    if (typeof updatePpcSelect === 'function') updatePpcSelect(selectId, { values: nextKeys });
+    const parsed = picksFromKeys(nextKeys);
+    if (typeof opts.onPicks === 'function') opts.onPicks(parsed);
+    renderFormatPickChips(chips, parsed, removePick);
+  }
+
+  formatValue.appendChild(createPpcSelect({
+    id: selectId,
+    options: flatFormatSelectOptions(),
+    values: selectedKeys,
+    multi: true,
+    colored: true,
+    placeholder: 'Pick format…',
+    onChange: vals => {
+      const picks = picksFromKeys(vals);
+      if (typeof opts.onPicks === 'function') opts.onPicks(picks);
+      renderFormatPickChips(chips, picks, removePick);
+    }
+  }));
+  formatValue.appendChild(chips);
+  renderFormatPickChips(chips, picksFromKeys(selectedKeys), removePick);
 }
 
 function cloneIdeaForFormat(source, pillar, format) {
@@ -16573,24 +16668,11 @@ function buildIdeaPanelProps(idea) {
   formatRow.id = 'pIdeaFormatRow';
   formatRow.innerHTML = '<span class="prop-label">Format</span><span class="prop-value"></span>';
   const formatValue = formatRow.querySelector('.prop-value');
-
-  const hint = document.createElement('div');
-  hint.className = 'idea-format-hint';
-  hint.textContent = 'Select one or more — they stay on this card. Add to calendar parks the extras in Unscheduled.';
-  formatValue.appendChild(hint);
-
-  formatValue.appendChild(createPpcSelect({
+  appendFormatMultiSelect(formatValue, {
     id: 'pIdeaFormat',
-    options: flatFormatSelectOptions(),
-    values: selectedKeys,
-    multi: true,
-    placeholder: 'Pick format…',
-    colored: true,
-    onChange: vals => {
-      const picks = (vals || []).map(parseFormatPickKey).filter(Boolean);
-      liveApplyPrimaryPick(picks);
-    }
-  }));
+    card: idea,
+    onPicks: liveApplyPrimaryPick
+  });
 
   wrap.appendChild(formatRow);
   appendContentLayerProp(wrap, idea.contentLayer, {
@@ -16633,23 +16715,14 @@ function buildPrepPanelProps(card) {
 
   const formatRow = document.createElement('div');
   formatRow.className = 'prop-row';
+  formatRow.id = 'pPrepFormatRow';
   formatRow.innerHTML = '<span class="prop-label">Format</span><span class="prop-value"></span>';
   const formatValue = formatRow.querySelector('.prop-value');
   if (panelMode === 'prep') {
-    const selectedKeys = formatPickKeysForCard(card);
-    const hint = document.createElement('div');
-    hint.className = 'idea-format-hint';
-    hint.textContent = 'Select one or more — they stay on this card. Add to calendar parks the extras in Unscheduled.';
-    formatValue.appendChild(hint);
-    formatValue.appendChild(createPpcSelect({
+    appendFormatMultiSelect(formatValue, {
       id: 'pFormat',
-      options: flatFormatSelectOptions(),
-      values: selectedKeys,
-      multi: true,
-      colored: true,
-      placeholder: 'Pick format…',
-      onChange: vals => {
-        const picks = (vals || []).map(parseFormatPickKey).filter(Boolean);
+      card: card,
+      onPicks: picks => {
         const live = prepCards().find(c => c.id === activePrepId);
         if (!live) return;
         if (picks.length) {
@@ -16661,7 +16734,7 @@ function buildPrepPanelProps(card) {
         refreshPrepCardFormatLabel(live);
         scheduleSave();
       }
-    }));
+    });
   } else {
     const startKey = (card.pillar && card.format)
       ? formatPickKey(card.pillar, card.format)

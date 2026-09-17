@@ -53,6 +53,19 @@
   overflow-y: auto;
 }
 .ppc-select.open .ppc-select-menu { display: block; }
+.ppc-select-menu.is-portaled {
+  display: block;
+  position: fixed;
+  z-index: 9200;
+  right: auto;
+}
+.ppc-select--multi .ppc-select-trigger {
+  align-items: flex-start;
+}
+.ppc-select--multi .ppc-select-trigger .ppc-label {
+  white-space: normal;
+  line-height: 1.3;
+}
 .ppc-select-option {
   display: block;
   width: 100%;
@@ -325,6 +338,8 @@ body.dark .ppc-datetime-time {
     document.querySelectorAll('.ppc-select.open, .ppc-date.open').forEach(el => {
       if (el !== except) {
         el.classList.remove('open');
+        const trig = el.querySelector('.ppc-select-trigger');
+        if (trig) trig.setAttribute('aria-expanded', 'false');
         // Return portaled date menus to their wrap
         if (el.classList.contains('ppc-date')) {
           const menu = el._ppcDateMenu;
@@ -333,6 +348,17 @@ body.dark .ppc-datetime-time {
             if (menu.parentElement !== el) el.appendChild(menu);
             menu.style.left = '';
             menu.style.top = '';
+          }
+        }
+        if (el.classList.contains('ppc-select')) {
+          const menu = el._ppcSelectMenu;
+          if (menu) {
+            menu.classList.remove('is-portaled');
+            if (menu.parentElement !== el) el.appendChild(menu);
+            menu.style.left = '';
+            menu.style.top = '';
+            menu.style.width = '';
+            menu.style.minWidth = '';
           }
         }
       }
@@ -859,7 +885,10 @@ body.dark .ppc-datetime-time {
           labelEl.textContent = picked[0].label;
           labelEl.style.color = useColor(picked[0]) ? picked[0].color : '';
         } else {
-          labelEl.textContent = picked[0].label + ' +' + (picked.length - 1);
+          const joined = picked.map(o => o.label).join(' · ');
+          labelEl.textContent = joined.length > 48
+            ? picked[0].label + ' +' + (picked.length - 1)
+            : joined;
           labelEl.style.color = useColor(picked[0]) ? picked[0].color : '';
         }
         menu.querySelectorAll('.ppc-select-option').forEach(el => {
@@ -885,10 +914,41 @@ body.dark .ppc-datetime-time {
       });
     }
 
+    function positionMenu() {
+      const rect = trigger.getBoundingClientRect();
+      const pad = 8;
+      const mw = Math.max(rect.width, 200);
+      menu.style.width = mw + 'px';
+      menu.style.minWidth = mw + 'px';
+      let left = rect.left;
+      if (left + mw > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - pad - mw);
+      if (left < pad) left = pad;
+      const mh = Math.min(menu.scrollHeight || 260, 260);
+      let top = rect.bottom + 5;
+      if (top + mh > window.innerHeight - pad) {
+        top = Math.max(pad, rect.top - mh - 5);
+      }
+      menu.style.left = Math.round(left) + 'px';
+      menu.style.top = Math.round(top) + 'px';
+    }
+
     function setOpen(open) {
       wrap.classList.toggle('open', open);
       trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) closePpcSelects(wrap);
+      if (open) {
+        closePpcSelects(wrap);
+        // Portal to body — the side panel uses transform + overflow, which clips menus.
+        if (menu.parentElement !== document.body) document.body.appendChild(menu);
+        menu.classList.add('is-portaled');
+        positionMenu();
+      } else {
+        menu.classList.remove('is-portaled');
+        if (menu.parentElement !== wrap) wrap.appendChild(menu);
+        menu.style.left = '';
+        menu.style.top = '';
+        menu.style.width = '';
+        menu.style.minWidth = '';
+      }
     }
 
     function startOptionRename(btn, opt) {
@@ -994,6 +1054,7 @@ body.dark .ppc-datetime-time {
             hidden.value = serializeMultiValues(selected);
             syncUI();
             emitChange();
+            if (menu.classList.contains('is-portaled')) positionMenu();
             return;
           }
           hidden.value = opt.id;
@@ -1020,6 +1081,7 @@ body.dark .ppc-datetime-time {
     wrap.appendChild(hidden);
     wrap.appendChild(trigger);
     wrap.appendChild(menu);
+    wrap._ppcSelectMenu = menu;
     rebuildMenu();
 
     wrap._ppcGetValues = function () {
@@ -1093,7 +1155,7 @@ body.dark .ppc-datetime-time {
   if (!global._ppcSelectClickBound) {
     global._ppcSelectClickBound = true;
     document.addEventListener('click', e => {
-      if (!e.target.closest('.ppc-select, .ppc-date, .ppc-date-menu, .ppc-datetime')) closePpcSelects();
+      if (!e.target.closest('.ppc-select, .ppc-select-menu, .ppc-date, .ppc-date-menu, .ppc-datetime')) closePpcSelects();
     });
     document.addEventListener('keydown', e => {
       if (e.key !== 'Escape') return;

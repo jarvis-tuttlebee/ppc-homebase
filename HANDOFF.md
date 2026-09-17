@@ -12,6 +12,21 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-17 — Prep format multi-select 0.12.106 (Cursor Cloud)
+
+### Local (not deployed)
+- Marketing **`0.12.106`** on `cursor/reorder-card-types-f0e6`
+- Live still **`0.12.102`**
+- Also includes 0.12.103–0.12.105 (reorder, multi-photo, multi-format cards)
+
+### What
+Preparation uses the same multi-format picker as Ideas (checkboxes + chips). The menu portals out of the side panel so extra formats are actually tappable. Titles stay on one card; extras still park in Unscheduled on Add to calendar.
+
+### Open / next
+Preview on `:8787`. Deploy not requested.
+
+---
+
 ## 2026-09-17 — Multi-format one card + Unscheduled extras 0.12.105 (Cursor Cloud)
 
 ### Local (not deployed)
