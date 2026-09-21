@@ -12,26 +12,29 @@ page versions are **behind** live.
 
 ---
 
-## 2026-09-21 — Prep also leaves the board on Add to calendar 0.12.109 (Cursor)
+## 2026-09-21 — Deployed Marketing 0.12.109 (Cursor)
 
-### Local (not deployed)
-- Marketing **`0.12.109`** on `cursor/ideas-move-unscheduled-cal-d899`
-- Live still **`0.12.107`**
+### Live
+- Worker Version ID: `633061df-748d-41ab-8951-9da8a3b69450`
+- Marketing **`0.12.109`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
+- Deployed from `cursor/ideas-move-unscheduled-cal-d899`
+- `origin/main` matches this tip (ff-only) after this entry
 
 ### What
-Add to calendar from **Preparation** (and Exec/Review) **moves** the card onto Calendar / Unscheduled — same as Ideas. Existing prep cards already linked to a date prune off Preparation on load.
+Add to calendar from Ideas, Preparation, Exec, or Review **moves** the card onto Calendar / Unscheduled — one working copy, not a duplicate. Empty publish date parks in Unscheduled. Hook / Script pills sit under Production plan.
+
+### Safe for cards?
+Yes — `hook` / `script` are new optional fields. Existing Ideas/Prep already on a calendar date leave those boards on next load.
 
 ### Open / next
-Deploy when asked (includes 0.12.108 Ideas move, Unscheduled empty date, Hook/Script).
+Hard-refresh Marketing (Cmd/Ctrl+Shift+R) so the version label shows **v0.12.109**.
 
 ---
 
 ## 2026-09-21 — Ideas move + Unscheduled + Hook/Script pills 0.12.108 (Cursor)
 
-### Local (not deployed)
-- Marketing **`0.12.108`** on `cursor/ideas-move-unscheduled-cal-d899`
-- Live still **`0.12.107`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
-- `origin/main` still matches live 0.12.107 — do not ff until this ships
+### Shipped in 0.12.109
+- Superceded by live **`0.12.109`** (same branch).
 
 ### What
 1. **Add to calendar from Ideas moves the card** — it leaves Content Ideas instead of staying as a linked duplicate. Existing dated Ideas copies prune on load.
