@@ -4799,6 +4799,30 @@
             <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pPlan','removeFormat')">Clear</button>
           </div>
           <div class="panel-desc" id="pPlan" contenteditable="true" placeholder="What needs to happen to produce this…"></div>
+          <div class="exec-opt-pills" id="prepOptPills" aria-label="Add production details"></div>
+          <div class="exec-opt-block" id="prepOptHook" hidden>
+            <hr class="panel-divider">
+            <div class="exec-opt-head">
+              <div class="panel-section-label">Hook</div>
+              <button type="button" class="exec-opt-remove" data-prep-opt-remove="hook">Remove</button>
+            </div>
+            <div class="panel-desc short" id="pHook" contenteditable="true" placeholder="Opening line or first seconds…"></div>
+          </div>
+          <div class="exec-opt-block" id="prepOptScript" hidden>
+            <hr class="panel-divider">
+            <div class="exec-opt-head">
+              <div class="panel-section-label">Script</div>
+              <button type="button" class="exec-opt-remove" data-prep-opt-remove="script">Remove</button>
+            </div>
+            <div class="fmt-bar">
+              <button type="button" class="fmt-btn" title="Bold" onclick="fmtField('pScript','bold')"><b>B</b></button>
+              <button type="button" class="fmt-btn" title="Italic" onclick="fmtField('pScript','italic')"><i>I</i></button>
+              <button type="button" class="fmt-btn" title="Underline" onclick="fmtField('pScript','underline')"><u>U</u></button>
+              <button type="button" class="fmt-btn" title="Bulleted list" onclick="fmtField('pScript','insertUnorderedList')">&#8226;</button>
+              <button type="button" class="fmt-btn wide" title="Clear formatting" onclick="fmtField('pScript','removeFormat')">Clear</button>
+            </div>
+            <div class="panel-desc" id="pScript" contenteditable="true" placeholder="Talking points, VO, on-screen text…"></div>
+          </div>
         </div>
         <div id="execExtraFields" style="display:none">
           <hr class="panel-divider">
@@ -5200,7 +5224,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.107';
+const APP_VERSION = '0.12.109';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5224,6 +5248,58 @@ const HIDE_POSTED_KEY = 'ppc-marketing-hide-posted';
 const HIDDEN_FORMATS_KEY = 'ppc-marketing-hidden-formats';
 /** Empty slots yell Need only within this many days of publish (or if unscheduled). */
 const NEED_ACTION_DAYS = 7;
+/** Optional production fields (pills under Production plan). Add more here later. */
+const PREP_OPTIONAL_SECTIONS = [
+  {
+    id: 'hook',
+    cardKey: 'hook',
+    fieldId: 'pHook',
+    blockId: 'prepOptHook',
+    label: 'Hook',
+    addLabel: '+ Hook',
+    placeholder: 'Opening line or first seconds…',
+    short: true
+  },
+  {
+    id: 'script',
+    cardKey: 'script',
+    fieldId: 'pScript',
+    blockId: 'prepOptScript',
+    label: 'Script',
+    addLabel: '+ Script',
+    placeholder: 'Talking points, VO, on-screen text…',
+    short: false,
+    fmt: true
+  }
+];
+
+function ensurePrepOptionalFields(card) {
+  if (!card) return card;
+  PREP_OPTIONAL_SECTIONS.forEach(spec => {
+    if (card[spec.cardKey] == null) card[spec.cardKey] = '';
+  });
+  return card;
+}
+
+function copyPrepOptionalFields(from, to) {
+  if (!from || !to) return to;
+  PREP_OPTIONAL_SECTIONS.forEach(spec => {
+    const val = from[spec.cardKey];
+    if (val != null && String(val).trim()) to[spec.cardKey] = val;
+  });
+  return to;
+}
+
+function readPrepOptionalFieldsFromPanel(card) {
+  if (!card) return;
+  PREP_OPTIONAL_SECTIONS.forEach(spec => {
+    const el = document.getElementById(spec.fieldId);
+    if (!el) return;
+    const block = document.getElementById(spec.blockId);
+    card[spec.cardKey] = (block && block.hidden) ? '' : sanitizeHtml(el.innerHTML || '').trim();
+  });
+}
+
 const MOOD_H_DEFAULT = 380;
 const MOOD_H_MIN = 220;
 const MOOD_H_MAX = 900;
@@ -6600,10 +6676,13 @@ function pipelineCardToIdea(card) {
     imageIndex: Number(card.imageIndex) || 0,
     extraFormats: parseExtraFormats(card),
     linkedScheduleId: card.linkedScheduleId || '',
+    productionPlan: card.productionPlan || '',
     x: pos.x,
     y: pos.y,
     createdAt: card.createdAt || new Date().toISOString()
   };
+  copyPrepOptionalFields(card, idea);
+  return idea;
 }
 
 /** Keep extra formats on the same idea instead of cloning sibling cards. */
@@ -6636,16 +6715,18 @@ function buildPrepCardFromIdea(idea, pillar, format, opts) {
     contentLayer: normalizeContentLayer(idea.contentLayer),
     contentWhy: idea.contentWhy || '',
     anchorId: idea.anchorId || '',
-    productionPlan: '',
+    productionPlan: idea.productionPlan || '',
     placementNote: '',
     linkedScheduleId: linkedScheduleId || '',
     createdAt: idea.createdAt || new Date().toISOString(),
     movedAt: new Date().toISOString()
   };
+  copyPrepOptionalFields(idea, prepCard);
   if (linkedScheduleId) {
     const slot = scheduleCards().find(c => c.id === linkedScheduleId);
     if (slot) {
       if (slot.productionPlan) prepCard.productionPlan = slot.productionPlan;
+      copyPrepOptionalFields(slot, prepCard);
       if (slot.productsUsed) prepCard.productsUsed = slot.productsUsed;
       if (slot.location) prepCard.location = slot.location;
       if (slot.requirements) prepCard.requirements = slot.requirements;
@@ -7609,6 +7690,8 @@ function migrateIdea(idea) {
   idea.contentLayer = normalizeContentLayer(idea.contentLayer);
   if (idea.contentWhy == null) idea.contentWhy = '';
   if (idea.anchorId == null) idea.anchorId = '';
+  if (idea.productionPlan == null) idea.productionPlan = '';
+  ensurePrepOptionalFields(idea);
   ensureCardImages(idea);
   idea.extraFormats = parseExtraFormats(idea);
   return idea;
@@ -7628,6 +7711,7 @@ function migratePrep(card) {
     card.format = defaultFormatForPillar(card.pillar);
   }
   if (card.productionPlan == null) card.productionPlan = '';
+  ensurePrepOptionalFields(card);
   // Placement note parked for calendar stage — keep data if present, no UI.
   if (card.placementNote == null && card.fitNote != null) {
     card.placementNote = card.fitNote;
@@ -8223,10 +8307,8 @@ function ensureIdeaPositions() {
 }
 
 /**
- * Restore Ideas-board reference cards for calendar slots that still point at a
- * sourceIdeaId after an older Prepare removed the idea from the board.
- * Skips slots that have already moved into Prep / Exec / Review so Prepare
- * stays permanent and pipeline/calendar progress is not duplicated back into Ideas.
+ * Heal reverse links when an Ideas card is still on the board.
+ * Do not recreate Ideas from calendar slots — Add to calendar moves the card.
  */
 function restoreIdeaRefsFromSchedule() {
   let changed = false;
@@ -8235,38 +8317,13 @@ function restoreIdeaRefsFromSchedule() {
     const stage = String(slot.linkedPipelineStage || '');
     if (stage && stage !== 'ideas') return;
     if (slot.linkedPipelineId && findPipelineCardById(slot.linkedPipelineId)) return;
-    // Also skip if a prep/exec/review card already owns this source idea.
     if (findPipelineCardBySourceIdea(slot.sourceIdeaId)) return;
 
     const existing = (DATA.ideas || []).find(i => i.id === slot.sourceIdeaId);
-    if (existing) {
-      if (existing.linkedScheduleId !== slot.id) {
-        existing.linkedScheduleId = slot.id;
-        changed = true;
-      }
-      return;
+    if (existing && existing.linkedScheduleId !== slot.id) {
+      existing.linkedScheduleId = slot.id;
+      changed = true;
     }
-    const pipeline = slot.linkedPipelineId ? findPipelineCardById(slot.linkedPipelineId) : null;
-    const src = (pipeline && pipeline.card) ? pipeline.card : slot;
-    const size = ideaCardSize((DATA.ideas || []).length + 1);
-    const pos = placeNearMostRecent(size);
-    DATA.ideas.push({
-      id: slot.sourceIdeaId,
-      body: src.body || slot.body || '',
-      cat: (src.pillar || slot.pillar || 'organic'),
-      format: src.format || slot.format || null,
-      imageData: src.imageData || slot.imageData || null,
-      imageW: src.imageW || slot.imageW || null,
-      imageH: src.imageH || slot.imageH || null,
-      images: cloneCardImages(src).length ? cloneCardImages(src) : cloneCardImages(slot),
-      imageIndex: Number(src.imageIndex != null ? src.imageIndex : slot.imageIndex) || 0,
-      linkedScheduleId: slot.id,
-      x: pos.x,
-      y: pos.y,
-      createdAt: src.createdAt || new Date().toISOString(),
-      restoredFromSchedule: true
-    });
-    changed = true;
   });
   return changed;
 }
@@ -8277,22 +8334,43 @@ function findPipelineCardBySourceIdea(ideaId) {
   return allPipelineCards().find(entry => entry.card && entry.card.sourceIdeaId === ideaId) || null;
 }
 
-/** Drop Ideas that already moved into Prep/Exec/Review (or calendar past Ideas). */
+/** Drop Ideas that already moved into Prep/Exec/Review or onto the calendar. */
 function pruneIdeasAlreadyInPipeline() {
   if (!Array.isArray(DATA.ideas) || !DATA.ideas.length) return false;
   const before = DATA.ideas.length;
   DATA.ideas = DATA.ideas.filter(idea => {
     if (!idea || !idea.id) return false;
     if (findPipelineCardBySourceIdea(idea.id)) return false;
-    const slot = linkedScheduleForIdea(idea);
-    if (slot) {
-      const stage = String(slot.linkedPipelineStage || '');
-      if (stage && stage !== 'ideas') return false;
-      if (slot.linkedPipelineId && findPipelineCardById(slot.linkedPipelineId)) return false;
-    }
+    if (linkedScheduleForIdea(idea)) return false;
     return true;
   });
   return DATA.ideas.length !== before;
+}
+
+function pipelineCardLinkedToCalendar(card) {
+  if (!card || !card.id) return false;
+  if (card.linkedScheduleId && scheduleCards().some(c => c && c.id === card.linkedScheduleId)) return true;
+  if (scheduleCards().some(c => c && c.linkedPipelineId === card.id)) return true;
+  return false;
+}
+
+/** Drop Prep/Exec/Review cards that already live on the calendar. */
+function prunePipelineAlreadyOnCalendar() {
+  let changed = false;
+  [
+    ['preparation', prepCards],
+    ['execution', execCards],
+    ['review', reviewCards]
+  ].forEach(([key, getter]) => {
+    const list = getter();
+    if (!Array.isArray(list) || !list.length) return;
+    const next = list.filter(card => !pipelineCardLinkedToCalendar(card));
+    if (next.length !== list.length) {
+      DATA.sections[key] = next;
+      changed = true;
+    }
+  });
+  return changed;
 }
 
 /** Pack ideas into a viewport-filling grid with adaptive gaps and column count. */
@@ -9370,6 +9448,9 @@ async function initApp() {
   resolveLayoutPrefs(DATA);
   if (healPipelineLinksFromSchedule()) scheduleSave();
   if (backfillCompleteFromPosted()) scheduleSave();
+  restoreIdeaRefsFromSchedule();
+  if (pruneIdeasAlreadyInPipeline()) scheduleSave();
+  if (prunePipelineAlreadyOnCalendar()) scheduleSave();
   renderBoard();
   applyMoodHeight(marketingMoodH);
   maybeShowMarketingDigest();
@@ -10097,7 +10178,7 @@ function scheduleBadgeLabel(slot) {
   if (!slot) return 'Scheduled';
   const at = slot.scheduledAt || slot.scheduleAt;
   const d = at ? new Date(at) : null;
-  const datePart = (d && !Number.isNaN(d.getTime())) ? formatShortDate(d) : 'Calendar';
+  const datePart = (d && !Number.isNaN(d.getTime())) ? formatShortDate(d) : 'Unscheduled';
   const stage = slot.linkedPipelineStage || 'ideas';
   const stageLabel = stage === 'prep' ? 'Prep'
     : (stage === 'execution' ? 'Exec'
@@ -10122,6 +10203,8 @@ function jumpToLinkedSchedule(scheduleId) {
       scheduleViewMonth = d.getMonth();
       scheduleViewWeekStart = weekStartSunday(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
     }
+  } else {
+    unscheduledQueueOpen = true;
   }
   setMarketingViewMode('calendar');
   expandedSections.add('schedule');
@@ -10214,6 +10297,8 @@ function spawnExtraFormatCalendarSlots(sourceCard, stage, primarySlot) {
       productsUsed: sourceCard.productsUsed || '',
       location: sourceCard.location || '',
       requirements: sourceCard.requirements || '',
+      hook: sourceCard.hook || '',
+      script: sourceCard.script || '',
       sourceIdeaId: sourceIdeaId,
       siblingOfScheduleId: primarySlot.id,
       extraFormats: [],
@@ -10239,9 +10324,28 @@ function extraFormatsPlaceToast(extras) {
   return names.join(', ') + ' in Unscheduled';
 }
 
+function slotHasPublishDate(slot) {
+  return !!(slot && String(slot.scheduledAt || slot.scheduleAt || '').trim());
+}
+
+function calendarPlaceToast(slot, extras, stage, isNew) {
+  const parked = extraFormatsPlaceToast(extras);
+  const dated = slotHasPublishDate(slot);
+  let base;
+  if (!isNew) {
+    base = dated ? 'Calendar dates updated' : 'Parked in Unscheduled';
+  } else if (stage === 'ideas' || stage === 'prep' || stage === 'execution' || stage === 'review') {
+    base = dated ? 'Moved to calendar' : 'Moved to Unscheduled';
+  } else {
+    base = dated ? 'On calendar' : 'Parked in Unscheduled';
+  }
+  return parked ? (base + ' · ' + parked) : base;
+}
+
 /**
  * Place or update a live calendar link for Ideas / Prep / Exec / Review.
- * Sets publish date + optional make-by date. Card stays in the pipeline.
+ * Publish date is optional — empty parks the card in Unscheduled.
+ * Ideas and pipeline cards leave their board (the calendar card is the working copy).
  * opts.skipSave — caller already persisted panel fields (e.g. Save changes).
  */
 function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts) {
@@ -10252,10 +10356,6 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts)
     : linkedScheduleForPipelineCard(card);
 
   const iso = dateInputToLocalIso(publishDateValue);
-  if (!iso) {
-    if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Pick a publish date');
-    return false;
-  }
 
   if (!options.skipSave && typeof savePanel === 'function') {
     try { savePanel(true); } catch (_) {}
@@ -10264,17 +10364,19 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts)
   pendingCalendarPlace = null;
 
   if (existing) {
-    existing.scheduledAt = iso;
-    existing.scheduleAt = iso;
+    existing.scheduledAt = iso || '';
+    existing.scheduleAt = iso || '';
     if (card.anchorId) existing.anchorId = card.anchorId;
     applyPrepByFromUi(existing, prepDateValue || '');
+    if (!iso) unscheduledQueueOpen = true;
     const extras = spawnExtraFormatCalendarSlots(card, stage, existing);
+    if (stage === 'ideas') consumeIdeaFromBoard(card.id);
+    else consumePipelineCardFromBoard(stage, card.id);
     clearTimeout(saveTimer);
     saveData();
     jumpToLinkedSchedule(existing.id);
     if (typeof PPC !== 'undefined' && PPC.showToast) {
-      const parked = extraFormatsPlaceToast(extras);
-      PPC.showToast(parked ? ('Calendar dates updated · ' + parked) : 'Calendar dates updated');
+      PPC.showToast(calendarPlaceToast(existing, extras, stage, false));
     }
     return true;
   }
@@ -10284,7 +10386,7 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts)
     : (card.pillar || 'organic');
   const format = card.format || 'ig-post';
   const probe = { scheduledAt: iso, scheduleAt: iso, pillar, format };
-  let slot = findEmptyNeedToFill(probe);
+  let slot = iso ? findEmptyNeedToFill(probe) : null;
   if (!slot) {
     slot = migrateSchedule({
       id: newScheduleId(),
@@ -10295,8 +10397,8 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts)
       needLabel: '',
       publishStatus: 'need',
       assignees: [],
-      scheduledAt: iso,
-      scheduleAt: iso,
+      scheduledAt: iso || '',
+      scheduleAt: iso || '',
       contentLayer: '',
       anchorId: card.anchorId || '',
       createdAt: new Date().toISOString()
@@ -10308,9 +10410,10 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts)
     if (card.anchorId) slot.anchorId = card.anchorId;
   }
   applyPrepByFromUi(slot, prepDateValue || '');
+  if (!iso) unscheduledQueueOpen = true;
 
-  if (stage === 'ideas') linkNeedToIdea(slot.id, card.id);
-  else linkNeedToPipelineCard(slot.id, card.id);
+  if (stage === 'ideas') linkNeedToIdea(slot.id, card.id, { skipToast: true });
+  else linkNeedToPipelineCard(slot.id, card.id, { skipToast: true });
 
   const extras = spawnExtraFormatCalendarSlots(card, stage, slot);
   if (extras.length) {
@@ -10319,10 +10422,7 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts)
   }
   jumpToLinkedSchedule(slot.id);
   if (typeof PPC !== 'undefined' && PPC.showToast) {
-    const parked = extraFormatsPlaceToast(extras);
-    PPC.showToast(parked
-      ? ('On calendar — ' + parked)
-      : 'On calendar — keep working from Pipeline or Calendar');
+    PPC.showToast(calendarPlaceToast(slot, extras, stage, true));
   }
   return true;
 }
@@ -10332,12 +10432,6 @@ function commitPendingCalendarPlace(silent) {
   if (silent || !pendingCalendarPlace) return 'none';
   const pending = pendingCalendarPlace;
   const pub = pending.readPub ? pending.readPub() : '';
-  if (!pub) {
-    if (typeof PPC !== 'undefined' && PPC.showToast) {
-      PPC.showToast('Pick a publish date to place on calendar');
-    }
-    return 'blocked';
-  }
   const make = pending.readMake ? pending.readMake() : '';
   const card = pending.card;
   const stage = pending.stage;
@@ -10375,9 +10469,9 @@ function buildAddToCalendarDateFields(slot) {
   pubInput.id = pubId;
   pubInput.className = 'panel-cal-place-date';
   pubInput.value = slot
-    ? (isoToDateInputValue(slot.scheduledAt || slot.scheduleAt) || todayDateInputValue())
-    : todayDateInputValue();
-  pubInput.setAttribute('aria-label', 'Publish date');
+    ? (isoToDateInputValue(slot.scheduledAt || slot.scheduleAt) || '')
+    : '';
+  pubInput.setAttribute('aria-label', 'Publish date (optional)');
   pubField.appendChild(pubLab);
   pubField.appendChild(pubInput);
 
@@ -10458,7 +10552,7 @@ function appendAddToCalendarAction(host, card, stage) {
     openBtn.type = 'button';
     openBtn.className = 'btn-secondary';
     openBtn.textContent = 'Add to calendar';
-    openBtn.title = 'Set publish + make-by dates from any phase — no need to reach Review first';
+    openBtn.title = 'Place on a publish day, or leave the date empty to park in Unscheduled';
     openBtn.addEventListener('click', () => renderExpanded(false));
     wrap.appendChild(openBtn);
   };
@@ -10468,8 +10562,8 @@ function appendAddToCalendarAction(host, card, stage) {
     const hint = document.createElement('div');
     hint.className = 'panel-cal-place-hint';
     hint.textContent = editing
-      ? 'Update the publish day and optional make-by. Save changes also applies these dates.'
-      : 'Pin to a publish day (and optional make-by). Save changes places it — or use Place on calendar.';
+      ? 'Leave publish date empty to park in Unscheduled. Save also applies these dates.'
+      : 'Pick a publish day, or leave it empty to park in Unscheduled.';
     wrap.appendChild(hint);
 
     const { fields, readPub, readMake, pubId } = buildAddToCalendarDateFields(editing ? linked : null);
@@ -10723,8 +10817,7 @@ function renderIdeasBody() {
   body.className = 'section-body';
 
   restoreIdeaRefsFromSchedule();
-  // Ideas that already live in Prep/Exec/Review (or calendar past Ideas) leave Ideas.
-  pruneIdeasAlreadyInPipeline();
+  if (pruneIdeasAlreadyInPipeline()) scheduleSave();
   ensureIdeaPositions();
   if (!moodViewRestored) {
     moodViewRestored = true;
@@ -11088,15 +11181,16 @@ function movePrepToIdeas(id) {
   // Remove from Prep first so pruneIdeasAlreadyInPipeline does not drop the restored idea.
   DATA.sections.preparation = prepCards().filter(c => c.id !== id);
   const idea = pipelineCardToIdea(card);
+  const linkedId = idea.linkedScheduleId || '';
+  idea.linkedScheduleId = '';
   if (!Array.isArray(DATA.ideas)) DATA.ideas = [];
   DATA.ideas.push(idea);
-  if (idea.linkedScheduleId) {
-    syncLinkedSchedulePreview(idea, 'ideas');
-    const slot = scheduleCards().find(c => c.id === idea.linkedScheduleId);
+  if (linkedId) {
+    const slot = scheduleCards().find(c => c.id === linkedId);
     if (slot) {
-      slot.sourceIdeaId = idea.id;
       slot.linkedPipelineId = '';
-      slot.linkedPipelineStage = 'ideas';
+      slot.linkedPipelineStage = '';
+      slot.sourceIdeaId = null;
     }
   }
   expandedSections.add('ideas');
@@ -11742,6 +11836,8 @@ function renderPreparationBody() {
   const body = document.createElement('div');
   body.className = 'section-body';
 
+  if (prunePipelineAlreadyOnCalendar()) scheduleSave();
+
   const board = document.createElement('div');
   board.className = 'prep-board';
 
@@ -12030,6 +12126,8 @@ function syncLinkedSchedulePreview(card, stage) {
     productsUsed: keep(card.productsUsed, slot.productsUsed),
     location: keep(card.location, slot.location),
     requirements: keep(card.requirements, slot.requirements),
+    hook: keep(card.hook, slot.hook),
+    script: keep(card.script, slot.script),
     reviewMedia: stage === 'review' ? (card.reviewMedia || null) : (slot.reviewMedia || null),
     reviewMediaW: stage === 'review' ? (card.reviewMediaW || null) : (slot.reviewMediaW || null),
     reviewMediaH: stage === 'review' ? (card.reviewMediaH || null) : (slot.reviewMediaH || null),
@@ -12073,6 +12171,9 @@ function syncLinkedPipelineFromSchedule(slot) {
       if (slot.contentLayer != null) idea.contentLayer = normalizeContentLayer(slot.contentLayer);
       if (slot.contentWhy != null) idea.contentWhy = slot.contentWhy;
       if (slot.anchorId != null) idea.anchorId = slot.anchorId || '';
+      if (slot.productionPlan != null) idea.productionPlan = slot.productionPlan;
+      if (slot.hook != null) idea.hook = slot.hook;
+      if (slot.script != null) idea.script = slot.script;
       if (slot.imageData) {
         idea.imageData = slot.imageData;
         idea.imageW = slot.imageW != null ? slot.imageW : idea.imageW;
@@ -12139,6 +12240,8 @@ function syncLinkedPipelineFromSchedule(slot) {
   if (slot.productsUsed != null) target.productsUsed = slot.productsUsed;
   if (slot.location != null) target.location = slot.location;
   if (slot.requirements != null) target.requirements = slot.requirements;
+  if (slot.hook != null) target.hook = slot.hook;
+  if (slot.script != null) target.script = slot.script;
   if (slot.imageData) {
     target.imageData = slot.imageData;
     target.imageW = slot.imageW != null ? slot.imageW : target.imageW;
@@ -12202,6 +12305,8 @@ function archiveScheduleToComplete(slot, opts) {
     existing.productsUsed = slot.productsUsed || existing.productsUsed || '';
     existing.location = slot.location || existing.location || '';
     existing.requirements = slot.requirements || existing.requirements || '';
+    existing.hook = slot.hook || existing.hook || '';
+    existing.script = slot.script || existing.script || '';
     existing.imageData = slot.imageData || existing.imageData || null;
     existing.imageW = slot.imageW != null ? slot.imageW : existing.imageW;
     existing.imageH = slot.imageH != null ? slot.imageH : existing.imageH;
@@ -12260,6 +12365,8 @@ function archiveScheduleToComplete(slot, opts) {
     productsUsed: slot.productsUsed || (moved && moved.productsUsed) || '',
     location: slot.location || (moved && moved.location) || '',
     requirements: slot.requirements || (moved && moved.requirements) || '',
+    hook: slot.hook || (moved && moved.hook) || '',
+    script: slot.script || (moved && moved.script) || '',
     reviewMedia: slot.reviewMedia || (moved && moved.reviewMedia) || null,
     reviewMediaW: slot.reviewMediaW || (moved && moved.reviewMediaW) || null,
     reviewMediaH: slot.reviewMediaH || (moved && moved.reviewMediaH) || null,
@@ -17200,23 +17307,18 @@ function buildScheduleActions(card) {
     !!card.linkedPipelineStage
   );
   if (hasFill) {
-    if (card.sourceIdeaId || (card.linkedPipelineStage === 'ideas' && card.sourceIdeaId)) {
+    const ideaOnBoard = card.sourceIdeaId
+      && (DATA.ideas || []).some(i => i && i.id === card.sourceIdeaId);
+    if (ideaOnBoard) {
       const jumpIdea = document.createElement('button');
       jumpIdea.type = 'button';
       jumpIdea.className = 'btn-secondary';
       jumpIdea.textContent = 'Open idea';
       jumpIdea.addEventListener('click', () => {
         const ideaId = card.sourceIdeaId;
-        const idea = (DATA.ideas || []).find(i => i.id === ideaId);
-        if (idea) {
-          expandedSections.add('ideas');
-          renderBoard();
-          openPanel(ideaId);
-          return;
-        }
-        if (typeof PPC !== 'undefined' && PPC.showToast) {
-          PPC.showToast('Idea is in Prep/Exec/Review — open it from the pipeline');
-        }
+        expandedSections.add('ideas');
+        renderBoard();
+        openPanel(ideaId);
       });
       actions.appendChild(jumpIdea);
     }
@@ -17329,6 +17431,8 @@ function fillReviewContext(card) {
     ['Layer', contentLayerLabel(card.contentLayer)],
     ['Format', formatTitlesLine(card) || formatLabel(card.pillar, card.format)],
     ['How to execute', stripHtml(card.productionPlan || '')],
+    ['Hook', stripHtml(card.hook || '')],
+    ['Script', stripHtml(card.script || '')],
     ['Products', stripHtml(card.productsUsed || '')],
     ['Location', stripHtml(card.location || '')],
     ['Requirements', stripHtml(card.requirements || '')]
@@ -17457,6 +17561,75 @@ function fillScheduleContext(card) {
     placeholder: 'What needs to happen to produce this…'
   });
 
+  const prepOpenMap = {};
+  PREP_OPTIONAL_SECTIONS.forEach(spec => {
+    prepOpenMap[spec.id] = !!stripHtml(card[spec.cardKey] || '').trim();
+  });
+  function renderPrepOptPills(pillsHost) {
+    pillsHost.innerHTML = '';
+    PREP_OPTIONAL_SECTIONS.forEach(spec => {
+      if (prepOpenMap[spec.id]) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'exec-opt-pill';
+      btn.textContent = spec.addLabel;
+      btn.title = 'Add a ' + spec.label.toLowerCase();
+      btn.addEventListener('click', () => {
+        prepOpenMap[spec.id] = true;
+        const block = wrap.querySelector('[data-schedule-opt="' + spec.id + '"]');
+        if (block) {
+          block.hidden = false;
+          const field = block.querySelector('[data-schedule-note]');
+          if (field) setTimeout(() => { try { field.focus(); } catch (_) {} }, 30);
+        }
+        renderPrepOptPills(pillsHost);
+      });
+      pillsHost.appendChild(btn);
+    });
+    pillsHost.style.display = pillsHost.childNodes.length ? 'flex' : 'none';
+  }
+  const prepPills = document.createElement('div');
+  prepPills.className = 'exec-opt-pills';
+  prepPills.setAttribute('aria-label', 'Add hook or script');
+  prepStage.appendChild(prepPills);
+  PREP_OPTIONAL_SECTIONS.forEach(spec => {
+    const block = document.createElement('div');
+    block.className = 'schedule-note-opt';
+    block.dataset.scheduleOpt = spec.id;
+    block.hidden = !prepOpenMap[spec.id];
+    const head = document.createElement('div');
+    head.className = 'schedule-note-opt-head';
+    const strong = document.createElement('strong');
+    strong.textContent = spec.label;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'schedule-note-opt-remove';
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', () => {
+      prepOpenMap[spec.id] = false;
+      block.hidden = true;
+      const field = block.querySelector('[data-schedule-note]');
+      if (field) field.innerHTML = '';
+      renderPrepOptPills(prepPills);
+    });
+    head.appendChild(strong);
+    head.appendChild(remove);
+    block.appendChild(head);
+    const fieldId = 'scheduleNote_' + spec.cardKey + '_' + (++noteUid);
+    if (spec.fmt) appendFmtBar(block, fieldId);
+    const input = document.createElement('div');
+    input.id = fieldId;
+    input.className = 'panel-desc schedule-note-rich' + (spec.short ? ' short' : '');
+    input.contentEditable = 'true';
+    input.dataset.scheduleNote = spec.cardKey;
+    input.setAttribute('placeholder', spec.placeholder);
+    input.innerHTML = scheduleNoteHtml(card[spec.cardKey] || '');
+    input.addEventListener('paste', plainTextPaste);
+    block.appendChild(input);
+    prepStage.appendChild(block);
+  });
+  renderPrepOptPills(prepPills);
+
   // 3. Execute — how to execute + optional pills (own field)
   const execStage = appendStage('Execute');
   appendNoteField(execStage, {
@@ -17542,7 +17715,7 @@ function readSchedulePipelineNotes(card) {
   const howTo = readRich('executionHowTo');
   if (howTo != null) card.executionHowTo = howTo;
 
-  ['productsUsed', 'location', 'requirements'].forEach(key => {
+  ['productsUsed', 'location', 'requirements', 'hook', 'script'].forEach(key => {
     const val = readRich(key);
     if (val == null) return;
     card[key] = val;
@@ -17602,9 +17775,12 @@ function openPanel(ideaId) {
   buildIdeaPanelProps(idea);
   buildIdeaActions(idea);
   hideStageExtraFields();
+  document.getElementById('prepExtraFields').style.display = 'block';
   setPlanHintVisible(false);
   document.getElementById('pDesc').innerHTML = sanitizeHtml(idea.body || '');
   setContentWhyInput(idea.contentWhy || '');
+  document.getElementById('pPlan').innerHTML = sanitizeHtml(idea.productionPlan || '');
+  syncPrepOptionalSections(idea);
   setPanelImage(idea.imageData);
   updatePanelStrip(idea.cat, idea.format);
   document.getElementById('panel').classList.add('open');
@@ -17636,12 +17812,75 @@ function openPrepPanel(prepId) {
   setContentWhyInput(card.contentWhy || '');
   document.getElementById('pPlan').innerHTML = sanitizeHtml(card.productionPlan || '');
   setPlanHintVisible(!stripHtml(card.productionPlan || ''));
+  syncPrepOptionalSections(card);
   setPanelImage(card.imageData);
   updatePanelStrip(card.pillar, card.format);
   document.getElementById('panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('pPlan').focus(), 50);
 }
+
+function syncPrepOptionalSections(card) {
+  PREP_OPTIONAL_SECTIONS.forEach(spec => {
+    const has = !!(card && stripHtml(card[spec.cardKey] || '').trim());
+    setPrepOptionalSectionOpen(spec, has, false);
+    const field = document.getElementById(spec.fieldId);
+    if (field) field.innerHTML = sanitizeHtml((card && card[spec.cardKey]) || '');
+  });
+  renderPrepOptionalPills();
+}
+
+function setPrepOptionalSectionOpen(spec, open, focusField) {
+  const block = document.getElementById(spec.blockId);
+  if (!block) return;
+  block.hidden = !open;
+  if (open && focusField) {
+    const field = document.getElementById(spec.fieldId);
+    if (field) setTimeout(() => { try { field.focus(); } catch (_) {} }, 30);
+  }
+}
+
+function renderPrepOptionalPills() {
+  const host = document.getElementById('prepOptPills');
+  if (!host) return;
+  host.innerHTML = '';
+  PREP_OPTIONAL_SECTIONS.forEach(spec => {
+    const block = document.getElementById(spec.blockId);
+    if (block && !block.hidden) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'exec-opt-pill';
+    btn.textContent = spec.addLabel;
+    btn.title = 'Add a ' + spec.label.toLowerCase();
+    btn.addEventListener('click', () => {
+      setPrepOptionalSectionOpen(spec, true, true);
+      renderPrepOptionalPills();
+    });
+    host.appendChild(btn);
+  });
+  host.style.display = host.childNodes.length ? 'flex' : 'none';
+}
+
+function clearPrepOptionalSection(id) {
+  const spec = PREP_OPTIONAL_SECTIONS.find(s => s.id === id);
+  if (!spec) return;
+  const field = document.getElementById(spec.fieldId);
+  if (field) field.innerHTML = '';
+  setPrepOptionalSectionOpen(spec, false, false);
+  renderPrepOptionalPills();
+}
+
+(function bindPrepOptionalSectionControls() {
+  const host = document.getElementById('prepExtraFields');
+  if (!host || host._prepOptBound) return;
+  host._prepOptBound = true;
+  host.addEventListener('click', e => {
+    const btn = e.target.closest('[data-prep-opt-remove]');
+    if (!btn) return;
+    e.preventDefault();
+    clearPrepOptionalSection(btn.getAttribute('data-prep-opt-remove'));
+  });
+})();
 
 const EXEC_OPTIONAL_SECTIONS = [
   {
@@ -18193,8 +18432,8 @@ function renderIdeaFillPicker(needCard) {
     btn.type = 'button';
     btn.className = 'idea-fill-item';
     btn.title = entry.stage === 'ideas'
-      ? 'Link this calendar Need to this idea (keeps it on the Ideas board)'
-      : 'Link this calendar Need to this pipeline card';
+      ? 'Move this idea onto the calendar (leaves Ideas)'
+      : 'Move this card onto the calendar (leaves ' + entry.label + ')';
 
     const thumb = document.createElement('div');
     thumb.className = 'idea-fill-item-thumb';
@@ -18229,7 +18468,8 @@ function renderIdeaFillPicker(needCard) {
 }
 
 /** Link an existing pipeline card to a calendar Need and mirror its current details. */
-function linkNeedToPipelineCard(needId, pipelineId) {
+function linkNeedToPipelineCard(needId, pipelineId, opts) {
+  const options = opts || {};
   const slot = scheduleCards().find(c => c.id === needId);
   const entry = findPipelineCardById(pipelineId);
   if (!slot || !entry || !entry.card) return;
@@ -18253,24 +18493,54 @@ function linkNeedToPipelineCard(needId, pipelineId) {
   const extras = liveSlot
     ? spawnExtraFormatCalendarSlots(pipelineCard, entry.stage, liveSlot)
     : [];
+  consumePipelineCardFromBoard(entry.stage, pipelineCard.id);
   ideaFillPickerOpen = false;
   clearTimeout(saveTimer);
   saveData();
   renderBoard();
   openSchedulePanel(needId);
-  if (typeof PPC !== 'undefined' && PPC.showToast) {
+  if (!options.skipToast && typeof PPC !== 'undefined' && PPC.showToast) {
     const parked = extraFormatsPlaceToast(extras);
-    const base = replacing ? 'Replaced calendar content from pipeline' : 'Linked calendar card to pipeline';
+    const dated = slotHasPublishDate(liveSlot);
+    const base = replacing
+      ? (dated ? 'Replaced calendar content from pipeline' : 'Moved to Unscheduled')
+      : (dated ? 'Moved to calendar' : 'Moved to Unscheduled');
     PPC.showToast(parked ? (base + ' · ' + parked) : base);
   }
 }
 
+function consumeIdeaFromBoard(ideaId) {
+  if (!ideaId) return false;
+  const before = (DATA.ideas || []).length;
+  DATA.ideas = (DATA.ideas || []).filter(i => i && i.id !== ideaId);
+  return DATA.ideas.length !== before;
+}
+
+function consumePipelineCardFromBoard(stage, cardId) {
+  if (!cardId) return false;
+  if (stage === 'prep') {
+    const before = prepCards().length;
+    DATA.sections.preparation = prepCards().filter(c => c && c.id !== cardId);
+    return prepCards().length !== before;
+  }
+  if (stage === 'execution') {
+    const before = execCards().length;
+    DATA.sections.execution = execCards().filter(c => c && c.id !== cardId);
+    return execCards().length !== before;
+  }
+  if (stage === 'review') {
+    const before = reviewCards().length;
+    DATA.sections.review = reviewCards().filter(c => c && c.id !== cardId);
+    return reviewCards().length !== before;
+  }
+  return false;
+}
+
 /**
- * Link an Ideas board card to a Need — keeps the idea on the board.
- * Progressing Ideas → Prep → Exec → Review carries the link and refreshes
- * Pipeline notes on the calendar card via syncLinkedSchedulePreview.
+ * Move an Ideas card onto a calendar Need, then remove it from Ideas.
  */
-function linkNeedToIdea(needId, ideaId) {
+function linkNeedToIdea(needId, ideaId, opts) {
+  const options = opts || {};
   const slot = scheduleCards().find(c => c.id === needId);
   const idea = DATA.ideas.find(i => i.id === ideaId);
   if (!slot || !idea) return;
@@ -18291,15 +18561,19 @@ function linkNeedToIdea(needId, ideaId) {
     liveSlot.linkedPipelineStage = 'ideas';
   }
   const extras = liveSlot ? spawnExtraFormatCalendarSlots(idea, 'ideas', liveSlot) : [];
+  consumeIdeaFromBoard(idea.id);
 
   ideaFillPickerOpen = false;
   clearTimeout(saveTimer);
   saveData();
   renderBoard();
   openSchedulePanel(needId);
-  if (typeof PPC !== 'undefined' && PPC.showToast) {
+  if (!options.skipToast && typeof PPC !== 'undefined' && PPC.showToast) {
     const parked = extraFormatsPlaceToast(extras);
-    const base = replacing ? 'Replaced calendar content from Ideas' : 'Linked idea — still on Ideas board';
+    const dated = slotHasPublishDate(liveSlot);
+    const base = replacing
+      ? (dated ? 'Replaced calendar content from Ideas' : 'Moved to Unscheduled')
+      : (dated ? 'Moved to calendar' : 'Moved to Unscheduled');
     PPC.showToast(parked ? (base + ' · ' + parked) : base);
   }
 }
@@ -18425,6 +18699,8 @@ function savePanel(silent) {
     idea.contentWhy = readContentWhyInput();
     idea.contentLayer = readContentLayerInput();
     idea.anchorId = readEventAnchorInput();
+    idea.productionPlan = sanitizeHtml(document.getElementById('pPlan').innerHTML).trim();
+    readPrepOptionalFieldsFromPanel(idea);
 
     if (prepareExpanded && !silent) {
       if (!idea.contentLayer) {
@@ -18480,6 +18756,7 @@ function savePanel(silent) {
     card.body = sanitizeHtml(document.getElementById('pDesc').innerHTML).trim();
     card.contentWhy = readContentWhyInput();
     card.productionPlan = sanitizeHtml(document.getElementById('pPlan').innerHTML).trim();
+    readPrepOptionalFieldsFromPanel(card);
     setPlanHintVisible(!stripHtml(card.productionPlan || ''));
 
     if (executeArmed && !silent) {
@@ -18697,7 +18974,7 @@ function plainTextPaste(e) {
   const text = (e.clipboardData || window.clipboardData).getData('text/plain');
   document.execCommand('insertText', false, text);
 }
-['pDesc', 'pPlan', 'pExecPlan', 'pProducts', 'pLocation', 'pRequirements', 'pOutcome', 'pTweaks', 'pScheduleReviewNotes', 'pScheduleOutcome', 'pScheduleTweaks'].forEach(id => {
+['pDesc', 'pPlan', 'pExecPlan', 'pProducts', 'pLocation', 'pRequirements', 'pHook', 'pScript', 'pOutcome', 'pTweaks', 'pScheduleReviewNotes', 'pScheduleOutcome', 'pScheduleTweaks'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('paste', plainTextPaste);
 });
@@ -19081,18 +19358,20 @@ function moveIdeaToPrep(idea, pillar, format) {
     contentLayer: normalizeContentLayer(idea.contentLayer),
     contentWhy: idea.contentWhy || '',
     anchorId: idea.anchorId || '',
-    productionPlan: '',
+    productionPlan: idea.productionPlan || '',
     placementNote: '',
     linkedScheduleId,
     createdAt: idea.createdAt || new Date().toISOString(),
     movedAt: new Date().toISOString()
   };
+  copyPrepOptionalFields(idea, prepCard);
 
   // Carry any Pipeline notes already typed on the linked calendar card.
   if (linkedScheduleId) {
     const slot = scheduleCards().find(c => c.id === linkedScheduleId);
     if (slot) {
       if (slot.productionPlan) prepCard.productionPlan = slot.productionPlan;
+      copyPrepOptionalFields(slot, prepCard);
       if (slot.productsUsed) prepCard.productsUsed = slot.productsUsed;
       if (slot.location) prepCard.location = slot.location;
       if (slot.requirements) prepCard.requirements = slot.requirements;

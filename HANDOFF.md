@@ -12,6 +12,41 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-21 — Prep also leaves the board on Add to calendar 0.12.109 (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.109`** on `cursor/ideas-move-unscheduled-cal-d899`
+- Live still **`0.12.107`**
+
+### What
+Add to calendar from **Preparation** (and Exec/Review) **moves** the card onto Calendar / Unscheduled — same as Ideas. Existing prep cards already linked to a date prune off Preparation on load.
+
+### Open / next
+Deploy when asked (includes 0.12.108 Ideas move, Unscheduled empty date, Hook/Script).
+
+---
+
+## 2026-09-21 — Ideas move + Unscheduled + Hook/Script pills 0.12.108 (Cursor)
+
+### Local (not deployed)
+- Marketing **`0.12.108`** on `cursor/ideas-move-unscheduled-cal-d899`
+- Live still **`0.12.107`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
+- `origin/main` still matches live 0.12.107 — do not ff until this ships
+
+### What
+1. **Add to calendar from Ideas moves the card** — it leaves Content Ideas instead of staying as a linked duplicate. Existing dated Ideas copies prune on load.
+2. **Empty publish date parks in Unscheduled** — no more “pick a publish date” block. Date field starts empty. Prep (and Ideas) can land on the calendar without inventing a day.
+3. **Hook / Script pills** under Production plan (Ideas, Prep, Calendar pipeline notes). Same layout as Products / Location / Requirements. More pills can be added later via `PREP_OPTIONAL_SECTIONS`.
+
+### Safe for cards?
+Yes — `hook` / `script` are new optional fields; calendar still owns dated cards. Ideas already on a calendar date leave the Ideas board on next load.
+
+### Open / next
+1. Preview on `:8787` (done locally)
+2. Deploy when asked; then ff-only `main`
+
+---
+
 ## 2026-09-17 — Deployed Marketing 0.12.107 (Cursor Cloud)
 
 ### Live
