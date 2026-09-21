@@ -12,6 +12,20 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-21 — Live KV: Posted archive → Content Review
+
+### Live
+- Marketing still **`0.12.110`** (Worker `b261f30a-86fe-4942-be05-889768b2029d`)
+- KV `_rev` **2078** after this move
+
+### What
+Moved **17** posted Complete cards into **Content Review** (calendar stays Posted). Skipped 13 Pinterest lite pins and 3 empty Posted slots (no body/media). Complete is empty until Jarvis marks reviews done.
+
+### Open / next
+Hard-refresh Marketing. Expand Content Review.
+
+---
+
 ## 2026-09-21 — Deployed Marketing 0.12.110 (Cursor Cloud)
 
 ### Live
