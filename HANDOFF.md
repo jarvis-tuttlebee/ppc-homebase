@@ -12,6 +12,31 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-21 — Posted → Content Review 0.12.110 (Cursor Cloud)
+
+### Local (not deployed)
+- Marketing **`0.12.110`** on `cursor/posted-to-content-review-4e81`
+- Live still **`0.12.109`** (Kanban `1.10.17` · Planner `2.10.16`)
+- `origin/main` still matches live 0.12.109 — do not ff until this ships
+
+### What
+Posted calendar cards go to **Content Review** (not straight to Complete).
+
+1. Mark a calendar card **Posted** → it stays on the calendar (teal wash) and a working copy appears in Content Review.
+2. Log outcome / tweaks there, then **Mark complete** → Content Complete.
+3. Calendar panel **Open in Review** jumps to that copy.
+4. Existing Posted cards currently sitting in Complete (never reviewed) move into Review on next load. Cards already marked complete from Review stay in Complete (`reviewedComplete`).
+
+### Safe for cards?
+Yes — calendar slots stay. Review copies use existing pipeline fields. New flags: `reviewedComplete` on Complete, `skipPostReview` if a Review card is deleted while Posted.
+
+### Open / next
+1. Preview on `:8787`
+2. Deploy when asked; then ff-only `main`
+3. Hard-refresh Marketing so the version label shows **v0.12.110**
+
+---
+
 ## 2026-09-21 — Deployed Marketing 0.12.109 (Cursor)
 
 ### Live

@@ -5224,7 +5224,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.109';
+const APP_VERSION = '0.12.110';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -7256,9 +7256,9 @@ const SECTIONS = [
   { id: 'preparation', name: 'Content Preparation', swatch: '#4E6E6C', built: true },
   // Execution retired (phase 1) — planning lives on calendar cards; leftover cards migrate to Prep.
   { id: 'execution', name: 'Content Execution', swatch: '#C29A3B', built: true, retired: true },
-  // Review will become post-Posted lessons (opt-in) → Complete; keep board for now.
+  // Post-Posted lessons — marking calendar Posted moves the working copy here.
   { id: 'review', name: 'Content Review', swatch: '#6B7A8D', built: true },
-  // Posted archive — keeps history after calendar status is Posted.
+  // Finished reviews — Mark complete from Content Review.
   { id: 'complete', name: 'Content Complete', swatch: '#5A6B5A', built: true }
 ];
 
@@ -7757,6 +7757,7 @@ function migrateComplete(card) {
   migrateReview(card);
   if (card.postedAt == null) card.postedAt = card.movedAt || card.scheduledAt || card.scheduleAt || '';
   if (card.linkedScheduleId == null) card.linkedScheduleId = '';
+  if (card.reviewedComplete == null) card.reviewedComplete = false;
   return card;
 }
 
@@ -8354,6 +8355,13 @@ function pipelineCardLinkedToCalendar(card) {
   return false;
 }
 
+/** Posted calendar cards keep a Review copy for lessons — do not prune those. */
+function isPostedReviewKeep(card) {
+  if (!card) return false;
+  const slot = linkedScheduleForPipelineCard(card);
+  return !!(slot && publishStatusOf(slot) === 'posted');
+}
+
 /** Drop Prep/Exec/Review cards that already live on the calendar. */
 function prunePipelineAlreadyOnCalendar() {
   let changed = false;
@@ -8364,7 +8372,12 @@ function prunePipelineAlreadyOnCalendar() {
   ].forEach(([key, getter]) => {
     const list = getter();
     if (!Array.isArray(list) || !list.length) return;
-    const next = list.filter(card => !pipelineCardLinkedToCalendar(card));
+    const next = list.filter(card => {
+      if (!pipelineCardLinkedToCalendar(card)) return true;
+      // Post-Posted Review is meant to sit beside the calendar card.
+      if (key === 'review' && isPostedReviewKeep(card)) return true;
+      return false;
+    });
     if (next.length !== list.length) {
       DATA.sections[key] = next;
       changed = true;
@@ -8915,6 +8928,10 @@ function newCompleteId() {
   return 'done-' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 }
 
+function newReviewId() {
+  return 'review-' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+}
+
 function typeLabel(id) {
   const c = catById(id);
   return c ? c.label : id;
@@ -9447,7 +9464,7 @@ async function initApp() {
   // Local Ideas height wins; cloud layoutPrefs only fill gaps (new browser / cleared storage).
   resolveLayoutPrefs(DATA);
   if (healPipelineLinksFromSchedule()) scheduleSave();
-  if (backfillCompleteFromPosted()) scheduleSave();
+  if (backfillReviewFromPosted()) scheduleSave();
   restoreIdeaRefsFromSchedule();
   if (pruneIdeasAlreadyInPipeline()) scheduleSave();
   if (prunePipelineAlreadyOnCalendar()) scheduleSave();
@@ -10370,8 +10387,11 @@ function placeCardOnCalendar(card, stage, publishDateValue, prepDateValue, opts)
     applyPrepByFromUi(existing, prepDateValue || '');
     if (!iso) unscheduledQueueOpen = true;
     const extras = spawnExtraFormatCalendarSlots(card, stage, existing);
-    if (stage === 'ideas') consumeIdeaFromBoard(card.id);
-    else consumePipelineCardFromBoard(stage, card.id);
+    const keepPostedReview = stage === 'review' && publishStatusOf(existing) === 'posted';
+    if (!keepPostedReview) {
+      if (stage === 'ideas') consumeIdeaFromBoard(card.id);
+      else consumePipelineCardFromBoard(stage, card.id);
+    }
     clearTimeout(saveTimer);
     saveData();
     jumpToLinkedSchedule(existing.id);
@@ -10938,6 +10958,15 @@ async function removeReviewCard(id) {
       });
     } catch (_) {}
   }
+  const postedSlot = card ? linkedScheduleForPipelineCard(card) : null;
+  const skippedPosted = !!(postedSlot && publishStatusOf(postedSlot) === 'posted');
+  if (skippedPosted) {
+    postedSlot.skipPostReview = true;
+    if (postedSlot.linkedPipelineId === id) {
+      postedSlot.linkedPipelineId = '';
+      if (postedSlot.linkedPipelineStage === 'review') postedSlot.linkedPipelineStage = '';
+    }
+  }
   DATA.sections.review = reviewCards().filter(c => c.id !== id);
   clearTimeout(saveTimer);
   saveData();
@@ -10946,6 +10975,12 @@ async function removeReviewCard(id) {
     PPC.showUndoToast('Review card removed', () => {
       if (reviewCards().some(c => c.id === snapshot.id)) return;
       DATA.sections.review.push(snapshot);
+      if (skippedPosted && postedSlot) {
+        delete postedSlot.skipPostReview;
+        postedSlot.linkedPipelineId = snapshot.id;
+        postedSlot.linkedPipelineStage = 'review';
+        snapshot.linkedScheduleId = postedSlot.id;
+      }
       scheduleSave();
       renderBoard();
       if (PPC.showToast) PPC.showToast('Review card restored');
@@ -11330,6 +11365,12 @@ function fillEmptyNeedSlot(slot, content) {
 function sendReviewToSchedule(id) {
   const card = reviewCards().find(c => c.id === id);
   if (!card) return;
+  if (isPostedReviewKeep(card)) {
+    if (typeof PPC !== 'undefined' && PPC.showToast) {
+      PPC.showToast('Already posted — use Mark complete when the review is done');
+    }
+    return;
+  }
   if (!card.scheduleAt) {
     if (!confirm('No schedule date set — send to Calendar anyway?')) return;
   }
@@ -11889,7 +11930,7 @@ function renderCompleteBody() {
   if (!cards.length) {
     const empty = document.createElement('div');
     empty.className = 'exec-empty';
-    empty.textContent = 'Posted content lands here — mark a calendar card Posted to archive it.';
+    empty.textContent = 'Finished reviews land here — mark Complete from Content Review.';
     body.appendChild(empty);
     return body;
   }
@@ -12010,16 +12051,22 @@ function renderReviewBody() {
   const body = document.createElement('div');
   body.className = 'section-body';
 
-  const cards = reviewCards();
+  const cards = reviewCards().slice().sort((a, b) => {
+    const ta = Date.parse(a.postedAt || a.reviewedAt || a.movedAt || a.createdAt || '') || 0;
+    const tb = Date.parse(b.postedAt || b.reviewedAt || b.movedAt || b.createdAt || '') || 0;
+    return tb - ta;
+  });
   if (!cards.length) {
     const empty = document.createElement('div');
     empty.className = 'exec-empty';
-    empty.textContent = 'No cards in review yet — send from Execution when the shoot is done.';
+    empty.textContent = 'Posted content lands here — mark a calendar card Posted, then log outcome and tweaks.';
     body.appendChild(empty);
     return body;
   }
 
-  const needDateCount = cards.filter(c => !c.scheduleAt || !String(c.scheduleAt).trim()).length;
+  const needDateCount = cards.filter(c =>
+    !isPostedReviewKeep(c) && (!c.scheduleAt || !String(c.scheduleAt).trim())
+  ).length;
   if (needDateCount) {
     const strip = document.createElement('div');
     strip.className = 'review-need-strip';
@@ -12285,75 +12332,119 @@ function healPipelineLinksFromSchedule() {
   return changed;
 }
 
-/** Move / create a Content Complete card when a calendar slot is Posted. */
-function archiveScheduleToComplete(slot, opts) {
+function reviewCardForSchedule(slot) {
+  if (!slot) return null;
+  return reviewCards().find(c =>
+    c.linkedScheduleId === slot.id ||
+    (slot.linkedPipelineId && c.id === slot.linkedPipelineId)
+  ) || null;
+}
+
+function completeCardForSchedule(slot) {
+  if (!slot) return null;
+  return completeCards().find(c =>
+    c.linkedScheduleId === slot.id ||
+    (slot.linkedPipelineId && c.id === slot.linkedPipelineId)
+  ) || null;
+}
+
+function applyPostedSlotToPipelineCard(target, slot) {
+  if (!target || !slot) return target;
+  target.body = slot.body || target.body || '';
+  target.pillar = slot.pillar || target.pillar || 'organic';
+  target.format = slot.format || target.format || defaultFormatForPillar('organic');
+  target.productionPlan = slot.productionPlan || target.productionPlan || '';
+  target.executionHowTo = slot.executionHowTo || target.executionHowTo || '';
+  target.productsUsed = slot.productsUsed || target.productsUsed || '';
+  target.location = slot.location || target.location || '';
+  target.requirements = slot.requirements || target.requirements || '';
+  target.hook = slot.hook || target.hook || '';
+  target.script = slot.script || target.script || '';
+  target.imageData = slot.imageData || target.imageData || null;
+  target.imageW = slot.imageW != null ? slot.imageW : target.imageW;
+  target.imageH = slot.imageH != null ? slot.imageH : target.imageH;
+  target.reviewMedia = slot.reviewMedia || target.reviewMedia || null;
+  target.reviewMediaW = slot.reviewMediaW || target.reviewMediaW || null;
+  target.reviewMediaH = slot.reviewMediaH || target.reviewMediaH || null;
+  target.reviewVideoUrl = slot.reviewVideoUrl || target.reviewVideoUrl || '';
+  target.caption = slot.caption || target.caption || '';
+  target.tags = slot.tags || target.tags || '';
+  target.music = slot.music || target.music || '';
+  target.contentOutcome = slot.contentOutcome || target.contentOutcome || '';
+  target.tweaks = slot.tweaks || target.tweaks || '';
+  target.reviewNotes = slot.reviewNotes || target.reviewNotes || '';
+  target.scheduleAt = slot.scheduledAt || slot.scheduleAt || target.scheduleAt || '';
+  target.linkedScheduleId = slot.id;
+  if (slot.sourceIdeaId) target.sourceIdeaId = slot.sourceIdeaId;
+  if (!target.postedAt) target.postedAt = new Date().toISOString();
+  return target;
+}
+
+function takePipelineCardOffBoard(entry) {
+  if (!entry || !entry.card) return null;
+  if (entry.stage === 'prep') {
+    DATA.sections.preparation = prepCards().filter(c => c.id !== entry.card.id);
+  } else if (entry.stage === 'execution') {
+    DATA.sections.execution = execCards().filter(c => c.id !== entry.card.id);
+  } else if (entry.stage === 'review') {
+    DATA.sections.review = reviewCards().filter(c => c.id !== entry.card.id);
+  }
+  return entry.card;
+}
+
+/** Move / create a Content Review card when a calendar slot is Posted. */
+function sendPostedScheduleToReview(slot, opts) {
   if (!slot || isDiscoverCard(slot)) return null;
   if (publishStatusOf(slot) !== 'posted') return null;
   if (isEmptyNeedSlot(slot) && !scheduleSlotHasContent(slot)) return null;
+  if (slot.skipPostReview) return null;
 
-  const existing = completeCards().find(c =>
-    c.linkedScheduleId === slot.id ||
-    (slot.linkedPipelineId && c.id === slot.linkedPipelineId)
-  );
-  if (existing) {
-    // Keep Complete in sync with the posted calendar card.
-    existing.body = slot.body || existing.body;
-    existing.pillar = slot.pillar || existing.pillar;
-    existing.format = slot.format || existing.format;
-    existing.productionPlan = slot.productionPlan || existing.productionPlan || '';
-    existing.executionHowTo = slot.executionHowTo || existing.executionHowTo || '';
-    existing.productsUsed = slot.productsUsed || existing.productsUsed || '';
-    existing.location = slot.location || existing.location || '';
-    existing.requirements = slot.requirements || existing.requirements || '';
-    existing.hook = slot.hook || existing.hook || '';
-    existing.script = slot.script || existing.script || '';
-    existing.imageData = slot.imageData || existing.imageData || null;
-    existing.imageW = slot.imageW != null ? slot.imageW : existing.imageW;
-    existing.imageH = slot.imageH != null ? slot.imageH : existing.imageH;
-    existing.reviewMedia = slot.reviewMedia || existing.reviewMedia || null;
-    existing.caption = slot.caption || existing.caption || '';
-    existing.tags = slot.tags || existing.tags || '';
-    existing.music = slot.music || existing.music || '';
-    existing.scheduleAt = slot.scheduledAt || slot.scheduleAt || existing.scheduleAt || '';
-    existing.linkedScheduleId = slot.id;
-    if (!existing.postedAt) existing.postedAt = new Date().toISOString();
-    slot.linkedPipelineId = existing.id;
+  const finished = completeCardForSchedule(slot);
+  if (finished && finished.reviewedComplete) {
+    slot.linkedPipelineId = finished.id;
     slot.linkedPipelineStage = 'complete';
+    return null;
+  }
+
+  const existing = reviewCardForSchedule(slot);
+  if (existing) {
+    applyPostedSlotToPipelineCard(existing, slot);
+    slot.linkedPipelineId = existing.id;
+    slot.linkedPipelineStage = 'review';
+    delete slot.skipPostReview;
     return existing;
   }
 
-  // Prefer moving the live pipeline card so Prep/Exec/Review clears.
   let moved = null;
-  if (slot.linkedPipelineId) {
+  if (finished && !finished.reviewedComplete) {
+    DATA.sections.complete = completeCards().filter(c => c.id !== finished.id);
+    moved = finished;
+  }
+
+  if (!moved && slot.linkedPipelineId) {
     const entry = findPipelineCardById(slot.linkedPipelineId);
-    if (entry) {
-      moved = entry.card;
-      if (entry.stage === 'prep') {
-        DATA.sections.preparation = prepCards().filter(c => c.id !== moved.id);
-      } else if (entry.stage === 'execution') {
-        DATA.sections.execution = execCards().filter(c => c.id !== moved.id);
-      } else if (entry.stage === 'review') {
-        DATA.sections.review = reviewCards().filter(c => c.id !== moved.id);
-      }
+    if (entry && entry.stage === 'review') {
+      applyPostedSlotToPipelineCard(entry.card, slot);
+      slot.linkedPipelineId = entry.card.id;
+      slot.linkedPipelineStage = 'review';
+      return entry.card;
     }
+    if (entry) moved = takePipelineCardOffBoard(entry);
   }
   if (!moved) {
     const healed = allPipelineCards().find(e => e.card && e.card.linkedScheduleId === slot.id);
-    if (healed) {
-      moved = healed.card;
-      if (healed.stage === 'prep') {
-        DATA.sections.preparation = prepCards().filter(c => c.id !== moved.id);
-      } else if (healed.stage === 'execution') {
-        DATA.sections.execution = execCards().filter(c => c.id !== moved.id);
-      } else if (healed.stage === 'review') {
-        DATA.sections.review = reviewCards().filter(c => c.id !== moved.id);
-      }
+    if (healed && healed.stage === 'review') {
+      applyPostedSlotToPipelineCard(healed.card, slot);
+      slot.linkedPipelineId = healed.card.id;
+      slot.linkedPipelineStage = 'review';
+      return healed.card;
     }
+    if (healed) moved = takePipelineCardOffBoard(healed);
   }
 
-  const done = migrateComplete({
+  const reviewCard = migrateReview({
     ...(moved || {}),
-    id: (moved && moved.id) || newCompleteId(),
+    id: (moved && moved.id) || newReviewId(),
     body: slot.body || (moved && moved.body) || '',
     pillar: slot.pillar || (moved && moved.pillar) || 'organic',
     format: slot.format || (moved && moved.format) || defaultFormatForPillar('organic'),
@@ -12376,32 +12467,77 @@ function archiveScheduleToComplete(slot, opts) {
     music: slot.music || (moved && moved.music) || '',
     contentOutcome: slot.contentOutcome || (moved && moved.contentOutcome) || '',
     tweaks: slot.tweaks || (moved && moved.tweaks) || '',
+    reviewNotes: slot.reviewNotes || (moved && moved.reviewNotes) || '',
     scheduleAt: slot.scheduledAt || slot.scheduleAt || (moved && moved.scheduleAt) || '',
     sourceIdeaId: slot.sourceIdeaId || (moved && moved.sourceIdeaId) || null,
     linkedScheduleId: slot.id,
-    postedAt: new Date().toISOString(),
+    postedAt: (moved && moved.postedAt) || new Date().toISOString(),
+    reviewedAt: (moved && moved.reviewedAt) || new Date().toISOString(),
     movedAt: new Date().toISOString(),
     createdAt: (moved && moved.createdAt) || new Date().toISOString()
   });
+  delete reviewCard.reviewedComplete;
+  reviewCards().push(reviewCard);
+  slot.linkedPipelineId = reviewCard.id;
+  slot.linkedPipelineStage = 'review';
+  delete slot.skipPostReview;
+  if (!(opts && opts.silent)) expandedSections.add('review');
+  if (!(opts && opts.silent) && typeof PPC !== 'undefined' && PPC.showToast) {
+    PPC.showToast('Moved to Content Review');
+  }
+  return reviewCard;
+}
+
+/** Finish lessons: Review → Content Complete. Calendar stays Posted. */
+function archiveReviewToComplete(id, opts) {
+  const card = reviewCards().find(c => c.id === id);
+  if (!card) return null;
+  DATA.sections.review = reviewCards().filter(c => c.id !== id);
+  const done = migrateComplete({
+    ...card,
+    id: card.id || newCompleteId(),
+    postedAt: card.postedAt || new Date().toISOString(),
+    reviewedComplete: true,
+    movedAt: new Date().toISOString(),
+    linkedScheduleId: card.linkedScheduleId || ''
+  });
   completeCards().push(done);
-  slot.linkedPipelineId = done.id;
-  slot.linkedPipelineStage = 'complete';
+  if (done.linkedScheduleId) {
+    const slot = scheduleCards().find(c => c.id === done.linkedScheduleId);
+    if (slot) {
+      slot.linkedPipelineId = done.id;
+      slot.linkedPipelineStage = 'complete';
+    }
+  }
+  expandedSections.add('complete');
+  closePanel();
+  clearTimeout(saveTimer);
+  saveData();
+  renderBoard();
   if (!(opts && opts.silent) && typeof PPC !== 'undefined' && PPC.showToast) {
     PPC.showToast('Moved to Content Complete');
   }
   return done;
 }
 
-/** Ensure every Posted calendar card has a Complete archive entry. */
-function backfillCompleteFromPosted() {
+/** Ensure every Posted calendar card has a Review copy (unless already completed). */
+function backfillReviewFromPosted() {
   let changed = false;
   scheduleCards().forEach(slot => {
     if (publishStatusOf(slot) !== 'posted') return;
+    if (slot.skipPostReview) return;
     if (isEmptyNeedSlot(slot) && !scheduleSlotHasContent(slot)) return;
-    const before = completeCards().length;
+    const beforeReview = reviewCards().length;
+    const beforeComplete = completeCards().length;
     const linkedId = slot.linkedPipelineId;
-    archiveScheduleToComplete(slot, { silent: true });
-    if (completeCards().length !== before || slot.linkedPipelineId !== linkedId) changed = true;
+    const stage = slot.linkedPipelineStage;
+    sendPostedScheduleToReview(slot, { silent: true });
+    if (
+      reviewCards().length !== beforeReview ||
+      completeCards().length !== beforeComplete ||
+      slot.linkedPipelineId !== linkedId ||
+      slot.linkedPipelineStage !== stage
+    ) changed = true;
   });
   return changed;
 }
@@ -12430,7 +12566,7 @@ function renderReviewCard(card) {
   el.dataset.reviewId = card.id;
   applyPrepCardStyle(el, card.pillar, card.format);
 
-  const needsDate = !card.scheduleAt || !String(card.scheduleAt).trim();
+  const needsDate = !isPostedReviewKeep(card) && (!card.scheduleAt || !String(card.scheduleAt).trim());
   if (needsDate) el.classList.add('exec-card--need-date');
 
   if (thumbSrc) {
@@ -12461,6 +12597,16 @@ function renderReviewCard(card) {
 
   const chips = document.createElement('div');
   chips.className = 'exec-card-chips';
+  if (isPostedReviewKeep(card)) {
+    const postedChip = document.createElement('span');
+    postedChip.className = 'exec-chip';
+    postedChip.textContent = card.postedAt
+      ? ('Posted ' + formatPostedDate(card.postedAt))
+      : 'Posted';
+    postedChip.style.background = '#E8F0EA';
+    postedChip.style.color = '#3D5A40';
+    chips.appendChild(postedChip);
+  }
   if (needsDate) {
     const needChip = document.createElement('span');
     needChip.className = 'exec-chip exec-chip--need-date';
@@ -15672,7 +15818,8 @@ function setPublishStatus(cardId, status, opts) {
       if (typeof syncSchedulePrepRemindUi === 'function') syncSchedulePrepRemindUi();
     }
   }
-  if (next === 'posted') archiveScheduleToComplete(card, { silent: true });
+  if (next !== 'posted') delete card.skipPostReview;
+  if (next === 'posted') sendPostedScheduleToReview(card);
   // Persist immediately — debounced scheduleSave can be cancelled by closePanel/savePanel.
   clearTimeout(saveTimer);
   saveData();
@@ -17253,37 +17400,56 @@ function buildReviewActions(card) {
   scheduleArmed = false;
   updateIdeaSaveBtn();
 
-  const scheduleBtn = document.createElement('button');
-  scheduleBtn.type = 'button';
-  scheduleBtn.className = 'btn-secondary';
-  scheduleBtn.id = 'scheduleToggle';
-  scheduleBtn.textContent = 'Schedule';
-  scheduleBtn.title = 'Final step: move out of Review onto the calendar. Prefer Add to calendar earlier if you only need dates.';
-  scheduleBtn.addEventListener('click', () => {
-    scheduleArmed = !scheduleArmed;
-    scheduleBtn.classList.toggle('active', scheduleArmed);
-    updateIdeaSaveBtn();
-  });
-  actions.appendChild(scheduleBtn);
+  const posted = isPostedReviewKeep(card);
 
-  appendAddToCalendarAction(actions, card, 'review');
+  if (posted) {
+    const doneBtn = document.createElement('button');
+    doneBtn.type = 'button';
+    doneBtn.className = 'btn-secondary';
+    doneBtn.textContent = 'Mark complete';
+    doneBtn.title = 'Archive to Content Complete. The calendar card stays Posted.';
+    doneBtn.addEventListener('click', () => {
+      savePanel(true);
+      archiveReviewToComplete(card.id);
+    });
+    actions.appendChild(doneBtn);
 
-  const backBtn = document.createElement('button');
-  backBtn.type = 'button';
-  backBtn.className = 'btn-secondary';
-  backBtn.textContent = 'Back to Execution';
-  backBtn.addEventListener('click', () => {
-    savePanel(true);
-    moveReviewToExecution(card.id);
-  });
-  actions.appendChild(backBtn);
+    appendAddToCalendarAction(actions, card, 'review');
+  } else {
+    const scheduleBtn = document.createElement('button');
+    scheduleBtn.type = 'button';
+    scheduleBtn.className = 'btn-secondary';
+    scheduleBtn.id = 'scheduleToggle';
+    scheduleBtn.textContent = 'Schedule';
+    scheduleBtn.title = 'Final step: move out of Review onto the calendar. Prefer Add to calendar earlier if you only need dates.';
+    scheduleBtn.addEventListener('click', () => {
+      scheduleArmed = !scheduleArmed;
+      scheduleBtn.classList.toggle('active', scheduleArmed);
+      updateIdeaSaveBtn();
+    });
+    actions.appendChild(scheduleBtn);
+
+    appendAddToCalendarAction(actions, card, 'review');
+
+    const backBtn = document.createElement('button');
+    backBtn.type = 'button';
+    backBtn.className = 'btn-secondary';
+    backBtn.textContent = 'Back to Execution';
+    backBtn.addEventListener('click', () => {
+      savePanel(true);
+      moveReviewToExecution(card.id);
+    });
+    actions.appendChild(backBtn);
+  }
 
   const del = document.createElement('button');
   del.type = 'button';
   del.className = 'btn-danger';
   del.textContent = 'Delete card';
   del.addEventListener('click', () => {
-    if (!confirm('Delete this review card?')) return;
+    if (!confirm(posted
+      ? 'Remove this from Content Review? The calendar card stays Posted.'
+      : 'Delete this review card?')) return;
     const id = card.id;
     closePanel();
     removeReviewCard(id);
@@ -17321,6 +17487,26 @@ function buildScheduleActions(card) {
         openPanel(ideaId);
       });
       actions.appendChild(jumpIdea);
+    }
+    if (publishStatusOf(card) === 'posted') {
+      const reviewLive = reviewCardForSchedule(card);
+      if (reviewLive) {
+        const jumpReview = document.createElement('button');
+        jumpReview.type = 'button';
+        jumpReview.className = 'btn-secondary';
+        jumpReview.textContent = 'Open in Review';
+        jumpReview.title = 'Log outcome and tweaks on Content Review';
+        jumpReview.addEventListener('click', () => {
+          expandedSections.add('review');
+          renderBoard();
+          openReviewPanel(reviewLive.id);
+          requestAnimationFrame(() => {
+            const target = document.querySelector('.board-section[data-section-id="review"]');
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        });
+        actions.appendChild(jumpReview);
+      }
     }
   }
 
@@ -18907,7 +19093,7 @@ function savePanel(silent) {
     if (tweaksEl) card.tweaks = sanitizeHtml(tweaksEl.innerHTML).trim();
     readSchedulePipelineNotes(card);
     syncLinkedPipelineFromSchedule(card);
-    if (publishStatusOf(card) === 'posted') archiveScheduleToComplete(card, { silent: true });
+    if (publishStatusOf(card) === 'posted') sendPostedScheduleToReview(card, { silent: true });
     if (!isDiscoverFormat(format)) {
       const ideaText = document.getElementById('pScheduleIdeaText');
       if (ideaText) {
