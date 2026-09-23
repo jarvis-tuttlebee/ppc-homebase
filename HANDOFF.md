@@ -12,13 +12,33 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-23 — Deployed consistency audit 0.12.112 (Cursor Cloud)
+
+### Live
+- Worker Version ID: `3739300f-87ea-40b8-92dd-dbe2c4c0e82f`
+- Marketing **`0.12.112`** · Kanban **`1.10.19`** · Planner **`2.10.17`**
+- Deployed from `cursor/homebase-consistency-audit-5f6c`
+- `origin/main` matches this tip (ff-only) after this entry
+
+### What
+Full consistency pass: Planner `saveToCloud` fix, Archive/Complete restore,
+Kanban patch-safe deletes/saves, Escape/Undo parity, Review → Preparation,
+empty-board localStorage resurrection, Home Settings + dark mode, Archive
+recover-before-drop.
+
+### Safe for cards?
+Yes — no KV migrate. Hard-refresh all pages (Cmd/Ctrl+Shift+R).
+
+### Open / next
+Hard-refresh. Spot-check: Settings rename on Planner, Kanban delete Undo,
+Marketing Complete delete, Home ⚙ Settings.
+
+---
+
 ## 2026-09-23 — Consistency audit fixes 0.12.112 (Cursor Cloud)
 
-### Local (not deployed)
-- Marketing **`0.12.112`** · Kanban **`1.10.19`** · Planner **`2.10.17`**
-- Branch `cursor/homebase-consistency-audit-5f6c` · PR #25
-- Live still Marketing **`0.12.110`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
-- `origin/main` still matches live — do not ff until this ships
+### Shipped in 0.12.112
+- Superceded by live deploy (Worker `3739300f-87ea-40b8-92dd-dbe2c4c0e82f`).
 
 ### What
 Full top-to-bottom consistency pass. Fixed:
