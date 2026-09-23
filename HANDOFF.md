@@ -12,6 +12,39 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-23 — Consistency audit fixes 0.12.112 (Cursor Cloud)
+
+### Local (not deployed)
+- Marketing **`0.12.112`** · Kanban **`1.10.19`** · Planner **`2.10.17`**
+- Branch `cursor/homebase-consistency-audit-5f6c` · PR #25
+- Live still Marketing **`0.12.110`** · Kanban **`1.10.17`** · Planner **`2.10.16`**
+- `origin/main` still matches live — do not ff until this ships
+
+### What
+Full top-to-bottom consistency pass. Fixed:
+
+1. Planner Settings called undefined `saveToCloud` (real fn was `saveToFireplace`) — project types / auto-assign never synced
+2. Content Complete archive + restore; Archive recover uses force so `_rev` can’t 409
+3. Undo toasts on Planner/Kanban deletes (Marketing already had them)
+4. Kanban delete / panel save / drag use patch + localStorage (no full-board clobber)
+5. Escape closes panels + Settings on all boards
+6. Complete delete sets `skipPostReview` (no Review backfill zombie)
+7. Calendar delete clears Complete links too
+8. Review “Back to Preparation” (Execution is retired)
+9. Empty Kanban cloud board no longer resurrected from localStorage
+10. Panel close silent-saves all modes; focus sync flushes dirty first
+11. Cloud sync failure toasts on Planner/Kanban
+
+### Safe for cards?
+Yes — additive flags (`skipPostReview` already existed). No KV migrate.
+
+### Open / next
+1. Preview on `:8787` (smoke done in Cloud)
+2. Deploy when asked; then ff-only `main`
+3. Follow-ups: shared staff list (Marketing ↔ Kanban); remaining full `saveBoard` paths for project reorder; Prep-by-layer (CONTENT-LAYERS-PLAN Phase C)
+
+---
+
 ## 2026-09-23 — Audit pass 2 (findings only, no fix)
 
 ### Live / clone

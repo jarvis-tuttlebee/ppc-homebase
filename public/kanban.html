@@ -1111,7 +1111,7 @@
 </div>
 
 <script src="/js/ppc-select.js?v=11"></script>
-<script src="/js/ppc-homebase.js?v=20"></script>
+<script src="/js/ppc-homebase.js?v=21"></script>
 <script>
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -1304,7 +1304,7 @@ let HIDDEN_EVENT_IDS = [];
 const STORAGE_KEY = 'kanban-board-data';
 const SYNC_URL = '/api/kanban';
 const PATCH_URL = SYNC_URL + '/patch';
-const APP_VERSION = '1.10.18';
+const APP_VERSION = '1.10.19';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
@@ -1411,16 +1411,19 @@ async function patchKanban(patch) {
 
 async function initApp() {
   let data = null;
+  let cloudOk = false;
   try {
     const res = await fetch(SYNC_URL);
     if (res.ok) {
+      cloudOk = true;
       const remote = await res.json();
-      if (remote && remote.cards && remote.cards.length) data = remote;
+      // Empty cloud board is authoritative — do not resurrect stale localStorage.
+      if (remote && Array.isArray(remote.cards)) data = remote;
     }
   } catch (err) {
     console.warn('Cloud fetch failed, falling back to local storage:', err);
   }
-  if (!data) {
+  if (!data && !cloudOk) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) data = JSON.parse(raw);
@@ -1428,7 +1431,7 @@ async function initApp() {
       console.warn('Could not load saved data:', err);
     }
   }
-  if (data && data.cards && data.cards.length) {
+  if (data && Array.isArray(data.cards)) {
     applyBoardData(data);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (err) {}
   }
@@ -1446,19 +1449,13 @@ async function refreshBoard() {
     const res = await fetch(SYNC_URL);
     if (res.ok) {
       const remote = await res.json();
-      if (remote && remote.cards && remote.cards.length) {
+      if (remote && Array.isArray(remote.cards)) {
         applyBoardData(remote);
         let migrated = false;
         if (migrateAssignees()) migrated = true;
         if (migrateWaitingColumn()) migrated = true;
         if (migrated) saveBoard();
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          cards: CARDS.map(c => ({ ...c })),
-          order: COLUMN_ORDER.slice(),
-          projects: PROJECTS.map(p => ({ ...p })),
-          staff: STAFF.slice(),
-          hiddenEventIds: HIDDEN_EVENT_IDS.slice()
-        })); } catch (err) {}
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(boardPayload())); } catch (err) {}
         // Drop expanded sections that no longer exist after a remote refresh.
         expandedSections = new Set([...expandedSections].filter(id => id === MISC_ID || id === PRIORITY_ID || projectById(id)));
         await syncCatsFromPlanner();
@@ -1803,14 +1800,15 @@ function attachTouchDrag(pill, card) {
     if (_touchTarget) _touchTarget.classList.add('drop-target');
   }, { passive: false });
 
-  pill.addEventListener('touchend', () => {
+  pill.addEventListener('touchend', async () => {
     if (!dragging) { clearTimeout(timer); timer = null; return; }
     _touchJustDragged = true;
     setTimeout(() => { _touchJustDragged = false; }, 400);
     if (_touchTarget) {
       moveCardToColumn(card, _touchTarget.dataset.dropColumn);
       cleanup();
-      saveBoard();
+      await patchKanban({ upsert: [card] });
+      saveBoardLocal();
       renderBoard();
       return;
     }
@@ -2536,13 +2534,15 @@ function makeColumn(col, sectionId) {
   body.addEventListener('dragleave', (e) => {
     if (!body.contains(e.relatedTarget)) body.classList.remove('drop-target');
   });
-  body.addEventListener('drop', (e) => {
+  body.addEventListener('drop', async (e) => {
     e.preventDefault(); body.classList.remove('drop-target');
     if (!_dragCard) return;
     assignCardToSection(_dragCard, sectionId);
     moveCardToColumn(_dragCard, col.id);
+    const moved = _dragCard;
     _dragCard = null;
-    saveBoard();
+    await patchKanban({ upsert: [moved] });
+    saveBoardLocal();
     renderBoard();
   });
 
@@ -3026,7 +3026,7 @@ function openPanel(card) {
   document.getElementById('overlay').classList.add('open');
 }
 
-function savePanel() {
+async function savePanel() {
   const title = document.getElementById('pTitle').textContent.trim();
   if (!title) { closePanel(); return; }
 
@@ -3049,6 +3049,7 @@ function savePanel() {
     if (project) c.project = project; else delete c.project;
   };
 
+  let savedCard;
   if (!activeCard) {
     const newCard = { id: 'k' + Date.now(), cat, status, title, body, tasks };
     applyMeta(newCard);
@@ -3057,6 +3058,7 @@ function savePanel() {
     // Dated → day cell; undated → Unassigned / Any. Never both (avoids delete race).
     if (newCard.dueDate) upsertPlannerMirror(newCard);
     else autoAssignToPlanner(newCard);
+    savedCard = newCard;
   } else {
     activeCard.cat = cat;
     activeCard.status = status;
@@ -3067,9 +3069,12 @@ function savePanel() {
     moveCardToColumn(activeCard, column);
     // Setting/changing/clearing a date re-places (or parks) the timeline pill.
     upsertPlannerMirror(activeCard);
+    savedCard = activeCard;
   }
 
-  saveBoard();
+  // Surgical card write — avoids clobbering concurrent Planner remirrors.
+  await patchKanban({ upsert: [savedCard] });
+  saveBoardLocal();
   renderCurrentView();
   closePanel();
 }

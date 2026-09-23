@@ -120,6 +120,7 @@
       finish(true);
     });
     el.appendChild(text);
+    el.appendChild(document.createTextNode(' '));
     el.appendChild(btn);
     el.style.pointerEvents = 'auto';
     el.style.opacity = '1';
@@ -312,17 +313,13 @@ body.dark .ppc-pin-card input{background:#141d2e;border-color:#2e3a55;color:#f0e
     const meta = entry.restoreMeta || {};
 
     if (entry.source === 'kanban') {
-      const res = await fetch('/api/kanban');
-      const board = await res.json().catch(() => ({}));
-      if (!Array.isArray(board.cards)) board.cards = [];
-      if (!board.cards.some(c => c.id === item.id)) board.cards.push(item);
-      if (item.srcEventId && Array.isArray(board.hiddenEventIds)) {
-        board.hiddenEventIds = board.hiddenEventIds.filter(id => id !== item.srcEventId);
-      }
-      await fetch('/api/kanban', {
+      // Surgical upsert — avoid full-board POST clobbering concurrent Planner remirrors.
+      const patch = { upsert: [item] };
+      if (item && item.srcEventId) patch.showEventIds = [item.srcEventId];
+      await fetch('/api/kanban/patch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(board)
+        body: JSON.stringify(patch)
       });
       const plannerEvents = Array.isArray(meta.plannerEvents) ? meta.plannerEvents : [];
       if (plannerEvents.length) {

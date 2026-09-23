@@ -5219,12 +5219,12 @@
 </div>
 
 <script src="/js/ppc-select.js?v=11"></script>
-<script src="/js/ppc-homebase.js?v=20"></script>
+<script src="/js/ppc-homebase.js?v=21"></script>
 <script>
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.111';
+const APP_VERSION = '0.12.112';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -9515,6 +9515,13 @@ async function refreshData(opts) {
 async function syncMarketingOnFocus() {
   if (!marketingHydrated) return;
   if (document.getElementById('panel') && document.getElementById('panel').classList.contains('open')) return;
+  // Flush local edits first so a newer remote rev doesn't silently discard them.
+  if (marketingLocalDirty || marketingSaveWanted || marketingSaveInFlight) {
+    try {
+      saveData();
+      if (marketingSaveInFlight) await marketingSaveInFlight;
+    } catch (_) {}
+  }
   try {
     const res = await fetch(SYNC_URL);
     if (!res.ok) {
@@ -9524,7 +9531,7 @@ async function syncMarketingOnFocus() {
     const remote = await res.json();
     const remoteRev = Number(remote && remote._rev) || 0;
     if (remote && Array.isArray(remote.ideas) && remoteRev > marketingRev) {
-      // Cloud is ahead — this tab is old. Load latest (even if we had local dirty).
+      // Cloud is ahead — this tab is old. Load latest.
       marketingSaveWanted = false;
       marketingLocalDirty = false;
       DATA = normalizeLoaded(remote);
@@ -11241,19 +11248,22 @@ function movePrepToIdeas(id) {
   if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Returned to Ideas');
 }
 
-function moveReviewToExecution(id) {
+function moveReviewToPreparation(id) {
   const card = reviewCards().find(c => c.id === id);
   if (!card) return;
   DATA.sections.review = reviewCards().filter(c => c.id !== id);
-  execCards().push(card);
-  syncLinkedSchedulePreview(card, 'execution');
-  expandedSections.add('execution');
+  // Execution is retired — park back in Preparation (same as Exec → Prep).
+  delete card.reviewedAt;
+  delete card.postedAt;
+  prepCards().push(card);
+  syncLinkedSchedulePreview(card, 'prep');
+  expandedSections.add('preparation');
   scheduleArmed = false;
   closePanel();
   clearTimeout(saveTimer);
   saveData();
   renderBoard();
-  openExecPanel(card.id);
+  openPrepPanel(card.id);
 }
 
 function isEmptyNeedSlot(card) {
@@ -12128,6 +12138,9 @@ function clearPipelineLinkForSchedule(scheduleId) {
   allPipelineCards().forEach(entry => {
     if (entry.card && entry.card.linkedScheduleId === scheduleId) entry.card.linkedScheduleId = '';
   });
+  completeCards().forEach(card => {
+    if (card && card.linkedScheduleId === scheduleId) card.linkedScheduleId = '';
+  });
   (DATA.ideas || []).forEach(idea => {
     if (idea && idea.linkedScheduleId === scheduleId) idea.linkedScheduleId = '';
   });
@@ -12560,13 +12573,17 @@ async function removeCompleteCard(id) {
   } catch (_) {}
   DATA.sections.complete = completeCards().filter(c => c.id !== id);
   // Detach schedule link so a later re-post can archive again.
+  // Mark skipPostReview so backfillReviewFromPosted does not recreate a Review copy.
   let detachedSlot = null;
   if (linkedScheduleId) {
     const slot = scheduleCards().find(c => c.id === linkedScheduleId);
-    if (slot && slot.linkedPipelineId === id) {
+    if (slot) {
       detachedSlot = slot;
-      slot.linkedPipelineId = '';
-      if (slot.linkedPipelineStage === 'complete') slot.linkedPipelineStage = '';
+      if (slot.linkedPipelineId === id) {
+        slot.linkedPipelineId = '';
+        if (slot.linkedPipelineStage === 'complete') slot.linkedPipelineStage = '';
+      }
+      if (publishStatusOf(slot) === 'posted') slot.skipPostReview = true;
     }
   }
   clearTimeout(saveTimer);
@@ -12579,6 +12596,7 @@ async function removeCompleteCard(id) {
       if (detachedSlot && linkedScheduleId) {
         detachedSlot.linkedPipelineId = snapshot.id;
         detachedSlot.linkedPipelineStage = 'complete';
+        delete detachedSlot.skipPostReview;
       }
       scheduleSave();
       renderBoard();
@@ -17462,10 +17480,10 @@ function buildReviewActions(card) {
     const backBtn = document.createElement('button');
     backBtn.type = 'button';
     backBtn.className = 'btn-secondary';
-    backBtn.textContent = 'Back to Execution';
+    backBtn.textContent = 'Back to Preparation';
     backBtn.addEventListener('click', () => {
       savePanel(true);
-      moveReviewToExecution(card.id);
+      moveReviewToPreparation(card.id);
     });
     actions.appendChild(backBtn);
   }
@@ -19140,8 +19158,8 @@ function savePanel(silent) {
 }
 
 function closePanel() {
-  // Persist schedule edits (status/note/Drive) even when closing without Save.
-  if (panelMode === 'schedule' && activeScheduleId) {
+  // Persist panel edits even when closing without Save (all modes).
+  if (panelMode && (activeIdeaId || activePrepId || activeExecId || activeReviewId || activeScheduleId)) {
     try { savePanel(true); } catch (_) {}
   }
   closeMediaLightbox();
