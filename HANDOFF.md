@@ -12,6 +12,27 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-23 — Audit pass 2 (findings only, no fix)
+
+### Live / clone
+- Live Marketing still **`0.12.110`**; this branch tip is Marketing **`0.12.111`**
+  (`cursor/homebase-consistency-audit-5f6c` fixes not re-reported)
+
+### What
+Second consistency audit beyond the in-flight save/archive/undo/Escape work.
+Top NEW bugs: Complete delete → Review backfill; calendar delete leaves Complete
+links; Review “Back to Execution”; kanban empty-cloud→localStorage resurrection;
+kanban `saveBoard` vs patch race; archive kanban restore full POST; marketing
+`closePanel` drops non-schedule edits; focus sync discards dirty marketing.
+
+### Safe for cards?
+N/A — audit only, no deploy.
+
+### Open / next
+Pick fixes from the Cloud Agent findings list (prefer pipeline + save races).
+
+---
+
 ## 2026-09-21 — Live KV: Posted archive → Content Review
 
 ### Live
