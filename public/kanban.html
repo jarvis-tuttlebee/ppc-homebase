@@ -1110,8 +1110,8 @@
   </div>
 </div>
 
-<script src="/js/ppc-select.js?v=8"></script>
-<script src="/js/ppc-homebase.js?v=19"></script>
+<script src="/js/ppc-select.js?v=11"></script>
+<script src="/js/ppc-homebase.js?v=20"></script>
 <script>
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -1304,12 +1304,55 @@ let HIDDEN_EVENT_IDS = [];
 const STORAGE_KEY = 'kanban-board-data';
 const SYNC_URL = '/api/kanban';
 const PATCH_URL = SYNC_URL + '/patch';
-const APP_VERSION = '1.10.17';
+const APP_VERSION = '1.10.18';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
 let doneGroupCollapsed = true;
 let boardSaveInFlight = 0;
+
+function boardPayload() {
+  return {
+    cards: CARDS.map(c => ({ ...c })),
+    order: COLUMN_ORDER.slice(),
+    projects: PROJECTS.map(p => ({ ...p })),
+    staff: STAFF.slice(),
+    hiddenEventIds: HIDDEN_EVENT_IDS.slice()
+  };
+}
+
+/** Persist to this browser only (no cloud POST). Use after surgical /api/kanban/patch. */
+function saveBoardLocal() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(boardPayload()));
+  } catch (err) {
+    console.warn('Local save failed:', err);
+  }
+}
+
+function saveBoard() {
+  const payload = boardPayload();
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (err) {
+    console.warn('Local save failed:', err);
+  }
+  boardSaveInFlight++;
+  return fetch(SYNC_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    cache: 'no-store'
+  }).then(res => {
+    if (!res.ok) throw new Error('Kanban sync HTTP ' + res.status);
+    return res;
+  }).catch(err => {
+    console.warn('Cloud sync failed:', err);
+    if (typeof PPC !== 'undefined' && PPC.showToast) {
+      PPC.showToast('Cloud sync failed — kept on this device');
+    }
+  }).finally(() => { boardSaveInFlight = Math.max(0, boardSaveInFlight - 1); });
+}
 
 // Moves a card into a column and stamps/clears its completion timestamp —
 // the Done column's "earlier" grouping is bucketed off this.
@@ -1348,29 +1391,6 @@ function migrateWaitingColumn() {
     changed = true;
   }
   return changed;
-}
-
-function saveBoard() {
-  const payload = {
-    cards: CARDS.map(c => ({ ...c })),
-    order: COLUMN_ORDER.slice(),
-    projects: PROJECTS.map(p => ({ ...p })),
-    staff: STAFF.slice(),
-    hiddenEventIds: HIDDEN_EVENT_IDS.slice()
-  };
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch (err) {
-    console.warn('Local save failed:', err);
-  }
-  boardSaveInFlight++;
-  return fetch(SYNC_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-    cache: 'no-store'
-  }).catch(err => console.warn('Cloud sync failed:', err))
-    .finally(() => { boardSaveInFlight = Math.max(0, boardSaveInFlight - 1); });
 }
 
 async function patchKanban(patch) {
@@ -1665,11 +1685,12 @@ function makeCardPill(card) {
   delBtn.addEventListener('click', async e => {
     e.stopPropagation();
     if (!confirm('Delete "' + card.title + '"? It will also be removed from the Annual Planner. You can recover it from Settings → Archive for 30 days.')) return;
+    const snap = JSON.parse(JSON.stringify(card));
     const plannerEvents = await removePlannerLinks(card);
     try {
       await PPC.archivePush({
         source: 'kanban',
-        item: JSON.parse(JSON.stringify(card)),
+        item: snap,
         restoreMeta: {
           column: card.column,
           project: card.project || null,
@@ -1680,15 +1701,57 @@ function makeCardPill(card) {
     } catch (_) {}
     const idx = CARDS.indexOf(card);
     if (idx !== -1) CARDS.splice(idx, 1);
-    if (card.srcEventId && !HIDDEN_EVENT_IDS.includes(card.srcEventId)) {
-      HIDDEN_EVENT_IDS.push(card.srcEventId);
+    const srcEventId = card.srcEventId;
+    if (srcEventId && !HIDDEN_EVENT_IDS.includes(srcEventId)) {
+      HIDDEN_EVENT_IDS.push(srcEventId);
     }
     renderBoard();
+    // Surgical patch only — a full saveBoard here can clobber concurrent
+    // Annual Planner remirrors that landed via /api/kanban/patch.
     await patchKanban({
       remove: [card.id],
-      hideEventIds: card.srcEventId ? [card.srcEventId] : []
+      hideEventIds: srcEventId ? [srcEventId] : []
     });
-    await saveBoard();
+    saveBoardLocal();
+    if (typeof PPC !== 'undefined' && PPC.showUndoToast) {
+      PPC.showUndoToast('Card deleted', async () => {
+        if (!CARDS.some(c => c.id === snap.id)) CARDS.push(snap);
+        if (srcEventId) {
+          HIDDEN_EVENT_IDS = HIDDEN_EVENT_IDS.filter(id => id !== srcEventId);
+        }
+        renderBoard();
+        await patchKanban({
+          upsert: [snap],
+          showEventIds: srcEventId ? [srcEventId] : []
+        });
+        // Put planner mirrors back if we archived them with the card.
+        if (plannerEvents && plannerEvents.length) {
+          try {
+            const pres = await fetch(PLANNER_SYNC_URL, { cache: 'no-store' });
+            const pdata = await pres.json().catch(() => ({}));
+            if (!Array.isArray(pdata.events)) pdata.events = [];
+            let dirty = false;
+            plannerEvents.forEach(ev => {
+              if (!ev || !ev.id) return;
+              if (!pdata.events.some(e => e.id === ev.id)) {
+                pdata.events.push(ev);
+                dirty = true;
+              }
+            });
+            if (dirty) {
+              await fetch(PLANNER_SYNC_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pdata),
+                cache: 'no-store'
+              });
+            }
+          } catch (_) {}
+        }
+        saveBoardLocal();
+        if (PPC.showToast) PPC.showToast('Card restored');
+      });
+    }
   });
   pill.appendChild(delBtn);
 
@@ -3403,6 +3466,21 @@ PPC.mountSettings({
   }
 });
 PPC.applyStoredDark();
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const settings = document.getElementById('ppcSettingsPanel');
+  if (settings && settings.classList.contains('open')) return;
+  const projModal = document.getElementById('projModal');
+  if (projModal && projModal.classList.contains('open')) return;
+  const t = e.target;
+  const tag = (t && t.tagName) ? t.tagName.toLowerCase() : '';
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || (t && t.isContentEditable)) return;
+  const panel = document.getElementById('panel');
+  if (panel && panel.classList.contains('open')) {
+    e.preventDefault();
+    closePanel();
+  }
+});
 initApp();
 </script>
 </body>

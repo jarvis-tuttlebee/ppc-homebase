@@ -299,7 +299,8 @@ body.dark .ppc-pin-card input{background:#141d2e;border-color:#2e3a55;color:#f0e
     const kind = (meta && meta.kind) || 'idea';
     if (kind === 'prep') return 'Marketing → Preparation';
     if (kind === 'exec') return 'Marketing → Execution';
-    if (kind === 'review') return 'Marketing → Review';
+    if (kind === 'review') return 'Marketing → Content Review';
+    if (kind === 'complete') return 'Marketing → Content Complete';
     if (kind === 'schedule') return 'Marketing → Calendar';
     if (kind === 'anchor') return 'Marketing → Events';
     return 'Marketing → Ideas';
@@ -361,11 +362,12 @@ body.dark .ppc-pin-card input{background:#141d2e;border-color:#2e3a55;color:#f0e
       const res = await fetch('/api/marketing');
       const data = await res.json().catch(() => ({}));
       if (!data.ideas) data.ideas = [];
-      if (!data.sections) data.sections = { preparation: [], execution: [], review: [], schedule: [] };
+      if (!data.sections) data.sections = { preparation: [], execution: [], review: [], schedule: [], complete: [] };
       if (!Array.isArray(data.sections.preparation)) data.sections.preparation = [];
       if (!Array.isArray(data.sections.execution)) data.sections.execution = [];
       if (!Array.isArray(data.sections.review)) data.sections.review = [];
       if (!Array.isArray(data.sections.schedule)) data.sections.schedule = [];
+      if (!Array.isArray(data.sections.complete)) data.sections.complete = [];
       if (!Array.isArray(data.anchors)) data.anchors = [];
 
       const kind = meta.kind || 'idea';
@@ -377,14 +379,21 @@ body.dark .ppc-pin-card input{background:#141d2e;border-color:#2e3a55;color:#f0e
         if (!data.sections.execution.some(c => c.id === item.id)) data.sections.execution.push(item);
       } else if (kind === 'review') {
         if (!data.sections.review.some(c => c.id === item.id)) data.sections.review.push(item);
+      } else if (kind === 'complete') {
+        if (!data.sections.complete.some(c => c.id === item.id)) data.sections.complete.push(item);
       } else if (kind === 'schedule') {
         if (!data.sections.schedule.some(c => c.id === item.id)) data.sections.schedule.push(item);
       } else if (kind === 'anchor') {
         if (!data.anchors.some(a => a.id === item.id)) data.anchors.push(item);
       }
+      // Archive recover is intentional — force so a mid-flight board rev bump
+      // cannot 409 and leave the item only in Archive.
       await fetch('/api/marketing', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PPC-Force-Overwrite': '1'
+        },
         body: JSON.stringify(data)
       });
       return marketingWhere(meta);
@@ -760,7 +769,21 @@ body.dark .section-row { color: #f0ede8; }
     if (p) p.classList.remove('open');
   }
 
+  function ensureSettingsEscape() {
+    if (ensureSettingsEscape._bound) return;
+    ensureSettingsEscape._bound = true;
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      const panel = document.getElementById('ppcSettingsPanel');
+      if (!panel || !panel.classList.contains('open')) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      closeSettings();
+    }, true);
+  }
+
   function ensureDom() {
+    ensureSettingsEscape();
     const existing = document.getElementById('ppcSettingsPanel');
     if (existing && existing.querySelector('#ppcSettingsBody') && existing.querySelector('#ppcArchiveToggle')) {
       ensureStyles();

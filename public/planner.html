@@ -1307,8 +1307,8 @@
   </div>
 </div>
 
-<script src="/js/ppc-select.js?v=8"></script>
-<script src="/js/ppc-homebase.js?v=19"></script>
+<script src="/js/ppc-select.js?v=11"></script>
+<script src="/js/ppc-homebase.js?v=20"></script>
 <script>
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -1432,7 +1432,7 @@ const REVENUE = [1000,1800,1500,5000,3000,3500,2000,5500,6500,8000,8000,8000];
 // ─── PERSISTENCE (localStorage + Cloudflare Worker sync) ─────────────────────
 const STORAGE_KEY = 'ppc-planner-data';
 const SYNC_URL = '/api/data';
-const APP_VERSION = '2.10.16';
+const APP_VERSION = '2.10.17';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
@@ -1447,7 +1447,7 @@ let MONTH_CAT_LABELS = {};
 // Monday-start calendar weeks (scheme 1 was day-number buckets).
 const WEEK_SCHEME = 5;
 
-function saveToFirestore() {
+function saveToCloud() {
   const payload = {
     cats:   CATS.map(c => ({ ...c })),
     events: EVENTS.map(e => ({ ...e })),
@@ -1465,7 +1465,13 @@ function saveToFirestore() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
     cache: 'no-store'
-  }).catch(err => console.warn('Cloud sync failed:', err));
+  }).then(res => {
+    if (!res.ok) throw new Error('Planner sync HTTP ' + res.status);
+    return res;
+  }).catch(err => {
+    console.warn('Cloud sync failed:', err);
+    showToast('Cloud sync failed — kept on this device');
+  });
 }
 
 async function initApp() {
@@ -1506,11 +1512,11 @@ async function initApp() {
     EVENTS.forEach(e => {
       if (e.day == null && e.week != null) { e.week = null; dirty = true; }
     });
-    if (dirty) saveToFirestore();
+    if (dirty) saveToCloud();
   }
   // Pull dated Task Board cards onto the timeline (and push dated timeline
   // events back), so both boards show the same item on the same day.
-  if (await syncDateMirrors()) saveToFirestore();   // also refreshes localStorage
+  if (await syncDateMirrors()) saveToCloud();   // also refreshes localStorage
   renderVertical();
   revealRevenueChart();
 }
@@ -1562,7 +1568,7 @@ function startOverviewCatRename(catCell, cat, mi, labelBtn) {
     try {
       if (save) {
         setCatLabelForMonth(cat.id, mi, input.value);
-        saveToFirestore();
+        saveToCloud();
       }
     } catch (err) {
       console.warn('Category rename save failed:', err);
@@ -2379,11 +2385,15 @@ async function pushEventToCard(evt) {
 }
 
 function showToast(msg) {
+  if (typeof PPC !== 'undefined' && typeof PPC.showToast === 'function') {
+    PPC.showToast(msg);
+    return;
+  }
   let el = document.getElementById('ppcToast');
   if (!el) {
     el = document.createElement('div');
     el.id = 'ppcToast';
-    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:#2C2C2C;color:#F7F5F2;font-family:DM Sans,sans-serif;font-size:13px;padding:10px 18px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.2);max-width:90vw;opacity:0;transition:opacity 0.2s;pointer-events:none;';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100000;background:#2C2C2C;color:#F7F5F2;font-family:DM Sans,sans-serif;font-size:13px;padding:10px 18px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.2);max-width:90vw;opacity:0;transition:opacity 0.2s;pointer-events:none;';
     document.body.appendChild(el);
   }
   el.textContent = msg;
@@ -2425,13 +2435,13 @@ function attachPillDelete(pill, evt, mi) {
       ? 'Remove "' + evt.title + '" from the timeline? It stays on the Task Board, just without a due date.'
       : 'Delete "' + evt.title + '"? You can recover it from Settings → Archive for 30 days.';
     if (!confirm(msg)) return;
+    const snap = JSON.parse(JSON.stringify(evt));
+    if (!snap.id) snap.id = 'e' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+    evt.id = snap.id;
     if (linked) {
       pushDueDateToCard(evt.srcCardId, null);
     } else {
       try {
-        const snap = JSON.parse(JSON.stringify(evt));
-        if (!snap.id) snap.id = 'e' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
-        evt.id = snap.id;
         await PPC.archivePush({
           source: 'planner',
           item: snap,
@@ -2442,9 +2452,19 @@ function attachPillDelete(pill, evt, mi) {
     }
     const i = EVENTS.indexOf(evt);
     if (i > -1) EVENTS.splice(i, 1);
-    saveToFirestore();
+    saveToCloud();
     if (mi != null) refreshMonthContent(mi);
     else renderVertical();
+    if (!linked && typeof PPC !== 'undefined' && PPC.showUndoToast) {
+      PPC.showUndoToast('Event deleted', () => {
+        if (EVENTS.some(ev => ev.id === snap.id)) return;
+        EVENTS.push(snap);
+        saveToCloud();
+        if (mi != null) refreshMonthContent(mi);
+        else renderVertical();
+        if (PPC.showToast) PPC.showToast('Event restored');
+      });
+    }
   };
   pill.appendChild(del);
 }
@@ -2573,7 +2593,7 @@ function attachTouchDrag(pill, evt, mi) {
         _touchTarget.dataset.dropDay ? parseInt(_touchTarget.dataset.dropDay) : null,
         destMi);
       cleanup();
-      saveToFirestore();
+      saveToCloud();
       refreshMonthContent(mi);
       if (destMi !== mi) refreshMonthContent(destMi);
       return;
@@ -2645,7 +2665,7 @@ function renderWeekDayGrid(parent, mi, band, collapsed) {
       await applyEventSlot(_dragEvt, band.key, date, destMi);
       const srcMi = _dragMi;
       _dragEvt = null; _dragMi = null;
-      saveToFirestore();
+      saveToCloud();
       if (srcMi != null) refreshMonthContent(srcMi);
       refreshMonthContent(destMi);
       if (destMi > 0) refreshMonthContent(destMi - 1);
@@ -2792,7 +2812,7 @@ function renderMonthWeeks(container, mi) {
       const srcMi = _dragMi;
       await applyEventSlot(_dragEvt, null, null, mi);
       _dragEvt = null; _dragMi = null;
-      saveToFirestore();
+      saveToCloud();
       if (srcMi != null && srcMi !== mi) refreshMonthContent(srcMi);
       refreshMonthContent(mi);
     });
@@ -3007,7 +3027,7 @@ function showCustomCatForm(picker, mi, weekKey, dayKey = null) {
     const fg = getFgForBg(selectedColor);
     const newCat = { id, label: name, bg: selectedColor, fg };
     CATS.push(newCat);
-    saveToFirestore();
+    saveToCloud();
     closeCatPicker();
     if (weekKey !== undefined && weekKey !== 'overview') {
       openNewEventPanel(newCat, mi, weekKey, dayKey);
@@ -3063,7 +3083,7 @@ function showEditCatForm(picker, cat, mi, weekKey) {
     cat.label = name;
     cat.bg = selectedColor;
     cat.fg = getFgForBg(selectedColor);
-    saveToFirestore();
+    saveToCloud();
     closeCatPicker();
     renderVertical();
   };
@@ -3402,11 +3422,11 @@ async function savePanel() {
       savedEvt = activeEvt;
     }
 
-    saveToFirestore();
+    saveToCloud();
     renderVertical();
     closePanel();
     const changed = await syncDateMirrors({ preferLocalId: savedEvt && savedEvt.id });
-    if (changed) { saveToFirestore(); renderVertical(); }
+    if (changed) { saveToCloud(); renderVertical(); }
   } catch (err) {
     console.error('savePanel failed:', err);
     showToast('Could not save — try again');
@@ -3636,6 +3656,19 @@ PPC.mountSettings({
 });
 
 darkMode = PPC.applyStoredDark();
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const settings = document.getElementById('ppcSettingsPanel');
+  if (settings && settings.classList.contains('open')) return;
+  const t = e.target;
+  const tag = (t && t.tagName) ? t.tagName.toLowerCase() : '';
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || (t && t.isContentEditable)) return;
+  const panel = document.getElementById('panel');
+  if (panel && panel.classList.contains('open')) {
+    e.preventDefault();
+    closePanel();
+  }
+});
 initApp();
 window.addEventListener('resize', () => {
   if (document.querySelector('.rev-section.is-ready')) drawChart();

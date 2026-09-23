@@ -5219,12 +5219,12 @@
 </div>
 
 <script src="/js/ppc-select.js?v=11"></script>
-<script src="/js/ppc-homebase.js?v=19"></script>
+<script src="/js/ppc-homebase.js?v=20"></script>
 <script>
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.110';
+const APP_VERSION = '0.12.111';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -9076,6 +9076,9 @@ async function persistMarketingOnce() {
   marketingSaveWanted = false;
   marketingLocalDirty = false;
   if (info && info.error === 'revision_conflict') {
+    if (typeof PPC !== 'undefined' && PPC.showToast) {
+      PPC.showToast('Board updated elsewhere — refreshing');
+    }
     await refreshData({ force: true, quiet: true });
     return;
   }
@@ -12542,14 +12545,26 @@ function backfillReviewFromPosted() {
   return changed;
 }
 
-function removeCompleteCard(id) {
+async function removeCompleteCard(id) {
   const card = completeCards().find(c => c.id === id);
   if (!card) return;
+  const snapshot = JSON.parse(JSON.stringify(card));
+  const linkedScheduleId = card.linkedScheduleId || '';
+  try {
+    await PPC.archivePush({
+      source: 'marketing',
+      item: snapshot,
+      restoreMeta: { kind: 'complete', pillar: card.pillar, format: card.format },
+      label: stripHtml(card.body || '') || 'Complete card'
+    });
+  } catch (_) {}
   DATA.sections.complete = completeCards().filter(c => c.id !== id);
   // Detach schedule link so a later re-post can archive again.
-  if (card.linkedScheduleId) {
-    const slot = scheduleCards().find(c => c.id === card.linkedScheduleId);
+  let detachedSlot = null;
+  if (linkedScheduleId) {
+    const slot = scheduleCards().find(c => c.id === linkedScheduleId);
     if (slot && slot.linkedPipelineId === id) {
+      detachedSlot = slot;
       slot.linkedPipelineId = '';
       if (slot.linkedPipelineStage === 'complete') slot.linkedPipelineStage = '';
     }
@@ -12557,6 +12572,19 @@ function removeCompleteCard(id) {
   clearTimeout(saveTimer);
   saveData();
   renderBoard();
+  if (snapshot && typeof PPC !== 'undefined' && PPC.showUndoToast) {
+    PPC.showUndoToast('Complete card removed', () => {
+      if (completeCards().some(c => c.id === snapshot.id)) return;
+      DATA.sections.complete.push(snapshot);
+      if (detachedSlot && linkedScheduleId) {
+        detachedSlot.linkedPipelineId = snapshot.id;
+        detachedSlot.linkedPipelineStage = 'complete';
+      }
+      scheduleSave();
+      renderBoard();
+      if (PPC.showToast) PPC.showToast('Complete card restored');
+    });
+  }
 }
 
 function renderReviewCard(card) {
@@ -19607,6 +19635,22 @@ if (calSlotCtxMenu) {
 }
 
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const lightbox = document.getElementById('mediaLightbox');
+    if (lightbox && lightbox.classList.contains('open')) return; // handled elsewhere
+    const settings = document.getElementById('ppcSettingsPanel');
+    if (settings && settings.classList.contains('open')) return; // shared Settings handler
+    const t = e.target;
+    const tag = (t && t.tagName) ? t.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || (t && t.isContentEditable)) return;
+    const panel = document.getElementById('panel');
+    if (panel && panel.classList.contains('open')) {
+      e.preventDefault();
+      closePanel();
+    }
+    return;
+  }
+
   // Stop browsers from hijacking "/" for find/search while working on the board.
   if (e.key === '/' || e.key === '?') {
     const t = e.target;
