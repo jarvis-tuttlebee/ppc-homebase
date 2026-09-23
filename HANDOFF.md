@@ -34,6 +34,9 @@ Full top-to-bottom consistency pass. Fixed:
 9. Empty Kanban cloud board no longer resurrected from localStorage
 10. Panel close silent-saves all modes; focus sync flushes dirty first
 11. Cloud sync failure toasts on Planner/Kanban
+12. Archive Recover restores **before** removing from Archive (no silent loss on fail)
+13. Review/Complete recover re-links calendar slot + clears `skipPostReview`
+14. Home mounts Settings + applies dark mode
 
 ### Safe for cards?
 Yes — additive flags (`skipPostReview` already existed). No KV migrate.
@@ -41,7 +44,7 @@ Yes — additive flags (`skipPostReview` already existed). No KV migrate.
 ### Open / next
 1. Preview on `:8787` (smoke done in Cloud)
 2. Deploy when asked; then ff-only `main`
-3. Follow-ups: shared staff list (Marketing ↔ Kanban); remaining full `saveBoard` paths for project reorder; Prep-by-layer (CONTENT-LAYERS-PLAN Phase C)
+3. Follow-ups: shared staff list (Marketing ↔ Kanban); remaining full `saveBoard` paths for project reorder; Prep-by-layer (CONTENT-LAYERS-PLAN Phase C); Marketing `_rev`-style guards for Planner blob
 
 ---
 

@@ -100,6 +100,42 @@
     .menu-marketing:active { color: #C29A3B; }
     .menu-item span { color: inherit; }
 
+    .home-settings {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 20;
+    }
+    .home-settings .nav-settings-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      color: #6B7A8D;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .home-settings .nav-settings-btn:hover {
+      color: #2C2C2C;
+      background: rgba(0,0,0,0.04);
+    }
+
+    body.dark {
+      background: #1A1A1A;
+      color: #F7F5F2;
+    }
+    body.dark .home { background: transparent; }
+    body.dark .brand .tag { color: #9AA3B0; }
+    body.dark .menu-item,
+    body.dark .menu-item:visited { color: #F7F5F2; }
+    body.dark .brand img {
+      filter: invert(1);
+    }
+
     @media (max-width: 480px) {
       .brand img { width: 240px; }
       .home { gap: 32px; padding: 28px 20px; }
@@ -119,6 +155,9 @@
   </style>
 </head>
 <body>
+  <div class="home-settings nav-row">
+    <button type="button" class="nav-settings-btn" id="settingsBtn" title="Settings" aria-label="Settings">⚙</button>
+  </div>
   <div class="home">
     <div class="brand">
       <img src="/assets/pressplay-logo-black.png?v=5" alt="Press Play" width="1346" height="280">
@@ -131,6 +170,10 @@
       <a class="menu-item menu-marketing" href="/marketing"><span>Marketing</span></a>
     </nav>
   </div>
-  <script src="/js/ppc-homebase.js?v=21"></script>
+  <script src="/js/ppc-homebase.js?v=22"></script>
+  <script>
+    PPC.applyStoredDark();
+    PPC.mountSettings({});
+  </script>
 </body>
 </html>

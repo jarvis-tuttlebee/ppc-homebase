@@ -383,6 +383,15 @@ body.dark .ppc-pin-card input{background:#141d2e;border-color:#2e3a55;color:#f0e
       } else if (kind === 'anchor') {
         if (!data.anchors.some(a => a.id === item.id)) data.anchors.push(item);
       }
+      // Re-attach calendar pipeline link so "Open in Review/Complete" works again.
+      if ((kind === 'review' || kind === 'complete') && item && item.linkedScheduleId) {
+        const slot = data.sections.schedule.find(c => c && c.id === item.linkedScheduleId);
+        if (slot) {
+          slot.linkedPipelineId = item.id;
+          slot.linkedPipelineStage = kind === 'complete' ? 'complete' : 'review';
+          delete slot.skipPostReview;
+        }
+      }
       // Archive recover is intentional — force so a mid-flight board rev bump
       // cannot 409 and leave the item only in Archive.
       await fetch('/api/marketing', {
@@ -724,13 +733,17 @@ body.dark .section-row { color: #f0ede8; }
       btn.onclick = async () => {
         btn.disabled = true;
         try {
+          // Restore first — only drop from Archive after the board write succeeds.
+          // Otherwise a 409/network blip would destroy the only recoverable copy.
+          const where = await restoreEntry(entry);
           const recovered = await archiveRecover(entry.id);
-          if (!recovered) return;
-          const where = await restoreEntry(recovered);
           showToast('Recovered to ' + where.replace(/^Recovered to /, ''));
-          if (typeof _opts.onAfterRecover === 'function') await _opts.onAfterRecover(recovered);
+          if (typeof _opts.onAfterRecover === 'function') {
+            await _opts.onAfterRecover(recovered || entry);
+          }
           await renderArchiveList();
         } catch (err) {
+          console.warn('Recover failed:', err);
           showToast('Recover failed');
           btn.disabled = false;
         }
