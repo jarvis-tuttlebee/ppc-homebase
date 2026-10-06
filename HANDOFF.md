@@ -12,7 +12,21 @@ page versions are **behind** live.
 
 ---
 
-## 2026-10-06 — Date ranges on Task Board + Planner (Claude Code cloud, not deployed)
+## 2026-10-06 — Deployed date ranges (Mac, from Claude Code cloud branch)
+
+### Live
+- Worker Version ID: `7cbbb13c-3949-44e4-97d0-589306a2e8da`
+- Marketing **`0.12.112`** · Kanban **`1.10.20`** · Planner **`2.10.18`**
+- Deployed from `claude/trusting-cray-bqmke4` (Mac clone `~/ppc-homebase-deploy`)
+- `origin/main` matches this tip (ff-only) after this entry
+
+### Open / next
+Hard-refresh Planner + Task Board. Spot-check: add an End date on a card,
+see the bar on the Planner Calendar tab.
+
+---
+
+## 2026-10-06 — Date ranges on Task Board + Planner (Claude Code cloud)
 
 ### Branch
 - `claude/trusting-cray-bqmke4` (from `main` = live 0.12.112)
@@ -38,8 +52,7 @@ Yes — additive field, no KV migrate. Old cards have no `dueEndDate` and render
 as before.
 
 ### Open / next
-1. Deploy when asked (`npx wrangler deploy` from this branch), then ff-only `main`
-2. Overview tab still lists ranged items by start month only
+1. Overview tab still lists ranged items by start month only
 
 ---
 
