@@ -892,7 +892,18 @@
     .week-day-body .pill.pill--range {
       padding: 4px 18px 4px 8px; font-size: 11px; line-height: 14px;
       white-space: nowrap; overflow: hidden;
+      border: none; border-radius: 0;
     }
+    .week-day-body .pill.pill--range-start { border-radius: 3px 0 0 3px; }
+    .week-day-body .pill.pill--range-end { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+    .week-day-body .pill.pill--range-start.pill--range-end { border-radius: 3px 12px 12px 3px; }
+    .week-day-body .pill.pill--range:hover { filter: brightness(0.96); }
+    .pill--range-resume .pill-title { opacity: 0.6; }
+    .week-day-body .pill.pill--range-overflow { overflow: visible; z-index: 1; }
+    .pill--range-overflow .pill-title { width: max-content; }
+    .pill--range .pill-datemark { display: none; }
+    body.dark .week-day-body .pill.pill--range { color: #f0ede8 !important; }
+    .pill-range-len { font-weight: 500; opacity: 0.6; margin-left: 6px; font-size: 10px; }
     .pill--range .pill-project { display: none; }
     .pill--range .pill-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pill--range .pill-datemark { position: absolute; top: 5px; right: 6px; float: none; margin: 0; }
@@ -1474,7 +1485,7 @@ const REVENUE = [1000,1800,1500,5000,3000,3500,2000,5500,6500,8000,8000,8000];
 // ─── PERSISTENCE (localStorage + Cloudflare Worker sync) ─────────────────────
 const STORAGE_KEY = 'ppc-planner-data';
 const SYNC_URL = '/api/data';
-const APP_VERSION = '2.10.18';
+const APP_VERSION = '2.10.19';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
@@ -2590,17 +2601,35 @@ function makeRangePill(evt, mi, iso, opts) {
   if (!pill) {
     seg.className = 'pill';
     setPillLabel(seg, evt, accentTextColor(cat.bg));
-    seg.style.background = PILL_BG;
     seg.style.color = accentTextColor(cat.bg);
     seg.style.fontWeight = '600';
     if (evt.status === 'complete') seg.classList.add('pill--complete');
     seg.addEventListener('click', e => { e.stopPropagation(); if (_touchJustDragged) return; openPanel(evt, cat); });
   }
+  // A highlighter run in the category colour: solid edge where it starts,
+  // tint through the days it covers, rounded cap where it ends.
   seg.classList.add('pill--range');
+  if (isStart) seg.classList.add('pill--range-start');
+  if (isEnd) seg.classList.add('pill--range-end');
   if (contLeft) seg.classList.add('pill--cont-left');
   if (contRight) seg.classList.add('pill--cont-right');
   if (!showLabel) seg.classList.add('pill--range-mid');
-  if (!isStart) seg.style.borderLeft = contLeft ? 'none' : '3px solid ' + cat.bg;
+  else if (!isStart) seg.classList.add('pill--range-resume');
+  seg.style.background = /^#[0-9a-f]{6}$/i.test(cat.bg) ? cat.bg + '2E' : PILL_BG;
+  seg.style.borderLeft = isStart ? '3px solid ' + cat.bg : 'none';
+  const titleEl = seg.querySelector('.pill-title');
+  if (isStart && titleEl) {
+    const len = document.createElement('span');
+    len.className = 'pill-range-len';
+    len.textContent = (isoDayDiff(evt.dueDate, evt.dueEndDate) + 1) + ' days';
+    titleEl.appendChild(len);
+  }
+  // Let the label run along the bar (over the following days' segments) rather
+  // than clipping at this one day's width. 26px = pill side padding, 15px = day gap.
+  if (showLabel && titleEl && opts.span > 1) {
+    titleEl.style.maxWidth = 'calc(' + opts.span + ' * (100% + 26px) + ' + ((opts.span - 1) * 15) + 'px - 26px)';
+    seg.classList.add('pill--range-overflow');
+  }
   const proj = projectName(evt.project);
   seg.title = (proj ? proj + ' · ' : '') + evt.title + ' · '
     + shortIsoLabel(evt.dueDate) + ' → ' + shortIsoLabel(evt.dueEndDate);
@@ -2815,9 +2844,13 @@ function renderWeekDayGrid(parent, mi, band, collapsed) {
       for (let lane = 0; lane <= maxLane; lane++) {
         const item = here.find(x => x.lane === lane);
         if (item) {
+          // Days this segment's bar covers from here to the row's end.
+          let span = 1;
+          while (colIdx + span <= lastLiveCol && colIsos[colIdx + span] <= item.evt.dueEndDate) span++;
           body.appendChild(makeRangePill(item.evt, cellMi, iso, {
             firstCol: colIdx === firstLiveCol,
-            lastCol: colIdx === lastLiveCol
+            lastCol: colIdx === lastLiveCol,
+            span
           }));
         } else {
           const spacer = document.createElement('div');
