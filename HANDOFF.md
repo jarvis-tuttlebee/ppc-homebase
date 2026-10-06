@@ -12,10 +12,13 @@ page versions are **behind** live.
 
 ---
 
-## 2026-10-06 — Range bars restyled (Claude Code cloud, not deployed)
+## 2026-10-06 — Deployed range bar restyle (Mac, from Claude Code cloud branch)
 
-### Branch
-- `claude/trusting-cray-bqmke4` · Planner **`2.10.19`** (Kanban/Marketing unchanged)
+### Live
+- Worker Version ID: `b89310b2-335d-4764-9359-e2a21b0ed445`
+- Marketing **`0.12.112`** · Kanban **`1.10.20`** · Planner **`2.10.19`**
+- Deployed from `claude/trusting-cray-bqmke4` (Mac clone `~/ppc-homebase-deploy`)
+- `origin/main` ff'd to `d125110`; this HANDOFF-only commit sits one ahead
 
 ### What
 Planner Calendar range bars are now a category-colour tint ("highlighter")
@@ -24,7 +27,7 @@ rounded cap on the end day, title faded at each new week row, label runs
 along the bar instead of clipping. Dark mode text fixed.
 
 ### Open / next
-Deploy when asked, then ff-only `main`.
+Hard-refresh Planner. Overview tab still lists ranged items by start month only.
 
 ---
 
