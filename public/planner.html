@@ -882,6 +882,38 @@
       outline: none;
     }
     .week-day-body .pill { display: block; width: 100%; box-sizing: border-box; }
+    /* Multi-day items: fixed-height segments that join across the day gap
+       (body padding 4 + border 1 + grid gap 5 + border 1 + padding 4 = 15px). */
+    .week-days-grid { --range-join-l: 7px; --range-join-r: 8px; }
+    .week-day-body .pill.pill--range,
+    .week-day-body .pill-range-spacer {
+      height: 24px; margin: 0 0 4px; box-sizing: border-box; flex: 0 0 auto;
+    }
+    .week-day-body .pill.pill--range {
+      padding: 4px 18px 4px 8px; font-size: 11px; line-height: 14px;
+      white-space: nowrap; overflow: hidden;
+    }
+    .pill--range .pill-project { display: none; }
+    .pill--range .pill-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pill--range .pill-datemark { position: absolute; top: 5px; right: 6px; float: none; margin: 0; }
+    .pill--range:hover .pill-datemark { visibility: hidden; }
+    .pill--range.pill--range-mid .pill-title,
+    .pill--range.pill--range-mid .pill-datemark { visibility: hidden; }
+    .week-day-body .pill.pill--cont-left {
+      margin-left: calc(-1 * var(--range-join-l));
+      width: calc(100% + var(--range-join-l));
+      border-top-left-radius: 0; border-bottom-left-radius: 0;
+      padding-left: calc(8px + var(--range-join-l));
+    }
+    .week-day-body .pill.pill--cont-right {
+      margin-right: calc(-1 * var(--range-join-r));
+      width: calc(100% + var(--range-join-r));
+      border-top-right-radius: 0; border-bottom-right-radius: 0;
+      border-right: none;
+    }
+    .week-day-body .pill.pill--cont-left.pill--cont-right {
+      width: calc(100% + var(--range-join-l) + var(--range-join-r));
+    }
     .week-day-body .week-add-btn { margin-top: 2px; }
     .pill[draggable="true"] { cursor: grab; }
     .pill.dragging { opacity: 0.3 !important; cursor: grabbing; }
@@ -1044,6 +1076,7 @@
         -webkit-overflow-scrolling: touch;
         gap: 6px;
         scroll-snap-type: x proximity;
+        --range-join-l: 8px; --range-join-r: 8px;
       }
       .week-day-col {
         flex: 0 0 108px;
@@ -1268,6 +1301,15 @@
           </div>
         </span>
       </div>
+      <div class="prop-row" id="pEndDateRow">
+        <span class="prop-label">End date</span>
+        <span class="prop-value">
+          <div class="prop-status-wrap">
+            <input type="date" class="prop-status-select" id="pEndDate" style="padding:4px 6px;">
+            <span class="exp-toggle" style="margin-left:8px;" onclick="setPlannerEndDate('')">clear</span>
+          </div>
+        </span>
+      </div>
       <!-- Month / Week / Day are derived from the date above. Kept in the DOM
            (hidden) so placement still works for events with no date set. -->
       <div class="prop-row" id="pDateRow" style="display:none;">
@@ -1432,7 +1474,7 @@ const REVENUE = [1000,1800,1500,5000,3000,3500,2000,5500,6500,8000,8000,8000];
 // ─── PERSISTENCE (localStorage + Cloudflare Worker sync) ─────────────────────
 const STORAGE_KEY = 'ppc-planner-data';
 const SYNC_URL = '/api/data';
-const APP_VERSION = '2.10.17';
+const APP_VERSION = '2.10.18';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
@@ -2215,6 +2257,29 @@ function dateToPlannerSlot(iso) {
   return { m: mi, week: band ? band.key : null, day: d };
 }
 
+// Multi-day items: dueDate is the start, dueEndDate the last day (inclusive).
+function eventRange(evt) {
+  if (!evt || !evt.dueDate || !evt.dueEndDate || evt.dueEndDate <= evt.dueDate) return null;
+  return { from: evt.dueDate, to: evt.dueEndDate };
+}
+
+function addDaysIso(iso, n) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + n);
+  return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+}
+
+function isoDayDiff(fromIso, toIso) {
+  const [y1, m1, d1] = fromIso.split('-').map(Number);
+  const [y2, m2, d2] = toIso.split('-').map(Number);
+  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
+}
+
+function shortIsoLabel(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+}
+
 // The inverse: a timeline slot → the date it represents.
 function slotToDate(mi, week, day) {
   if (mi == null) return null;
@@ -2278,7 +2343,7 @@ async function syncDateMirrors(opts) {
     if (!datedCards.has(e.srcCardId)) {
       // Undated (or date cleared) → keep parked in Unassigned / Any.
       if (e.week != null || e.day != null || e.dueDate) {
-        e.week = null; e.day = null; delete e.dueDate;
+        e.week = null; e.day = null; delete e.dueDate; delete e.dueEndDate;
         eventsChanged = true;
       }
     }
@@ -2290,7 +2355,7 @@ async function syncDateMirrors(opts) {
       if (idx >= 0) {
         const e = EVENTS[idx];
         if (preferLocalIds.has(e.id)) return;
-        e.week = null; e.day = null; delete e.dueDate;
+        e.week = null; e.day = null; delete e.dueDate; delete e.dueEndDate;
         eventsChanged = true;
       }
       return;
@@ -2302,12 +2367,13 @@ async function syncDateMirrors(opts) {
       title: card.title || 'Untitled task', date: MONTHS[slot.m],
       body: stripHtml(card.body), status: card.status || 'planned',
       tasks: (card.tasks || []).slice(), dueDate: card.dueDate,
+      dueEndDate: card.dueEndDate || undefined,
       project: card.project || null
     };
     if (idx < 0) { next.id = 'mir-' + id; EVENTS.push(next); eventsChanged = true; return; }
     const e = EVENTS[idx];
     if (preferLocalIds.has(e.id)) return; // just saved from the panel — don't clobber
-    if (['cat','m','week','day','title','status','body','dueDate','project'].some(f => e[f] !== next[f])) {
+    if (['cat','m','week','day','title','status','body','dueDate','dueEndDate','project'].some(f => e[f] !== next[f])) {
       Object.assign(e, next); eventsChanged = true;
     }
   });
@@ -2328,7 +2394,8 @@ async function syncDateMirrors(opts) {
       id: existing ? existing.id : 'kmir-' + evt.id,
       srcEventId: evt.id, mirrored: true,
       title: evt.title, cat: evt.cat, status: evt.status || 'planned',
-      dueDate: evt.dueDate, project: evt.project || undefined
+      dueDate: evt.dueDate, dueEndDate: evt.dueEndDate || null,
+      project: evt.project || undefined
     };
     if (!existing) {
       // Only set these on creation — afterwards they're the board's to own.
@@ -2337,7 +2404,8 @@ async function syncDateMirrors(opts) {
       desired.tasks = (evt.tasks || []).slice();
       desired.assignees = [];
       upserts.push(desired);
-    } else if (['title','cat','status','dueDate','project'].some(f => existing[f] !== desired[f])) {
+    } else if (['title','cat','status','dueDate','project'].some(f => existing[f] !== desired[f])
+      || (existing.dueEndDate || null) !== desired.dueEndDate) {
       desired.column = statusToColumn(evt.status);
       // Keep body/tasks in sync when the planner panel just saved this event.
       if (preferLocalIds.has(evt.id)) {
@@ -2355,8 +2423,8 @@ async function syncDateMirrors(opts) {
 
 // Write a date back to a linked card (null clears it, retiring the mirror).
 // Single-card patch — never rewrites the rest of the board.
-async function pushDueDateToCard(cardId, iso) {
-  await patchBoard([{ id: cardId, dueDate: iso || null }], []);
+async function pushDueDateToCard(cardId, iso, endIso) {
+  await patchBoard([{ id: cardId, dueDate: iso || null, dueEndDate: (iso && endIso) || null }], []);
 }
 
 async function pushStatusToCard(cardId, status) {
@@ -2378,6 +2446,7 @@ async function pushEventToCard(evt) {
     status: evt.status || 'planned',
     column: statusToColumn(evt.status),
     dueDate: evt.dueDate || null,
+    dueEndDate: (evt.dueDate && evt.dueEndDate) || null,
     project: evt.project || null
   };
   if (evt.status === 'complete') patch.doneAt = new Date().toISOString();
@@ -2417,10 +2486,14 @@ async function applyEventSlot(evt, week, dayKey, cellMi) {
     evt.day = null;
   }
   const iso = typeof dayKey === 'number' ? isoFromMonthDay(evt.m, dayKey) : null;
+  const range = eventRange(evt);
   if (evt.dueDate || evt.srcCardId) {
     if (iso) evt.dueDate = iso; else delete evt.dueDate;
   }
-  if (evt.srcCardId) await pushDueDateToCard(evt.srcCardId, iso);
+  // A dragged range keeps its length; dropping it in Unassigned drops the range.
+  if (range && iso) evt.dueEndDate = addDaysIso(iso, isoDayDiff(range.from, range.to));
+  else delete evt.dueEndDate;
+  if (evt.srcCardId) await pushDueDateToCard(evt.srcCardId, iso, evt.dueEndDate);
 }
 
 function attachPillDelete(pill, evt, mi) {
@@ -2500,6 +2573,63 @@ function makePill(evt, mi) {
   return pill;
 }
 
+/* One day's segment of a multi-day item. Segments join into a bar across the
+   week row; the label shows where the bar starts in each row. Only the start
+   day drags (moving the whole range) and carries the delete button. */
+function makeRangePill(evt, mi, iso, opts) {
+  const isStart = iso === evt.dueDate;
+  const isEnd = iso === evt.dueEndDate;
+  const contLeft = !isStart && !opts.firstCol;
+  const contRight = !isEnd && !opts.lastCol;
+  const showLabel = isStart || opts.firstCol;
+
+  const pill = isStart ? makePill(evt, mi) : null;
+  const cat = CATS.find(c => c.id === evt.cat);
+  if (!cat) return document.createTextNode('');
+  const seg = pill || document.createElement('span');
+  if (!pill) {
+    seg.className = 'pill';
+    setPillLabel(seg, evt, accentTextColor(cat.bg));
+    seg.style.background = PILL_BG;
+    seg.style.color = accentTextColor(cat.bg);
+    seg.style.fontWeight = '600';
+    if (evt.status === 'complete') seg.classList.add('pill--complete');
+    seg.addEventListener('click', e => { e.stopPropagation(); if (_touchJustDragged) return; openPanel(evt, cat); });
+  }
+  seg.classList.add('pill--range');
+  if (contLeft) seg.classList.add('pill--cont-left');
+  if (contRight) seg.classList.add('pill--cont-right');
+  if (!showLabel) seg.classList.add('pill--range-mid');
+  if (!isStart) seg.style.borderLeft = contLeft ? 'none' : '3px solid ' + cat.bg;
+  const proj = projectName(evt.project);
+  seg.title = (proj ? proj + ' · ' : '') + evt.title + ' · '
+    + shortIsoLabel(evt.dueDate) + ' → ' + shortIsoLabel(evt.dueEndDate);
+  return seg;
+}
+
+/* Assign each multi-day item overlapping this week row a lane, so its bar sits
+   at the same height in every day it covers. */
+function rangeLanesForWeek(colIsos) {
+  const live = colIsos.filter(Boolean);
+  if (!live.length) return [];
+  const first = live[0], last = live[live.length - 1];
+  const evts = EVENTS.filter(e => {
+    if (!CATS.some(c => c.id === e.cat)) return false;
+    if (e.day == null) return false;               // parked in Unassigned / Any
+    const r = eventRange(e);
+    return r && r.from <= last && r.to >= first;
+  }).sort((a, b) => a.dueDate.localeCompare(b.dueDate)
+    || b.dueEndDate.localeCompare(a.dueEndDate)
+    || String(a.id).localeCompare(String(b.id)));
+  const laneEnds = [];
+  return evts.map(evt => {
+    let lane = laneEnds.findIndex(end => end < evt.dueDate);
+    if (lane < 0) { lane = laneEnds.length; laneEnds.push(evt.dueEndDate); }
+    else laneEnds[lane] = evt.dueEndDate;
+    return { evt, lane };
+  });
+}
+
 // Project name sits in small text above the title, so it's clear at a glance
 // what the item belongs to.
 function setPillLabel(pill, evt, accent) {
@@ -2525,7 +2655,7 @@ function markDatedPill(pill, evt) {
   tag.textContent = evt.srcCardId ? '⇄' : '◆';
   tag.title = evt.srcCardId
     ? 'Linked to the Task Board — moving it here updates the task\'s due date'
-    : 'Pinned to ' + evt.dueDate;
+    : 'Pinned to ' + evt.dueDate + (eventRange(evt) ? ' → ' + evt.dueEndDate : '');
   pill.appendChild(tag);
   pill.classList.add('pill--dated');
 }
@@ -2618,7 +2748,11 @@ function renderWeekDayGrid(parent, mi, band, collapsed) {
   daysGrid.style.gridTemplateColumns = 'repeat(7, minmax(88px, 1fr))';
 
   const cols = dayColumnsForBand(mi, band);
-  cols.forEach(({ date, label: dayLabel, weekend, outside, bleed, inert, cellMi }) => {
+  const colIsos = cols.map(c => (c.inert || c.cellMi == null) ? null : isoFromMonthDay(c.cellMi, c.date));
+  const firstLiveCol = colIsos.findIndex(Boolean);
+  const lastLiveCol = colIsos.length - 1 - colIsos.slice().reverse().findIndex(Boolean);
+  const rangeLanes = rangeLanesForWeek(colIsos);
+  cols.forEach(({ date, label: dayLabel, weekend, outside, bleed, inert, cellMi }, colIdx) => {
     const col = document.createElement('div');
     col.className = 'week-day-col'
       + (weekend ? ' week-day-col--weekend' : '')
@@ -2672,9 +2806,30 @@ function renderWeekDayGrid(parent, mi, band, collapsed) {
       if (destMi < 11) refreshMonthContent(destMi + 1);
     });
 
+    // Multi-day items first, each in a fixed lane so its bar lines up across
+    // the week; lanes free on this day get a spacer.
+    const iso = colIsos[colIdx];
+    const here = rangeLanes.filter(x => x.evt.dueDate <= iso && x.evt.dueEndDate >= iso);
+    if (here.length) {
+      const maxLane = Math.max(...here.map(x => x.lane));
+      for (let lane = 0; lane <= maxLane; lane++) {
+        const item = here.find(x => x.lane === lane);
+        if (item) {
+          body.appendChild(makeRangePill(item.evt, cellMi, iso, {
+            firstCol: colIdx === firstLiveCol,
+            lastCol: colIdx === lastLiveCol
+          }));
+        } else {
+          const spacer = document.createElement('div');
+          spacer.className = 'pill-range-spacer';
+          body.appendChild(spacer);
+        }
+      }
+    }
+
     EVENTS.filter(e => {
       const cat = CATS.find(c => c.id === e.cat);
-      return cat && e.m === cellMi && e.day === date;
+      return cat && e.m === cellMi && e.day === date && !eventRange(e);
     }).forEach(evt => body.appendChild(makePill(evt, cellMi)));
 
     const addBtn = document.createElement('button');
@@ -3134,6 +3289,10 @@ function initPanelSelects() {
   replaceNativeSelect(document.getElementById('pWeek'), { bare: true, colored: false });
   if (typeof replaceNativeDate === 'function') {
     replaceNativeDate(document.getElementById('pExactDate'), { placeholder: 'Planner date' });
+    replaceNativeDate(document.getElementById('pEndDate'), {
+      placeholder: 'Optional — for a date range',
+      getOutlineDate: () => (document.getElementById('pExactDate') || {}).value || ''
+    });
   }
   const exactDate = document.getElementById('pExactDate');
   if (exactDate && exactDate.dataset.boundChange !== '1') {
@@ -3146,6 +3305,11 @@ initPanelSelects();
 function setPlannerExactDate(iso) {
   if (typeof setPpcDateValue === 'function' && setPpcDateValue('pExactDate', iso || '')) return;
   const el = document.getElementById('pExactDate');
+  if (el) el.value = iso || '';
+}
+function setPlannerEndDate(iso) {
+  if (typeof setPpcDateValue === 'function' && setPpcDateValue('pEndDate', iso || '')) return;
+  const el = document.getElementById('pEndDate');
   if (el) el.value = iso || '';
 }
 
@@ -3269,6 +3433,7 @@ function openNewEventPanel(cat, monthIdx, weekNum, dayKey = null) {
   fillWeekSelect(monthIdx, activeNewWeek);
   document.getElementById('pDay').value = dayKey || '';
   setPlannerExactDate('');
+  setPlannerEndDate('');
   fillProjectSelect('');
   document.getElementById('pDesc').textContent = '';
   renderSubtasks([]);
@@ -3318,6 +3483,7 @@ function onExactDateChange() {
 }
 function clearExactDate() {
   setPlannerExactDate('');
+  setPlannerEndDate('');
 }
 
 function openPanel(evt, cat) {
@@ -3334,6 +3500,7 @@ function openPanel(evt, cat) {
   fillWeekSelect(evt.m, evt.week);
   document.getElementById('pDay').value = evt.day || '';
   setPlannerExactDate(evt.dueDate || '');
+  setPlannerEndDate(eventRange(evt) ? evt.dueEndDate : '');
   fillProjectSelect(evt.project || '');
   document.getElementById('pDesc').textContent = evt.body || '';
   renderSubtasks(evt.tasks || []);
@@ -3367,7 +3534,8 @@ async function savePanel() {
     const rawDay = dayEl ? dayEl.value : '';
     let dayVal = rawDay === '' || rawDay == null ? null : parseInt(rawDay, 10);
     if (isNaN(dayVal)) dayVal = null;
-    const exactDate = (dateEl && dateEl.value) || null;
+    let exactDate = (dateEl && dateEl.value) || null;
+    let endDate = (document.getElementById('pEndDate') || {}).value || null;
     const projectId = (projectEl && projectEl.value) || null;
     const status = (statusEl && statusEl.value) || 'planned';
     const catId = (catEl && catEl.value) || (activeCat && activeCat.id) || (CATS[0] && CATS[0].id);
@@ -3376,6 +3544,19 @@ async function savePanel() {
 
     // An exact date wins: it pins the pill to that day on the timeline.
     let monthIdx = activeEvt ? activeEvt.m : activeNewMonth;
+    // A range starts on the exact date, or on the day cell the item sits in.
+    if (endDate && !exactDate && monthIdx != null && typeof dayVal === 'number') {
+      exactDate = isoFromMonthDay(monthIdx, dayVal);
+    }
+    if (endDate && !exactDate) {
+      showToast('Pick a start date for the range');
+      return;
+    }
+    if (endDate && endDate < exactDate) {
+      showToast('The end date is before the start date');
+      return;
+    }
+    if (endDate === exactDate) endDate = null;
     if (exactDate) {
       const slot = dateToPlannerSlot(exactDate);
       if (slot) { monthIdx = slot.m; week = slot.week; dayVal = slot.day; }
@@ -3400,6 +3581,7 @@ async function savePanel() {
         tasks:  tasks
       };
       if (exactDate) created.dueDate = exactDate;
+      if (endDate) created.dueEndDate = endDate;
       if (projectId) created.project = projectId;
       EVENTS.push(created);
       savedEvt = created;
@@ -3414,6 +3596,7 @@ async function savePanel() {
       activeEvt.body   = body;
       activeEvt.tasks  = tasks;
       if (exactDate) activeEvt.dueDate = exactDate; else delete activeEvt.dueDate;
+      if (endDate) activeEvt.dueEndDate = endDate; else delete activeEvt.dueEndDate;
       if (projectId) activeEvt.project = projectId; else delete activeEvt.project;
       if (activeEvt.srcCardId) {
         const ok = await pushEventToCard(activeEvt);

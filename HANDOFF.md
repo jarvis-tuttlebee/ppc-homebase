@@ -12,6 +12,37 @@ page versions are **behind** live.
 
 ---
 
+## 2026-10-06 — Date ranges on Task Board + Planner (Claude Code cloud, not deployed)
+
+### Branch
+- `claude/trusting-cray-bqmke4` (from `main` = live 0.12.112)
+- Kanban **`1.10.20`** · Planner **`2.10.18`** · Marketing unchanged **`0.12.112`**
+
+### What
+Cards/events can span dates. New optional field `dueEndDate` (inclusive last
+day) alongside `dueDate` (start), on Kanban cards and Planner events, mirrored
+both ways.
+- Task Board panel: **+ End date** next to Due date (row relabels to Start
+  date; × returns to a single date). Card meta shows `12 Oct → 15 Oct`.
+- Planner panel: new **End date** row. With no exact date set, the range starts
+  on the item's day cell.
+- Planner Calendar: ranged items render as a bar across every day they cover,
+  in fixed lanes per week row; label repeats at the start of each week row.
+  Drag the start segment to move the whole range (length kept); dropping into
+  Unassigned / Any clears the range.
+- Task Board panel save now sends cleared `dueDate` / `dueEndDate` / `project`
+  as `null` (server patch merges, so omitted keys never cleared before).
+
+### Safe for cards?
+Yes — additive field, no KV migrate. Old cards have no `dueEndDate` and render
+as before.
+
+### Open / next
+1. Deploy when asked (`npx wrangler deploy` from this branch), then ff-only `main`
+2. Overview tab still lists ranged items by start month only
+
+---
+
 ## 2026-09-23 — Deployed consistency audit 0.12.112 (Cursor Cloud)
 
 ### Live

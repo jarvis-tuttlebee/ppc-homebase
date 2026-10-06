@@ -779,6 +779,12 @@
     }
     .prop-status-select:focus { background: #f8f6f3; }
     .prop-status-wrap { display: flex; align-items: center; gap: 6px; }
+    .due-range-toggle {
+      flex: 0 0 auto; background: none; border: none; padding: 2px 4px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; color: #9a958d;
+      white-space: nowrap;
+    }
+    .due-range-toggle:hover { color: #4E6E6C; }
     .status-dot-small { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .panel-divider { border: none; border-top: 1px solid #ede9e3; margin: 18px 0; }
     .panel-section-label {
@@ -1067,10 +1073,20 @@
         </span>
       </div>
       <div class="prop-row">
-        <span class="prop-label">Due date</span>
+        <span class="prop-label" id="pDueLabel">Due date</span>
         <span class="prop-value">
           <div class="prop-status-wrap">
             <input type="date" class="prop-status-select" id="pDue" style="padding:4px 6px;">
+            <button type="button" class="due-range-toggle" id="pDueRangeBtn" onclick="toggleDueRange()">+ End date</button>
+          </div>
+        </span>
+      </div>
+      <div class="prop-row" id="pDueEndRow" style="display:none;">
+        <span class="prop-label">End date</span>
+        <span class="prop-value">
+          <div class="prop-status-wrap">
+            <input type="date" class="prop-status-select" id="pDueEnd" style="padding:4px 6px;">
+            <button type="button" class="due-range-toggle" onclick="toggleDueRange(false)" title="Back to a single date">&times;</button>
           </div>
         </span>
       </div>
@@ -1304,7 +1320,7 @@ let HIDDEN_EVENT_IDS = [];
 const STORAGE_KEY = 'kanban-board-data';
 const SYNC_URL = '/api/kanban';
 const PATCH_URL = SYNC_URL + '/patch';
-const APP_VERSION = '1.10.19';
+const APP_VERSION = '1.10.20';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 
 let editMode = true;
@@ -1605,6 +1621,20 @@ function dueDisplay(iso) {
   return { text: label };
 }
 
+function shortDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+}
+
+// Ranged cards read "12 Oct → 15 Oct"; overdue only once the end has passed.
+function cardDueDisplay(card) {
+  if (!card.dueDate || !card.dueEndDate || card.dueEndDate <= card.dueDate) return dueDisplay(card.dueDate);
+  const end = dueDisplay(card.dueEndDate);
+  const text = shortDate(card.dueDate) + ' → ' + shortDate(card.dueEndDate);
+  if (end.overdue && end.text !== 'Today') return { text: text + ' · overdue', overdue: true };
+  return { text };
+}
+
 function makeCardPill(card) {
   const cat = CATS.find(c => c.id === card.cat) || CATS[0];
   const pill = document.createElement('div');
@@ -1659,7 +1689,7 @@ function makeCardPill(card) {
   meta.className = 'card-meta';
   meta.appendChild(metaCell(ICON_USER, 'Assignee', assigneeDisplay(card)));
   meta.appendChild(metaCell(ICON_STATUS, 'Status', { chip: card.status || 'planned' }));
-  meta.appendChild(metaCell(ICON_CAL, 'Due date', dueDisplay(card.dueDate)));
+  meta.appendChild(metaCell(ICON_CAL, card.dueEndDate ? 'Dates' : 'Due date', cardDueDisplay(card)));
   pill.appendChild(meta);
 
   pill.draggable = !IS_TOUCH;
@@ -2611,6 +2641,10 @@ function initPanelSelects() {
   replaceNativeSelect(document.getElementById('pProject'), { bare: true, colored: false });
   if (typeof replaceNativeDate === 'function') {
     replaceNativeDate(document.getElementById('pDue'), { placeholder: 'Due date' });
+    replaceNativeDate(document.getElementById('pDueEnd'), {
+      placeholder: 'End date',
+      getOutlineDate: () => (document.getElementById('pDue') || {}).value || ''
+    });
   }
 }
 
@@ -2621,10 +2655,26 @@ function initProjectDatePickers() {
   if (start) replaceNativeDate(start, { placeholder: 'Start date' });
   if (end) replaceNativeDate(end, { placeholder: 'End date' });
 }
-function setKanbanDueDate(iso) {
-  if (typeof setPpcDateValue === 'function' && setPpcDateValue('pDue', iso || '')) return;
-  const el = document.getElementById('pDue');
+function setKanbanDateInput(id, iso) {
+  if (typeof setPpcDateValue === 'function' && setPpcDateValue(id, iso || '')) return;
+  const el = document.getElementById(id);
   if (el) el.value = iso || '';
+}
+// A card has a single due date, or a start → end range (dueDate → dueEndDate).
+function setKanbanDueDate(iso, endIso) {
+  setKanbanDateInput('pDue', iso);
+  setKanbanDateInput('pDueEnd', endIso);
+  setDueRangeVisible(!!endIso);
+}
+function setDueRangeVisible(on) {
+  document.getElementById('pDueEndRow').style.display = on ? '' : 'none';
+  document.getElementById('pDueRangeBtn').style.display = on ? 'none' : '';
+  document.getElementById('pDueLabel').textContent = on ? 'Start date' : 'Due date';
+}
+function toggleDueRange(on) {
+  const show = on == null ? document.getElementById('pDueEndRow').style.display === 'none' : !!on;
+  if (!show) setKanbanDateInput('pDueEnd', '');
+  setDueRangeVisible(show);
 }
 initPanelSelects();
 initProjectDatePickers();
@@ -3017,7 +3067,7 @@ function openPanel(card) {
   setPpcSelectValue('pColumn', card.column);
   setPpcSelectValue('pStatus', card.status || 'planned');
   document.getElementById('pDesc').innerHTML = sanitizeHtml(card.body || '');
-  setKanbanDueDate(card.dueDate || '');
+  setKanbanDueDate(card.dueDate || '', card.dueEndDate || '');
   fillPanelSelects(card.assignees || [], card.project || '');
   renderSubtasks(card.tasks || []);
   updateStatusColor();
@@ -3039,13 +3089,21 @@ async function savePanel() {
   const body = sanitizeHtml(document.getElementById('pDesc').innerHTML).trim();
   const assignees = panelAssignees.slice();
   const dueDate = document.getElementById('pDue').value;
+  let dueEndDate = document.getElementById('pDueEnd').value;
   const project = document.getElementById('pProject').value;
   const tasks = readSubtasks();
+  if (dueEndDate && dueDate && dueEndDate < dueDate) {
+    alert('The end date is before the start date.');
+    return;
+  }
+  // A range needs a start, and a same-day "range" is just a due date.
+  if (!dueDate || dueEndDate === dueDate) dueEndDate = '';
 
   const applyMeta = (c) => {
     c.assignees = assignees;
     delete c.assignee;   // legacy single-value field
     if (dueDate) c.dueDate = dueDate; else delete c.dueDate;
+    if (dueEndDate) c.dueEndDate = dueEndDate; else delete c.dueEndDate;
     if (project) c.project = project; else delete c.project;
   };
 
@@ -3073,7 +3131,13 @@ async function savePanel() {
   }
 
   // Surgical card write — avoids clobbering concurrent Planner remirrors.
-  await patchKanban({ upsert: [savedCard] });
+  // The server merges fields, so cleared ones go as null to actually clear.
+  await patchKanban({ upsert: [{
+    ...savedCard,
+    dueDate: savedCard.dueDate || null,
+    dueEndDate: savedCard.dueEndDate || null,
+    project: savedCard.project || null
+  }] });
   saveBoardLocal();
   renderCurrentView();
   closePanel();
@@ -3345,6 +3409,7 @@ async function upsertPlannerMirror(card) {
         status: card.status || 'planned',
         tasks: (card.tasks || []).slice(),
         dueDate: card.dueDate,
+        dueEndDate: card.dueEndDate || undefined,
         project: card.project || null
       };
       if (idx < 0) data.events.push(next); else Object.assign(data.events[idx], next);
@@ -3359,6 +3424,7 @@ async function upsertPlannerMirror(card) {
       e.week = null;
       e.day = null;
       delete e.dueDate;
+      delete e.dueEndDate;
       if (card.project) e.project = card.project; else delete e.project;
     } else if (!card.dueDate) {
       if (!(data.settings && data.settings.kanbanAutoAssign === false)) {
@@ -3392,6 +3458,8 @@ async function upsertPlannerMirror(card) {
         ev.tasks = (card.tasks || []).slice();
         if (card.dueDate) ev.dueDate = card.dueDate;
         else delete ev.dueDate;
+        if (card.dueDate && card.dueEndDate) ev.dueEndDate = card.dueEndDate;
+        else delete ev.dueEndDate;
       }
     }
 
