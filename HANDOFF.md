@@ -12,6 +12,36 @@ page versions are **behind** live.
 
 ---
 
+## 2026-11-09 — Deployed fix: Ideas grid delete button on photo cards 0.12.115 (Claude Code, PC)
+
+### Live
+- Worker Version ID: `4af71b17-4ffc-43ca-b4e8-4ff006f8c66e`
+- Marketing **`0.12.115`** (Kanban/Planner unchanged)
+- Deployed from `claude/dreamy-hopper-3ydimr` (Proton Drive clone)
+- `origin/main` matches this tip (ff-only) after this entry
+
+### Why
+Jarvis reported: can't delete Idea cards that have a photo.
+
+### What
+`.ideas-grid-del` (the × button) had no `z-index`. `.ideas-grid-thumb`
+(only rendered when the idea has a photo) is `position: relative` and is
+appended to the card *after* the delete button — same stacking level, later
+in DOM order, so the thumbnail was painting over the delete button and
+eating the click. One-line fix: `.ideas-grid-del { z-index: 2; }` (matches
+the existing `.card-delete` convention used everywhere else in this file).
+Board-view idea cards and Prep cards were already unaffected (their delete
+buttons already had an explicit z-index, or their thumb isn't `position`d).
+
+### Safe for cards?
+Yes — CSS only, no data/shape change.
+
+### Open / next
+Hard-refresh Marketing. Smoke: delete an Idea card that has a photo, from
+the grid view.
+
+---
+
 ## 2026-11-09 — Deployed Unscheduled tray grouping 0.12.114 (Claude Code, PC)
 
 ### Live
