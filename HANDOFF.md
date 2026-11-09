@@ -12,6 +12,33 @@ page versions are **behind** live.
 
 ---
 
+## 2026-11-09 — Unscheduled calendar card → Back to Ideas (Claude Code cloud, not deployed)
+
+### Branch
+- `claude/dreamy-hopper-3ydimr` (from `main`) · Marketing **`0.12.113`** (Kanban/Planner unchanged)
+- `main` also carries undeployed Planner **`2.10.19`** range-bar restyle (see entry below)
+
+### What
+Calendar card panel gets **Back to Ideas** when the card is in Unscheduled
+(no publish date), has content or a pipeline/idea link, isn't a Discover pin,
+and isn't Posted. Confirm → content goes to the Ideas board and the calendar
+card is **deleted** (no archive / undo — the content lives on as the idea).
+- Idea still on the board (`sourceIdeaId`) → reused, link cleared.
+- Otherwise idea rebuilt from the slot (body, images, layer, why, event,
+  plan, hook etc.); reuses `sourceIdeaId` unless another card still claims it.
+- Shared link (`reviewVideoUrl`) appended to the idea body as plain text.
+- Fixed `pipelineCardToIdea`: Prep optional fields (hook, script, …) were
+  never copied (unreachable code after `return`). Also affects Prep → Back to Ideas.
+
+### Safe for cards?
+Yes — no KV migrate. Smoke-tested locally (wrangler dev): three link types,
+empty Need / dated card show no button, state persists across reload.
+
+### Open / next
+Deploy when asked, hard-refresh Marketing, then ff-only `main`.
+
+---
+
 ## 2026-10-06 — Range bars restyled (Claude Code cloud, not deployed)
 
 ### Branch

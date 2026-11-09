@@ -5224,7 +5224,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.112';
+const APP_VERSION = '0.12.113';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -6661,7 +6661,7 @@ function pipelineCardToIdea(card) {
   const pos = placeNearMostRecent(size);
   let ideaId = card.sourceIdeaId || newId();
   if ((DATA.ideas || []).some(i => i && i.id === ideaId)) ideaId = newId();
-  return {
+  const idea = {
     id: ideaId,
     body: card.body || '',
     cat: (card.pillar && pillarById(card.pillar)) ? card.pillar : 'organic',
@@ -11243,6 +11243,78 @@ function movePrepToIdeas(id) {
   closePanel();
   clearTimeout(saveTimer);
   saveData();
+  renderBoard();
+  openPanel(idea.id);
+  if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Returned to Ideas');
+}
+
+/** Unscheduled calendar card with content — offer Back to Ideas (not empty Needs / pins / posted). */
+function canSendScheduleToIdeas(card) {
+  if (!card || isDiscoverCard(card)) return false;
+  if (String(card.scheduledAt || card.scheduleAt || '').trim()) return false;
+  if (publishStatusOf(card) === 'posted') return false;
+  return !!(
+    scheduleSlotHasContent(card) ||
+    card.sourceIdeaId ||
+    card.linkedPipelineId
+  );
+}
+
+/**
+ * Unscheduled calendar card → Ideas board; the calendar slot is deleted.
+ * Linked Prep card becomes the idea; an idea still on the board is reused;
+ * otherwise the idea is rebuilt from the slot's own content.
+ */
+function moveScheduleToIdeas(scheduleId) {
+  const slot = scheduleCards().find(c => c.id === scheduleId);
+  if (!slot) return;
+  if (!Array.isArray(DATA.ideas)) DATA.ideas = [];
+
+  const linkedPrep = slot.linkedPipelineId
+    ? prepCards().find(c => c.id === slot.linkedPipelineId)
+    : null;
+  const existingIdea = !linkedPrep && slot.sourceIdeaId
+    ? DATA.ideas.find(i => i && i.id === slot.sourceIdeaId)
+    : null;
+
+  let idea = existingIdea;
+  if (!idea) {
+    if (linkedPrep) {
+      // Remove from Prep first so pruneIdeasAlreadyInPipeline does not drop the restored idea.
+      DATA.sections.preparation = prepCards().filter(c => c.id !== linkedPrep.id);
+    }
+    idea = pipelineCardToIdea(linkedPrep || slot);
+    // A reused sourceIdeaId still claimed by another calendar / pipeline card would get pruned on load.
+    const claimed = scheduleCards().some(c => c && c.id !== slot.id && c.sourceIdeaId === idea.id)
+      || !!findPipelineCardBySourceIdea(idea.id);
+    if (claimed) idea.id = newId();
+    DATA.ideas.push(idea);
+  }
+
+  // Keep anything that only lived on the calendar card.
+  if (!stripHtml(idea.body || '').trim() && stripHtml(slot.body || '').trim()) idea.body = slot.body;
+  if (!idea.imageData && !cloneCardImages(idea).length && (slot.imageData || cloneCardImages(slot).length)) {
+    idea.imageData = slot.imageData || null;
+    idea.imageW = slot.imageW;
+    idea.imageH = slot.imageH;
+    idea.images = cloneCardImages(slot);
+    idea.imageIndex = Number(slot.imageIndex) || 0;
+  }
+  const link = String(slot.reviewVideoUrl || '').trim();
+  if (link && !String(idea.body || '').includes(link)) {
+    // Ideas have no link field — keep the shared link as plain text in the body.
+    idea.body = (idea.body ? idea.body + '<br>' : '') + escapeHtml(link);
+  }
+  idea.linkedScheduleId = '';
+
+  clearPipelineLinkForSchedule(slot.id);
+  DATA.sections.schedule = scheduleCards().filter(c => c.id !== slot.id);
+
+  expandedSections.add('ideas');
+  closePanel();
+  clearTimeout(saveTimer);
+  // Force: removing a filled calendar card must not trip the wipe guard.
+  saveData({ force: true });
   renderBoard();
   openPanel(idea.id);
   if (typeof PPC !== 'undefined' && PPC.showToast) PPC.showToast('Returned to Ideas');
@@ -17554,6 +17626,21 @@ function buildScheduleActions(card) {
         actions.appendChild(jumpReview);
       }
     }
+  }
+
+  if (canSendScheduleToIdeas(card)) {
+    const backBtn = document.createElement('button');
+    backBtn.type = 'button';
+    backBtn.className = 'btn-secondary';
+    backBtn.textContent = 'Back to Ideas';
+    backBtn.title = 'Move this content to the Ideas board and remove the calendar card';
+    backBtn.addEventListener('click', () => {
+      if (!confirm('Return this card to Ideas? The calendar card will be deleted.')) return;
+      const id = card.id;
+      savePanel(true);
+      moveScheduleToIdeas(id);
+    });
+    actions.appendChild(backBtn);
   }
 
   const del = document.createElement('button');
