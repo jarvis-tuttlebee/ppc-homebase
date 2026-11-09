@@ -12,6 +12,41 @@ page versions are **behind** live.
 
 ---
 
+## 2026-11-09 — Deployed Events→Projects rename + Unscheduled lane layout 0.12.117 (Claude Code, PC)
+
+### Live
+- Worker Version ID: `b9f018f0-7040-46b8-8d58-df244f84c469`
+- Marketing **`0.12.117`** (Kanban/Planner unchanged)
+- Deployed from `claude/dreamy-hopper-3ydimr` (Proton Drive clone)
+- `origin/main` matches this tip (ff-only) after this entry
+
+### What
+1. **Events → Projects.** The calendar's Events toolbar button, its
+   dropdown ("Active events" → "Active projects", "+Add event" → "+Add
+   project"), the add/edit panel (heading, "Edit event" tooltips, toasts
+   "Event saved"/"Event deleted"), and the Ideas/Prep/Calendar "Event" prop
+   row are all relabelled "Project(s)". Left unchanged on purpose: the
+   Event/Release/Cadence sub-type labels (still describe *what kind* of
+   project it is), the "Event night" field, and the Settings "Event types"
+   colour section — those are the type taxonomy, not the feature name.
+2. **Unscheduled tray lane layout.** The Type/Layer/Project groups built in
+   0.12.114 now render as side-by-side lane columns (title bar tinted to
+   the group's colour + its own scrollable card area) instead of flat
+   header rows — same visual language as the Content Preparation board's
+   lanes (reuses `hexWash()`/`accentTextColor()` the same way
+   `renderPrepLane()` does). `unscheduledGroups()`, the Group-by toggle, and
+   drag/drop are unchanged.
+
+### Safe for cards?
+Yes — copy + layout only. No KV shape change.
+
+### Open / next
+Hard-refresh Marketing. Smoke: open the Projects dropdown + add/edit panel;
+switch Type/Layer/Project in Unscheduled and confirm lanes render/scroll
+correctly; drag a card into/out of Unscheduled.
+
+---
+
 ## 2026-11-09 — Deployed fix: Ideas grid delete button on photo cards 0.12.115 (Claude Code, PC)
 
 ### Live
