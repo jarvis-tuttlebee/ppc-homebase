@@ -3762,6 +3762,42 @@
       padding: 8px 4px;
       font-size: 12px;
     }
+    .cal-unsched-groupby {
+      width: 100%;
+      margin-bottom: 4px;
+    }
+    .cal-unsched-group-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 8px 4px 4px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #9a958d;
+    }
+    .cal-unsched-group-swatch {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(44,44,44,0.12);
+    }
+    .cal-unsched-group-cards {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 5px;
+      width: 100%;
+      padding: 0 0 6px;
+    }
+    .cal-unsched-group-cards .cal-slot {
+      width: auto;
+      max-width: min(240px, 100%);
+      flex: 0 1 auto;
+    }
     .cal-anchor-overlay {
       position: fixed;
       inset: 0;
@@ -5224,7 +5260,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.113';
+const APP_VERSION = '0.12.114';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -5246,6 +5282,7 @@ const EARLIER_WEEKS_KEY = 'ppc-marketing-earlier-weeks';
 const CAL_RANGE_KEY = 'ppc-marketing-cal-range';
 const HIDE_POSTED_KEY = 'ppc-marketing-hide-posted';
 const HIDDEN_FORMATS_KEY = 'ppc-marketing-hidden-formats';
+const UNSCHED_GROUP_KEY = 'ppc-marketing-unsched-group';
 /** Empty slots yell Need only within this many days of publish (or if unscheduled). */
 const NEED_ACTION_DAYS = 7;
 /** Optional production fields (pills under Production plan). Add more here later. */
@@ -7009,6 +7046,82 @@ function calendarFormatFilterOptions() {
   return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
 }
 
+const NO_GROUP_TONE = '#b5b0a8';
+
+/**
+ * Buckets Unscheduled cards by type / layer / event for the grouped tray.
+ * Returns [{ key, label, tone, cards }] — no card is dropped; cards that
+ * don't have the dimension set land in a trailing "No …" bucket.
+ */
+function unscheduledGroups(cards, mode) {
+  if (mode === 'event') {
+    const byAnchor = new Map();
+    const noEvent = [];
+    cards.forEach(c => {
+      const anchor = c.anchorId ? anchors().find(a => a.id === c.anchorId) : null;
+      if (!anchor) { noEvent.push(c); return; }
+      if (!byAnchor.has(anchor.id)) {
+        byAnchor.set(anchor.id, {
+          key: anchor.id,
+          label: anchor.title || 'Untitled',
+          tone: anchorTypeColor(anchor.type),
+          startDate: String(anchor.startDate || ''),
+          cards: []
+        });
+      }
+      byAnchor.get(anchor.id).cards.push(c);
+    });
+    const groups = Array.from(byAnchor.values()).sort((a, b) => a.startDate.localeCompare(b.startDate));
+    if (noEvent.length) groups.push({ key: '__no_event__', label: 'No event', tone: NO_GROUP_TONE, cards: noEvent });
+    return groups;
+  }
+
+  if (mode === 'type') {
+    const optsByKey = new Map(calendarFormatFilterOptions().map(o => [o.key, o]));
+    const byType = new Map();
+    const noType = [];
+    cards.forEach(c => {
+      if (!c.format) { noType.push(c); return; }
+      const key = calFormatKeyOfCard(c);
+      if (!byType.has(key)) {
+        const opt = optsByKey.get(key);
+        byType.set(key, {
+          key,
+          label: (opt && opt.label) || formatLabel(c.pillar, c.format) || c.format,
+          tone: (opt && opt.tone) || formatColor(c.format, c.pillar),
+          cards: []
+        });
+      }
+      byType.get(key).cards.push(c);
+    });
+    const groups = Array.from(byType.values()).sort((a, b) => a.label.localeCompare(b.label));
+    if (noType.length) groups.push({ key: '__no_type__', label: 'No type', tone: NO_GROUP_TONE, cards: noType });
+    return groups;
+  }
+
+  // mode === 'layer' (default)
+  const byLayer = new Map();
+  const noLayer = [];
+  cards.forEach(c => {
+    const id = normalizeContentLayer(c.contentLayer);
+    if (!id) { noLayer.push(c); return; }
+    if (!byLayer.has(id)) byLayer.set(id, []);
+    byLayer.get(id).push(c);
+  });
+  const groups = CONTENT_LAYERS
+    .filter(l => byLayer.has(l.id))
+    .map(l => ({ key: l.id, label: l.short || l.label, tone: l.tone, cards: byLayer.get(l.id) }));
+  if (noLayer.length) groups.push({ key: '__no_layer__', label: NO_LAYER_INFO.label, tone: NO_GROUP_TONE, cards: noLayer });
+  return groups;
+}
+
+function setUnscheduledGroupBy(mode) {
+  if (mode !== 'type' && mode !== 'layer' && mode !== 'event') return;
+  unscheduledGroupBy = mode;
+  try { localStorage.setItem(UNSCHED_GROUP_KEY, mode); } catch (_) {}
+  renderBoard();
+}
+
 /** Pillar groups for the Types dropdown (expandable categories). */
 function calendarFormatFilterGroups() {
   const byPillar = new Map();
@@ -7466,6 +7579,14 @@ let _prepTouchJustDragged = false;
 /** Expanded pillar ids in the Types dropdown (Organic open by default). */
 let typesFilterExpanded = new Set(['organic']);
 let unscheduledQueueOpen = true;
+/** How the Unscheduled tray groups its cards: 'type' | 'layer' | 'event'. */
+let unscheduledGroupBy = 'layer';
+try {
+  const _savedGroupBy = localStorage.getItem(UNSCHED_GROUP_KEY);
+  if (_savedGroupBy === 'type' || _savedGroupBy === 'layer' || _savedGroupBy === 'event') {
+    unscheduledGroupBy = _savedGroupBy;
+  }
+} catch (_) {}
 let activeAnchorPanelId = null;
 let anchorPanelIsNew = false;
 let lastAnchorTypeValue = 'event';
@@ -13098,7 +13219,41 @@ function renderScheduleBody() {
     empty.textContent = 'No unscheduled Needs — every Need has a publish date, or drop a Need here to park it.';
     list.appendChild(empty);
   } else {
-    unscheduled.forEach(card => list.appendChild(renderCalSlot(card)));
+    const groupByWrap = document.createElement('div');
+    groupByWrap.className = 'cal-unsched-groupby cal-range-toggle';
+    groupByWrap.setAttribute('role', 'tablist');
+    groupByWrap.setAttribute('aria-label', 'Group Unscheduled by');
+    [['type', 'Type'], ['layer', 'Layer'], ['event', 'Event']].forEach(([mode, label]) => {
+      const gBtn = document.createElement('button');
+      gBtn.type = 'button';
+      gBtn.className = 'cal-nav-btn' + (unscheduledGroupBy === mode ? ' is-active' : '');
+      gBtn.textContent = label;
+      gBtn.setAttribute('aria-selected', unscheduledGroupBy === mode ? 'true' : 'false');
+      gBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        setUnscheduledGroupBy(mode);
+      });
+      groupByWrap.appendChild(gBtn);
+    });
+    list.appendChild(groupByWrap);
+
+    unscheduledGroups(unscheduled, unscheduledGroupBy).forEach(group => {
+      const groupLabel = document.createElement('div');
+      groupLabel.className = 'cal-unsched-group-label';
+      const swatch = document.createElement('span');
+      swatch.className = 'cal-unsched-group-swatch';
+      swatch.style.background = group.tone;
+      groupLabel.appendChild(swatch);
+      const text = document.createElement('span');
+      text.textContent = group.label + ' · ' + group.cards.length;
+      groupLabel.appendChild(text);
+      list.appendChild(groupLabel);
+
+      const groupCards = document.createElement('div');
+      groupCards.className = 'cal-unsched-group-cards';
+      group.cards.forEach(card => groupCards.appendChild(renderCalSlot(card)));
+      list.appendChild(groupCards);
+    });
   }
   unschedWrap.appendChild(list);
   function acceptUnschedDragOver(e) {
