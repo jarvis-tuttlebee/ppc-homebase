@@ -3800,18 +3800,17 @@
     }
     .cal-unsched-lane-cards {
       display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      gap: 5px;
+      flex-direction: column;
+      gap: 6px;
       padding: 6px;
       flex: 1;
-      max-height: 220px;
+      max-height: 300px;
       overflow-y: auto;
     }
     .cal-unsched-lane-cards .cal-slot {
-      width: auto;
+      width: 100%;
       max-width: 100%;
-      flex: 0 1 auto;
+      flex: 0 0 auto;
     }
     .cal-anchor-overlay {
       position: fixed;
@@ -5275,7 +5274,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.117';
+const APP_VERSION = '0.12.118';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
