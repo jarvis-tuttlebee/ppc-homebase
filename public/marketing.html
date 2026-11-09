@@ -3770,36 +3770,47 @@
       width: 100%;
       margin-bottom: 4px;
     }
-    .cal-unsched-group-label {
+    .cal-unsched-lanes {
       display: flex;
-      align-items: center;
-      gap: 6px;
+      gap: 0;
       width: 100%;
-      padding: 8px 4px 4px;
+      overflow-x: auto;
+      align-items: stretch;
+      background: #f7f5f2;
+      border: 1px solid #e2ddd5;
+      border-radius: 8px;
+    }
+    .cal-unsched-lane {
+      flex: 1 1 0;
+      min-width: 120px;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #e2ddd5;
+    }
+    .cal-unsched-lane:last-child { border-right: none; }
+    .cal-unsched-lane-title {
       font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #9a958d;
+      padding: 6px 6px;
+      border-bottom: 1px solid #e8e5e0;
+      background: rgba(255,255,255,0.55);
+      text-align: center;
     }
-    .cal-unsched-group-swatch {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      border: 1px solid rgba(44,44,44,0.12);
-    }
-    .cal-unsched-group-cards {
+    .cal-unsched-lane-cards {
       display: flex;
       flex-wrap: wrap;
       align-items: flex-start;
       gap: 5px;
-      width: 100%;
-      padding: 0 0 6px;
+      padding: 6px;
+      flex: 1;
+      max-height: 220px;
+      overflow-y: auto;
     }
-    .cal-unsched-group-cards .cal-slot {
+    .cal-unsched-lane-cards .cal-slot {
       width: auto;
-      max-width: min(240px, 100%);
+      max-width: 100%;
       flex: 0 1 auto;
     }
     .cal-anchor-overlay {
@@ -4998,7 +5009,7 @@
                 </div>
               </div>
               <div class="schedule-campaign-field">
-                <div class="panel-section-label">Event</div>
+                <div class="panel-section-label">Project</div>
                 <div id="pScheduleAnchorWrap" style="margin-top:2px"></div>
               </div>
               <div class="schedule-pipeline-notes">
@@ -5160,7 +5171,7 @@
 <div class="cal-anchor-overlay" id="anchorOverlay" onclick="closeAnchorPanel()"></div>
 <div class="cal-anchor-panel" id="anchorPanel">
   <button type="button" class="cal-anchor-close" onclick="closeAnchorPanel()" aria-label="Close">&#x2715;</button>
-  <h2 id="anchorPanelHeading">Event</h2>
+  <h2 id="anchorPanelHeading">Project</h2>
   <div class="cal-anchor-field">
     <label for="anchorTitle">Name</label>
     <input type="text" id="anchorTitle" placeholder="Event, release, or cadence name">
@@ -5180,7 +5191,7 @@
     <small class="cal-anchor-hint" id="anchorDateModeHint">One night, or a start–end span.</small>
   </div>
   <div class="cal-anchor-field" id="anchorSingleDateField">
-    <label for="anchorEventDate">Event date</label>
+    <label for="anchorEventDate">Date</label>
     <div id="anchorEventDateWrap"></div>
   </div>
   <div id="anchorRangeDates" hidden>
@@ -5201,7 +5212,7 @@
   </div>
   <div class="cal-anchor-field">
     <label for="anchorNotes">Description</label>
-    <textarea id="anchorNotes" rows="3" placeholder="Notes for this event…"></textarea>
+    <textarea id="anchorNotes" rows="3" placeholder="Notes for this project…"></textarea>
   </div>
 
   <label class="cal-anchor-check">
@@ -5264,7 +5275,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.115';
+const APP_VERSION = '0.12.117';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
@@ -13227,7 +13238,7 @@ function renderScheduleBody() {
     groupByWrap.className = 'cal-unsched-groupby cal-range-toggle';
     groupByWrap.setAttribute('role', 'tablist');
     groupByWrap.setAttribute('aria-label', 'Group Unscheduled by');
-    [['type', 'Type'], ['layer', 'Layer'], ['event', 'Event']].forEach(([mode, label]) => {
+    [['type', 'Type'], ['layer', 'Layer'], ['event', 'Project']].forEach(([mode, label]) => {
       const gBtn = document.createElement('button');
       gBtn.type = 'button';
       gBtn.className = 'cal-nav-btn' + (unscheduledGroupBy === mode ? ' is-active' : '');
@@ -13241,23 +13252,27 @@ function renderScheduleBody() {
     });
     list.appendChild(groupByWrap);
 
+    const lanes = document.createElement('div');
+    lanes.className = 'cal-unsched-lanes';
     unscheduledGroups(unscheduled, unscheduledGroupBy).forEach(group => {
-      const groupLabel = document.createElement('div');
-      groupLabel.className = 'cal-unsched-group-label';
-      const swatch = document.createElement('span');
-      swatch.className = 'cal-unsched-group-swatch';
-      swatch.style.background = group.tone;
-      groupLabel.appendChild(swatch);
-      const text = document.createElement('span');
-      text.textContent = group.label + ' · ' + group.cards.length;
-      groupLabel.appendChild(text);
-      list.appendChild(groupLabel);
+      const lane = document.createElement('div');
+      lane.className = 'cal-unsched-lane';
 
-      const groupCards = document.createElement('div');
-      groupCards.className = 'cal-unsched-group-cards';
-      group.cards.forEach(card => groupCards.appendChild(renderCalSlot(card)));
-      list.appendChild(groupCards);
+      const laneTitle = document.createElement('div');
+      laneTitle.className = 'cal-unsched-lane-title';
+      laneTitle.style.borderBottomColor = hexWash(group.tone, 0.35);
+      laneTitle.style.color = accentTextColor(group.tone);
+      laneTitle.textContent = group.label + ' · ' + group.cards.length;
+      lane.appendChild(laneTitle);
+
+      const laneCards = document.createElement('div');
+      laneCards.className = 'cal-unsched-lane-cards';
+      group.cards.forEach(card => laneCards.appendChild(renderCalSlot(card)));
+      lane.appendChild(laneCards);
+
+      lanes.appendChild(lane);
     });
+    list.appendChild(lanes);
   }
   unschedWrap.appendChild(list);
   function acceptUnschedDragOver(e) {
@@ -13491,11 +13506,11 @@ function buildEventsControl() {
   btn.setAttribute('aria-haspopup', 'true');
   btn.setAttribute('aria-expanded', eventsMenuOpen ? 'true' : 'false');
   if (isCompactCalChrome()) {
-    btn.textContent = list.length ? ('Events ' + list.length) : 'Events';
+    btn.textContent = list.length ? ('Projects ' + list.length) : 'Projects';
   } else {
-    btn.textContent = list.length ? ('Events · ' + list.length) : 'Events';
+    btn.textContent = list.length ? ('Projects · ' + list.length) : 'Projects';
   }
-  btn.title = 'Active events and campaigns';
+  btn.title = 'Active projects and campaigns';
   btn.addEventListener('click', e => {
     e.stopPropagation();
     eventsMenuOpen = !eventsMenuOpen;
@@ -13510,12 +13525,12 @@ function buildEventsControl() {
   const menu = document.createElement('div');
   menu.className = 'cal-events-menu' + (eventsMenuOpen ? ' open' : '');
   menu.setAttribute('role', 'menu');
-  menu.setAttribute('aria-label', 'Events');
+  menu.setAttribute('aria-label', 'Projects');
   menu.addEventListener('click', e => e.stopPropagation());
 
   const head = document.createElement('div');
   head.className = 'cal-events-menu-label';
-  head.textContent = 'Active events';
+  head.textContent = 'Active projects';
   menu.appendChild(head);
 
   if (!list.length) {
@@ -13546,7 +13561,7 @@ function buildEventsControl() {
       text.appendChild(meta);
       item.appendChild(swatch);
       item.appendChild(text);
-      item.title = 'Edit event';
+      item.title = 'Edit project';
       item.addEventListener('click', e => {
         e.stopPropagation();
         eventsMenuOpen = false;
@@ -13559,7 +13574,7 @@ function buildEventsControl() {
   const addBtn = document.createElement('button');
   addBtn.type = 'button';
   addBtn.className = 'cal-events-add';
-  addBtn.textContent = '+ Add event';
+  addBtn.textContent = '+ Add project';
   addBtn.addEventListener('click', e => {
     e.stopPropagation();
     eventsMenuOpen = false;
@@ -13674,13 +13689,13 @@ function buildMarketingWeekRow(band, cardsByDay, leadUpByDay, prepByDay, today) 
 }
 
 function leadUpCueLabel(anchor) {
-  const name = (anchor && anchor.title || '').trim() || 'Event';
+  const name = (anchor && anchor.title || '').trim() || 'Project';
   const short = name.length > 18 ? name.slice(0, 16) + '…' : name;
   return short;
 }
 
 function leadUpCueTitle(anchor) {
-  const name = (anchor && anchor.title || '').trim() || 'Event';
+  const name = (anchor && anchor.title || '').trim() || 'Project';
   const mode = anchor && anchor.scheduleMode === 'through' ? 'Cadence' : 'Lead-up';
   return mode + ' · ' + name;
 }
@@ -14951,7 +14966,7 @@ function ensureAnchorPanelSelects() {
 
 function ensureAnchorDateInputs() {
   const specs = [
-    { wrapId: 'anchorEventDateWrap', id: 'anchorEventDate', placeholder: 'Event date' },
+    { wrapId: 'anchorEventDateWrap', id: 'anchorEventDate', placeholder: 'Date' },
     { wrapId: 'anchorStartWrap', id: 'anchorStart', placeholder: 'Start date' },
     { wrapId: 'anchorEndWrap', id: 'anchorEnd', placeholder: 'End date' },
     { wrapId: 'anchorNightWrap', id: 'anchorNight', placeholder: 'Optional' }
@@ -15035,7 +15050,7 @@ function openNewEventPanel() {
   hideAddFormatForm();
   activeAnchorPanelId = null;
   anchorPanelIsNew = true;
-  document.getElementById('anchorPanelHeading').textContent = 'New event';
+  document.getElementById('anchorPanelHeading').textContent = 'New project';
   document.getElementById('anchorTitle').value = '';
   setPpcSelectValue('anchorType', 'event');
   lastAnchorTypeValue = 'event';
@@ -15073,7 +15088,7 @@ function openAnchorPanel(anchorId) {
   hideAddFormatForm();
   activeAnchorPanelId = anchorId;
   anchorPanelIsNew = false;
-  document.getElementById('anchorPanelHeading').textContent = 'Edit event';
+  document.getElementById('anchorPanelHeading').textContent = 'Edit project';
   document.getElementById('anchorTitle').value = anchor.title || '';
   const type = normalizeAnchorType(anchor.type);
   refreshAnchorTypeSelect(type);
@@ -15130,7 +15145,7 @@ async function saveAnchorPanel() {
   if (dateMode === 'single') {
     const eventDate = ((document.getElementById('anchorEventDate') || {}).value || '').slice(0, 10);
     if (!eventDate) {
-      PPC.showToast('Event date is required');
+      PPC.showToast('Date is required');
       focusPpcDate('anchorEventDate');
       return;
     }
@@ -15236,7 +15251,7 @@ async function saveAnchorPanel() {
   } else if (cleared > 0) {
     PPC.showToast('Saved · ' + cleared + ' empty slot' + (cleared === 1 ? '' : 's') + ' removed');
   } else {
-    PPC.showToast('Event saved');
+    PPC.showToast('Project saved');
   }
 }
 
@@ -15244,7 +15259,7 @@ async function deleteAnchorPanel() {
   if (anchorPanelIsNew || !activeAnchorPanelId) return;
   const anchor = anchors().find(a => a.id === activeAnchorPanelId);
   if (!anchor) return;
-  const name = (anchor.title || 'this event').trim();
+  const name = (anchor.title || 'this project').trim();
   if (!confirm('Delete "' + name + '"?\n\nEmpty Need slots for it will be removed. Filled content stays on the calendar (unlinked).')) {
     return;
   }
@@ -15254,7 +15269,7 @@ async function deleteAnchorPanel() {
       source: 'marketing',
       item: JSON.parse(JSON.stringify(anchor)),
       restoreMeta: { kind: 'anchor' },
-      label: name || 'Event'
+      label: name || 'Project'
     });
   } catch (_) {}
   await clearEmptyAutoSlotsForAnchor(id);
@@ -15269,7 +15284,7 @@ async function deleteAnchorPanel() {
   saveData({ force: true });
   closeAnchorPanel();
   renderBoard();
-  PPC.showToast('Event deleted · recoverable from Archive');
+  PPC.showToast('Project deleted · recoverable from Archive');
 }
 
 function escapeHtml(text) {
@@ -16684,7 +16699,7 @@ function appendEventProp(wrap, selectedId, opts) {
   const row = document.createElement('div');
   row.className = 'prop-row';
   row.id = 'pEventRow';
-  row.innerHTML = '<span class="prop-label">Event</span><span class="prop-value"></span>';
+  row.innerHTML = '<span class="prop-label">Project</span><span class="prop-value"></span>';
   const value = row.querySelector('.prop-value');
   value.appendChild(createPpcSelect({
     id: 'pEventAnchor',
@@ -16759,7 +16774,7 @@ function renderScheduleCard(card) {
       desc.style.color = anchorTypeColor(anchor.type);
       desc.style.fontWeight = '600';
       desc.style.cursor = 'pointer';
-      desc.title = 'Edit event · ' + (anchor.title || '');
+      desc.title = 'Edit project · ' + (anchor.title || '');
       desc.addEventListener('click', e => {
         e.stopPropagation();
         openAnchorPanel(anchor.id);
