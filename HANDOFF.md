@@ -12,6 +12,35 @@ page versions are **behind** live.
 
 ---
 
+## 2026-11-09 — Deployed Unscheduled tray grouping 0.12.114 (Claude Code, PC)
+
+### Live
+- Worker Version ID: `fbea5014-56ca-45e5-af16-f683db640423`
+- Marketing **`0.12.114`** (Kanban/Planner unchanged)
+- Deployed from `claude/dreamy-hopper-3ydimr` (Proton Drive clone)
+- `origin/main` matches this tip (ff-only) after this entry
+
+### What
+Calendar Unscheduled tray was one flat bag of chips. Added a small **Type ·
+Layer · Event** segmented control above it — cards now render grouped under
+a swatch + label + count per group (sorted sensibly per mode; cards with no
+value land in a trailing "No …" bucket, never dropped). Choice persists in
+localStorage (`ppc-marketing-unsched-group`), defaults to **Layer**. New
+helper `unscheduledGroups(cards, mode)` reuses existing format/layer/anchor
+label+colour helpers — no new filtering, drag/drop, or collapse behaviour
+touched.
+
+### Safe for cards?
+Yes — display-only reorganisation of cards already in the tray. No KV shape
+change.
+
+### Open / next
+Hard-refresh Marketing. Smoke: switch Type/Layer/Event, drag a card in/out
+of Unscheduled, confirm a card with no layer/event/type lands in its "No …"
+bucket.
+
+---
+
 ## 2026-11-09 — Deployed Marketing 0.12.113 + Planner range bars 1.10.20/2.10.19 (Claude Code, PC)
 
 ### Live
