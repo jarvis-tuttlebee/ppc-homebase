@@ -12,6 +12,26 @@ page versions are **behind** live.
 
 ---
 
+## 2026-11-09 — Deployed Marketing 0.12.113 + Planner range bars 1.10.20/2.10.19 (Claude Code, PC)
+
+### Live
+- Worker Version ID: `546d48c0-b456-45ff-badb-63cb5db3b5c0`
+- Marketing **`0.12.113`** · Kanban **`1.10.20`** · Planner **`2.10.19`**
+- Deployed from `claude/dreamy-hopper-3ydimr` (Proton Drive clone)
+- `origin/main` matches this tip (ff-only) after this entry
+
+### What
+Ships both of the undeployed slices below in one go: Unscheduled calendar
+card → **Back to Ideas**, and the Planner **range-bar restyle** (10-06, was
+already on `main` but never deployed until now).
+
+### Open / next
+Hard-refresh Marketing + Planner (Cmd/Ctrl+Shift+R). Smoke Back to Ideas on
+an Unscheduled card; check Planner Calendar range bars render with the new
+highlighter style.
+
+---
+
 ## 2026-11-09 — Unscheduled calendar card → Back to Ideas (Claude Code cloud, not deployed)
 
 ### Branch
