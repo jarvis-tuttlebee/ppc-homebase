@@ -12,6 +12,34 @@ page versions are **behind** live.
 
 ---
 
+## 2026-11-09 — Deployed Unscheduled lanes: one card per row 0.12.118 (Claude Code, PC)
+
+### Live
+- Worker Version ID: `0d3a7819-46ed-4eb5-88b2-dd2ef3a26816`
+- Marketing **`0.12.118`** (Kanban/Planner unchanged)
+- Deployed from `claude/dreamy-hopper-3ydimr` (Proton Drive clone)
+- `origin/main` matches this tip (ff-only) after this entry
+
+### Why
+Jarvis: the 0.12.117 lane layout wrapped several smaller cards per row
+inside a lane — looked scattered.
+
+### What
+`.cal-unsched-lane-cards` is now `flex-direction: column` (was
+`flex-wrap: wrap`) and its `.cal-slot` cards are `width: 100%` — one card
+per row per lane, matching Content Preparation's card stack exactly.
+Bumped the per-lane scroll cap 220px → 300px to fit a few full-width rows
+before scrolling.
+
+### Safe for cards?
+Yes — CSS only.
+
+### Open / next
+Hard-refresh Marketing. Confirm Unscheduled lanes read as a clean one-card
+column per group.
+
+---
+
 ## 2026-11-09 — Deployed Events→Projects rename + Unscheduled lane layout 0.12.117 (Claude Code, PC)
 
 ### Live
