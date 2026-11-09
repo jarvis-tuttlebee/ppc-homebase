@@ -12,6 +12,27 @@ page versions are **behind** live.
 
 ---
 
+## 2026-09-30 — Data import: 30 Content Library cards (Claude Code)
+
+### What
+Data-only, no code change or deploy. Added 30 cards to Marketing → Calendar
+**Unscheduled** (board `_rev` 2189 → 2190) from the Proton Drive
+`Marketing Content/Content Library - Pillars/` folder.
+- `body` = `A-C01 · London in the Uniform` style (codes A/B/C/W = Acquisition /
+  Identity / Conversion / World Building; W-* use `contentLayer: identity`).
+- `format` `ig-post-carousel` or `ig-story`, `publishStatus: preparing`, caption,
+  `contentWhy` (notes + suggested week), `productionPlan` (slide order).
+- All slides uploaded to R2 (1080px) as `images[]`. `reviewVideoUrl` (the **Link**
+  field) = the post's Proton Drive folder, account-free form
+  `https://drive.proton.me/<shareId>/folder/<linkId>` (redirects to the signed-in account).
+
+### Safe for cards?
+Yes — appended only. Other sections untouched (prep 23, review 16, ideas 5).
+The server snapshot from this save plus the local backup `live-backup-rev2189.json` (Claude
+session scratchpad) are the rollback points.
+
+---
+
 ## 2026-09-21 — Deployed Marketing 0.12.109 (Cursor)
 
 ### Live
