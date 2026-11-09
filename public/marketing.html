@@ -359,6 +359,10 @@
       cursor: pointer;
       line-height: 1;
       box-shadow: 0 1px 3px rgba(44,44,44,0.08);
+      /* .ideas-grid-thumb is also position:relative for photo cards and is
+         appended after this button — without an explicit z-index it was
+         painting on top and swallowing the delete click on photo cards. */
+      z-index: 2;
     }
     @media (hover: none) {
       .ideas-grid-del { color: #6B7A8D; }
@@ -5260,7 +5264,7 @@
 const STORAGE_KEY = 'ppc-marketing-data';
 const SYNC_URL = '/api/marketing';
 const MEDIA_UPLOAD_URL = '/api/marketing/media';
-const APP_VERSION = '0.12.114';
+const APP_VERSION = '0.12.115';
 document.getElementById('versionTag').textContent = 'v' + APP_VERSION;
 let marketingHydrated = false;
 let marketingRev = 0;
